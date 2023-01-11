@@ -1,0 +1,12 @@
+[workspace]
+members = [
+	"providers",
+	"requirements",
+	"engine",
+]
+default-members = []
+
+[profile.dev]
+opt-level = 3
+
+[workspace.dependencies]
