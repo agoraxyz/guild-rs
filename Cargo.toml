@@ -4,9 +4,7 @@ members = [
 	"requirements",
 	"engine",
 ]
-default-members = [
-	"engine",
-]
+default-members = []
 
 [profile.dev]
 opt-level = 3
