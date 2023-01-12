@@ -6,3 +6,9 @@ edition = "2021"
 
 [dev-dependencies]
 shiba = { version = "0.1.1", default-features = false }
+
+[dependencies]
+tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
+web3 = { version = "0.17.0" }
+async-trait = { version = "0.1.57", default-features = false }
+thiserror = { version = "1.0.24", default-features = false }
