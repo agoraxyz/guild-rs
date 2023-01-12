@@ -1,6 +1,8 @@
 use crate::{Error, Requirement, User};
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct FreeRequirement;
 
 #[async_trait]

@@ -1,6 +1,8 @@
 use crate::{Address, Error, Requirement, User};
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct AllowListRequirement {
     pub addresses: Vec<Address>,
 }
