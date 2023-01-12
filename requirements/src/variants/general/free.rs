@@ -11,7 +11,7 @@ impl Requirement for Free {
         Ok(users.iter().map(|_| true).collect())
     }
 
-    async fn check(&self, user: User) -> Result<bool, Error> {
+    async fn check(&self, _user: User) -> Result<bool, Error> {
         Ok(true)
     }
 }

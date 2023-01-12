@@ -3,7 +3,7 @@ use thiserror::Error;
 
 pub use web3::types::{Address, U256};
 
-mod general;
+mod variants;
 
 pub struct User {
     pub addresses: Vec<Address>,
