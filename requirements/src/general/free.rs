@@ -3,10 +3,10 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct FreeRequirement;
+pub struct Free;
 
 #[async_trait]
-impl Requirement for FreeRequirement {
+impl Requirement for Free {
     async fn check_for_many(&self, users: &[User]) -> Result<Vec<bool>, Error> {
         Ok(users.iter().map(|_| true).collect())
     }
@@ -18,11 +18,11 @@ impl Requirement for FreeRequirement {
 
 #[cfg(test)]
 mod test {
-    use super::{FreeRequirement, Requirement, User};
+    use super::{Free, Requirement, User};
 
     #[tokio::test]
     async fn free_requirement_check() {
-        let req = FreeRequirement;
+        let req = Free;
 
         assert!(req.check(User { addresses: vec![] }).await.unwrap());
     }
