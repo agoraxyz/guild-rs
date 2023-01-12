@@ -1,4 +1,4 @@
-use crate::{Error, Requirement, User};
+use crate::{Requirement, RequirementError, User};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
@@ -7,11 +7,13 @@ pub struct Free;
 
 #[async_trait]
 impl Requirement for Free {
-    async fn check_for_many(&self, users: &[User]) -> Result<Vec<bool>, Error> {
+    type Error = RequirementError;
+
+    async fn check_for_many(&self, users: &[User]) -> Result<Vec<bool>, Self::Error> {
         Ok(users.iter().map(|_| true).collect())
     }
 
-    async fn check(&self, _user: User) -> Result<bool, Error> {
+    async fn check(&self, _user: User) -> Result<bool, Self::Error> {
         Ok(true)
     }
 }

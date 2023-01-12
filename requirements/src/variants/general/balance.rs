@@ -1,4 +1,4 @@
-use crate::{Address, Error, Requirement, User, U256};
+use crate::{Address, Requirement, RequirementError, User, U256};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
@@ -43,7 +43,9 @@ pub struct BalanceRequirement {
 
 #[async_trait]
 impl Requirement for BalanceRequirement {
-    async fn check_for_many(&self, users: &[User]) -> Result<Vec<bool>, Error> {
+    type Error = RequirementError;
+
+    async fn check_for_many(&self, users: &[User]) -> Result<Vec<bool>, Self::Error> {
         let addresses: Vec<Address> = users
             .iter()
             .flat_map(|user| user.addresses.clone())
@@ -69,7 +71,7 @@ impl Requirement for BalanceRequirement {
             .collect())
     }
 
-    async fn check(&self, user: User) -> Result<bool, Error> {
+    async fn check(&self, user: User) -> Result<bool, Self::Error> {
         self.check_for_many(&[user]).await.map(|res| res[0])
     }
 }

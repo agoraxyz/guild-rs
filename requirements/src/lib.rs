@@ -15,12 +15,12 @@ pub enum RequirementError {
     Other(String),
 }
 
-type Error = RequirementError;
-
 #[async_trait]
 pub trait Requirement {
-    async fn check_for_many(&self, users: &[User]) -> Result<Vec<bool>, Error>;
-    async fn check(&self, user: User) -> Result<bool, Error>;
+    type Error;
+
+    async fn check_for_many(&self, users: &[User]) -> Result<Vec<bool>, Self::Error>;
+    async fn check(&self, user: User) -> Result<bool, Self::Error>;
 }
 
 #[macro_export]

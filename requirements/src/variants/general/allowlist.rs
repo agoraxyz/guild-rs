@@ -1,4 +1,4 @@
-use crate::{Address, Error, Requirement, User};
+use crate::{Address, Requirement, RequirementError, User};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +9,9 @@ pub struct AllowListRequirement {
 
 #[async_trait]
 impl Requirement for AllowListRequirement {
-    async fn check_for_many(&self, users: &[User]) -> Result<Vec<bool>, Error> {
+    type Error = RequirementError;
+
+    async fn check_for_many(&self, users: &[User]) -> Result<Vec<bool>, Self::Error> {
         Ok(users
             .iter()
             .map(|user| {
@@ -20,7 +22,7 @@ impl Requirement for AllowListRequirement {
             .collect())
     }
 
-    async fn check(&self, user: User) -> Result<bool, Error> {
+    async fn check(&self, user: User) -> Result<bool, Self::Error> {
         self.check_for_many(&[user]).await.map(|res| res[0])
     }
 }
