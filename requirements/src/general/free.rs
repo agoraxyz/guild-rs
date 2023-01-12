@@ -12,7 +12,7 @@ impl Requirement for FreeRequirement {
     }
 
     async fn check(&self, user: User) -> Result<bool, Error> {
-        self.check_for_many(&[user]).await.map(|res| res[0])
+        Ok(true)
     }
 }
 
