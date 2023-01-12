@@ -3,12 +3,12 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct AllowListRequirement {
+pub struct AllowList {
     pub addresses: Vec<Address>,
 }
 
 #[async_trait]
-impl Requirement for AllowListRequirement {
+impl Requirement for AllowList {
     type Error = RequirementError;
 
     async fn check_for_many(&self, users: &[User]) -> Result<Vec<bool>, Self::Error> {
@@ -29,12 +29,12 @@ impl Requirement for AllowListRequirement {
 
 #[cfg(test)]
 mod test {
-    use super::{AllowListRequirement, Requirement, User};
+    use super::{AllowList, Requirement, User};
     use crate::address;
 
     #[tokio::test]
     async fn allowlist_requirement_check() {
-        let req = AllowListRequirement {
+        let req = AllowList {
             addresses: vec![
                 address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
                 address!("0x20CC54c7ebc5f43b74866D839b4BD5c01BB23503"),

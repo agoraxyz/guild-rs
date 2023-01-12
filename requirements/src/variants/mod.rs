@@ -1,3 +1,3 @@
 mod general;
 
-pub use general::{allowlist::AllowListRequirement, balance::BalanceRequirement, free::Free};
+pub use general::{allowlist::AllowList, balance::Balance, free::Free};

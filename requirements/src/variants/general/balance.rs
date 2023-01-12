@@ -34,7 +34,7 @@ impl Relation {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct BalanceRequirement {
+pub struct Balance {
     // TODO: use the Chain type from the providers crate
     // https://github.com/agoraxyz/requirement-engine-v2/issues/6#issue-1530872075
     pub chain: u64,
@@ -43,7 +43,7 @@ pub struct BalanceRequirement {
 }
 
 #[async_trait]
-impl Requirement for BalanceRequirement {
+impl Requirement for Balance {
     type Error = RequirementError;
 
     async fn check_for_many(&self, users: &[User]) -> Result<Vec<bool>, Self::Error> {
@@ -81,7 +81,7 @@ impl Requirement for BalanceRequirement {
 
 #[cfg(test)]
 mod test {
-    use super::{BalanceRequirement, Relation, Requirement, TokenType, User, U256};
+    use super::{Balance, Relation, Requirement, TokenType, User, U256};
     use crate::address;
 
     macro_rules! u256 {
@@ -121,7 +121,7 @@ mod test {
 
     #[tokio::test]
     async fn balance_requirement_check() {
-        let req = BalanceRequirement {
+        let req = Balance {
             chain: 69,
             token_type: TokenType::Coin,
             relation: Relation::GreaterThan(u256!(0)),
