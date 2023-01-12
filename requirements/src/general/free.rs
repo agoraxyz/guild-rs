@@ -20,10 +20,8 @@ mod test {
 
     #[tokio::test]
     async fn free_requirement_check() {
-        async fn free_requirement_check() {
-            let req = FreeRequirement;
+        let req = FreeRequirement;
 
-            assert!(req.check(User { addresses: vec![] }).await.unwrap());
-        }
+        assert!(req.check(User { addresses: vec![] }).await.unwrap());
     }
 }
