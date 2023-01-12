@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use thiserror::Error;
 
-pub use web3::types::Address;
+pub use web3::types::{Address, U256};
 
 mod general;
 
