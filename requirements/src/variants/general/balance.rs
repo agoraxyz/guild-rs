@@ -36,6 +36,7 @@ impl Relation {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct BalanceRequirement {
     // TODO: use the Chain type from the providers crate
+    // https://github.com/agoraxyz/requirement-engine-v2/issues/6#issue-1530872075
     pub chain: u64,
     pub token_type: TokenType,
     pub relation: Relation,
@@ -52,12 +53,14 @@ impl Requirement for BalanceRequirement {
             .collect();
 
         // TODO: use providers to query balance
+        // https://github.com/agoraxyz/requirement-engine-v2/issues/6#issue-1530872075
         let balances: Vec<U256> = addresses
             .iter()
             .map(|_| U256::from_dec_str("69").unwrap())
             .collect();
 
         // TODO: use the appropriate function of providers
+        // https://github.com/agoraxyz/requirement-engine-v2/issues/6#issue-1530872075
         // match self.token_type {
         //     TokenType::Coin => {}
         //     TokenType::Fungible { address } => {}
