@@ -1,7 +1,15 @@
 [package]
 name = "rusty-gate-requirements"
+description = "Requirement types for the Guild-Network"
 version = "0.1.0"
+repository = "https://github.com/agoraxyz/requirement-engine-v2"
+readme = "README.md"
+license = "MIT"
 authors = ["Shronk <ureshpohar@gmail.com>"]
+keywords = ["guild", "guild-network", "requirements"]
+categories = [
+    "cryptography", "cryptography::cryptocurrencies", "data-structures"
+]
 edition = "2021"
 
 [dev-dependencies]

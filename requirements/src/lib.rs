@@ -1,3 +1,7 @@
+#![deny(clippy::all)]
+#![deny(clippy::dbg_macro)]
+#![deny(clippy::cargo)]
+
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
