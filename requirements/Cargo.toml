@@ -10,6 +10,6 @@ tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
 
 [dependencies]
 serde = { version = "1.0.144", features = ["derive"] }
-web3 = { version = "0.17.0" }
+ethereum-types = { version = "0.14.1" }
 async-trait = { version = "0.1.57", default-features = false }
 thiserror = { version = "1.0.24", default-features = false }

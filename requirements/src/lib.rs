@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use thiserror::Error;
 
-pub use web3::types::{Address, U256};
+pub use ethereum_types::{Address, U256};
 
 mod variants;
 
@@ -27,6 +27,6 @@ pub trait Requirement {
 macro_rules! address {
     ($addr:expr) => {{
         use std::str::FromStr;
-        web3::types::Address::from_str($addr).expect(&format!("Invalid address {}", $addr))
+        ethereum_types::Address::from_str($addr).expect(&format!("Invalid address {}", $addr))
     }};
 }
