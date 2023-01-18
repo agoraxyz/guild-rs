@@ -11,17 +11,17 @@ pub enum TokenType {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub enum Relation {
-    EqualTo(U256),
-    GreaterThan(U256),
-    GreaterOrEqualTo(U256),
-    LessThan(U256),
-    LessOrEqualTo(U256),
-    Between(std::ops::Range<U256>),
+pub enum Relation<T> {
+    EqualTo(T),
+    GreaterThan(T),
+    GreaterOrEqualTo(T),
+    LessThan(T),
+    LessOrEqualTo(T),
+    Between(core::ops::Range<T>),
 }
 
-impl Relation {
-    pub fn assert(&self, x: &U256) -> bool {
+impl<T: PartialEq + PartialOrd> Relation<T> {
+    pub fn assert(&self, x: &T) -> bool {
         match self {
             Relation::EqualTo(a) => x == a,
             Relation::GreaterThan(a) => x > a,
@@ -39,7 +39,7 @@ pub struct Balance {
     // https://github.com/agoraxyz/requirement-engine-v2/issues/6#issue-1530872075
     pub chain: u64,
     pub token_type: TokenType,
-    pub relation: Relation,
+    pub relation: Relation<U256>,
 }
 
 #[async_trait]
@@ -84,39 +84,33 @@ mod test {
     use super::{Balance, Relation, Requirement, TokenType, User, U256};
     use crate::address;
 
-    macro_rules! u256 {
-        ($num: expr) => {
-            U256::from_dec_str(&format!("{}", $num)).unwrap()
-        };
-    }
-
     #[test]
     fn relations() {
-        assert!(Relation::EqualTo(u256!(0)).assert(&u256!(0)));
-        assert!(!Relation::EqualTo(u256!(10)).assert(&u256!(2)));
-        assert!(!Relation::EqualTo(u256!(420)).assert(&u256!(421)));
+        assert!(Relation::<u32>::EqualTo(0).assert(&0));
+        assert!(!Relation::<u32>::EqualTo(10).assert(&2));
+        assert!(!Relation::<u32>::EqualTo(420).assert(&421));
 
-        assert!(!Relation::GreaterThan(u256!(10)).assert(&u256!(3)));
-        assert!(!Relation::GreaterThan(u256!(10)).assert(&u256!(10)));
-        assert!(Relation::GreaterThan(u256!(10)).assert(&u256!(20)));
+        assert!(!Relation::<u32>::GreaterThan(10).assert(&3));
+        assert!(!Relation::<u32>::GreaterThan(10).assert(&10));
+        assert!(Relation::<u32>::GreaterThan(10).assert(&20));
 
-        assert!(Relation::GreaterOrEqualTo(u256!(23)).assert(&u256!(42)));
-        assert!(Relation::GreaterOrEqualTo(u256!(23)).assert(&u256!(23)));
-        assert!(!Relation::GreaterOrEqualTo(u256!(23)).assert(&u256!(14)));
+        assert!(Relation::<u32>::GreaterOrEqualTo(23).assert(&42));
+        assert!(Relation::<u32>::GreaterOrEqualTo(23).assert(&23));
+        assert!(!Relation::<u32>::GreaterOrEqualTo(23).assert(&14));
 
-        assert!(Relation::LessThan(u256!(23)).assert(&u256!(1)));
-        assert!(!Relation::LessThan(u256!(23)).assert(&u256!(23)));
-        assert!(!Relation::LessThan(u256!(23)).assert(&u256!(42)));
+        assert!(Relation::<u32>::LessThan(23).assert(&1));
+        assert!(!Relation::<u32>::LessThan(23).assert(&23));
+        assert!(!Relation::<u32>::LessThan(23).assert(&42));
 
-        assert!(Relation::LessOrEqualTo(u256!(23)).assert(&u256!(1)));
-        assert!(Relation::LessOrEqualTo(u256!(23)).assert(&u256!(23)));
-        assert!(!Relation::LessOrEqualTo(u256!(23)).assert(&u256!(42)));
+        assert!(Relation::<u32>::LessOrEqualTo(23).assert(&1));
+        assert!(Relation::<u32>::LessOrEqualTo(23).assert(&23));
+        assert!(!Relation::<u32>::LessOrEqualTo(23).assert(&42));
 
-        assert!(!Relation::Between(u256!(0)..u256!(100)).assert(&u256!(230)));
-        assert!(!Relation::Between(u256!(50)..u256!(100)).assert(&u256!(15)));
-        assert!(!Relation::Between(u256!(50)..u256!(100)).assert(&u256!(100)));
-        assert!(Relation::Between(u256!(50)..u256!(100)).assert(&u256!(77)));
-        assert!(Relation::Between(u256!(50)..u256!(100)).assert(&u256!(50)));
+        assert!(!Relation::<u32>::Between(0..100).assert(&230));
+        assert!(!Relation::<u32>::Between(50..100).assert(&15));
+        assert!(!Relation::<u32>::Between(50..100).assert(&100));
+        assert!(Relation::<u32>::Between(50..100).assert(&77));
+        assert!(Relation::<u32>::Between(50..100).assert(&50));
     }
 
     #[tokio::test]
@@ -124,7 +118,7 @@ mod test {
         let req = Balance {
             chain: 69,
             token_type: TokenType::Coin,
-            relation: Relation::GreaterThan(u256!(0)),
+            relation: Relation::GreaterThan(U256::from(0)),
         };
 
         assert!(req
