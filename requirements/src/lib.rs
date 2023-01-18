@@ -1,12 +1,21 @@
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 pub use ethereum_types::{Address, U256};
 
 mod variants;
 
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+pub enum Identity {
+    EvmAddress(Address),
+    SolAccount(String),
+    Telegram,
+    Discord,
+}
+
 pub struct User {
-    pub addresses: Vec<Address>,
+    pub identities: Vec<Identity>,
 }
 
 #[derive(Error, Debug)]
@@ -24,9 +33,11 @@ pub trait Requirement {
 }
 
 #[macro_export]
-macro_rules! address {
+macro_rules! evm_addr {
     ($addr:expr) => {{
         use std::str::FromStr;
-        ethereum_types::Address::from_str($addr).expect(&format!("Invalid address {}", $addr))
+        let addr =
+            ethereum_types::H160::from_str($addr).expect(&format!("Invalid address {}", $addr));
+        $crate::Identity::EvmAddress(addr)
     }};
 }

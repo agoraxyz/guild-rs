@@ -26,6 +26,6 @@ mod test {
     async fn free_requirement_check() {
         let req = Free;
 
-        assert!(req.check(User { addresses: vec![] }).await.unwrap());
+        assert!(req.check(User { identities: vec![] }).await.unwrap());
     }
 }

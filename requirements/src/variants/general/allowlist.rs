@@ -1,10 +1,10 @@
-use crate::{Address, Requirement, RequirementError, User};
+use crate::{Identity, Requirement, RequirementError, User};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct AllowList {
-    pub addresses: Vec<Address>,
+    pub identities: Vec<Identity>,
 }
 
 #[async_trait]
@@ -15,9 +15,9 @@ impl Requirement for AllowList {
         Ok(users
             .iter()
             .map(|user| {
-                user.addresses
+                user.identities
                     .iter()
-                    .any(|address| self.addresses.contains(address))
+                    .any(|identity| self.identities.contains(identity))
             })
             .collect())
     }
@@ -30,27 +30,27 @@ impl Requirement for AllowList {
 #[cfg(test)]
 mod test {
     use super::{AllowList, Requirement, User};
-    use crate::address;
+    use crate::evm_addr;
 
     #[tokio::test]
     async fn allowlist_requirement_check() {
         let req = AllowList {
-            addresses: vec![
-                address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
-                address!("0x20CC54c7ebc5f43b74866D839b4BD5c01BB23503"),
+            identities: vec![
+                evm_addr!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
+                evm_addr!("0x20CC54c7ebc5f43b74866D839b4BD5c01BB23503"),
             ],
         };
 
         assert!(req
             .check(User {
-                addresses: vec![address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE")]
+                identities: vec![evm_addr!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE")]
             })
             .await
             .unwrap());
 
         assert!(!req
             .check(User {
-                addresses: vec![address!("0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3")]
+                identities: vec![evm_addr!("0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3")]
             })
             .await
             .unwrap());

@@ -1,4 +1,4 @@
-use crate::{Address, Requirement, RequirementError, User, U256};
+use crate::{Address, Identity, Requirement, RequirementError, User, U256};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
@@ -47,16 +47,19 @@ impl Requirement for Balance {
     type Error = RequirementError;
 
     async fn check_for_many(&self, users: &[User]) -> Result<Vec<bool>, Self::Error> {
-        let addresses: Vec<Address> = users
+        let identities: Vec<Identity> = users
             .iter()
-            .flat_map(|user| user.addresses.clone())
+            .flat_map(|user| user.identities.clone())
             .collect();
 
         // TODO: use providers to query balance
         // https://github.com/agoraxyz/requirement-engine-v2/issues/6#issue-1530872075
-        let balances: Vec<U256> = addresses
+        let balances: Vec<U256> = identities
             .iter()
-            .map(|_| U256::from_dec_str("69").unwrap())
+            .map(|identity| match identity {
+                Identity::EvmAddress(_) | Identity::SolAccount(_) => U256::from(69),
+                _ => U256::from(0),
+            })
             .collect();
 
         // TODO: use the appropriate function of providers
@@ -81,8 +84,8 @@ impl Requirement for Balance {
 
 #[cfg(test)]
 mod test {
-    use super::{Balance, Relation, Requirement, TokenType, User, U256};
-    use crate::address;
+    use super::{Balance, Identity, Relation, Requirement, TokenType, User, U256};
+    use crate::evm_addr;
 
     #[test]
     fn relations() {
@@ -123,14 +126,21 @@ mod test {
 
         assert!(req
             .check(User {
-                addresses: vec![address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE")]
+                identities: vec![evm_addr!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE")]
             })
             .await
             .unwrap());
 
         assert!(req
             .check(User {
-                addresses: vec![address!("0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3")]
+                identities: vec![evm_addr!("0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3")]
+            })
+            .await
+            .unwrap());
+
+        assert!(!req
+            .check(User {
+                identities: vec![Identity::Telegram]
             })
             .await
             .unwrap());
