@@ -1,12 +1,12 @@
 [package]
-name = "rusty-gate-requirements"
-description = "Requirement types for the Guild-Network"
+name = "rusty-gate-common"
+description = "Common types and traits for Guild-Network"
 version = "0.1.0"
 repository = "https://github.com/agoraxyz/requirement-engine-v2"
 readme = "README.md"
 license = "MIT"
 authors = ["Shronk <ureshpohar@gmail.com>"]
-keywords = ["guild", "guild-network", "requirements"]
+keywords = ["guild", "guild-network", "types"]
 categories = [
     "cryptography", "cryptography::cryptocurrencies", "data-structures"
 ]
@@ -14,10 +14,8 @@ edition = "2021"
 
 [dev-dependencies]
 shiba = { version = "0.1.1", default-features = false }
-tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
 
 [dependencies]
-rusty-gate-common = { path = "../common" }
 serde = { version = "1.0.144", features = ["derive"] }
 ethereum-types = { version = "0.14.1" }
 async-trait = { version = "0.1.57", default-features = false }
