@@ -1,3 +1,3 @@
-mod general;
+mod core;
 
-pub use general::{allowlist::AllowList, balance::Balance, free::Free};
+pub use self::core::{allowlist::AllowList, balance::Balance, free::Free};
