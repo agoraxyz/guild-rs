@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-pub use ethereum_types::{Address, U256};
+use ethereum_types::Address;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub enum Identity {

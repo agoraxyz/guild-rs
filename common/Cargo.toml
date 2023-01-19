@@ -16,7 +16,7 @@ edition = "2021"
 shiba = { version = "0.1.1", default-features = false }
 
 [dependencies]
-serde = { version = "1.0.144", features = ["derive"] }
-ethereum-types = { version = "0.14.1" }
-async-trait = { version = "0.1.57", default-features = false }
+serde = { workspace = true }
+async-trait = { workspace = true }
+ethereum-types = { workspace = true }
 thiserror = { version = "1.0.24", default-features = false }

@@ -10,3 +10,6 @@ members = [
 opt-level = 3
 
 [workspace.dependencies]
+serde = { version = "1.0.144", features = ["derive"] }
+async-trait = { version = "0.1.57", default-features = false }
+ethereum-types = { version = "0.14.1" }
