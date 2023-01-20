@@ -140,7 +140,7 @@ mod test {
 
         assert!(!req
             .check(User {
-                identities: vec![Identity::Telegram]
+                identities: vec![Identity::Telegram(69)]
             })
             .await
             .unwrap());

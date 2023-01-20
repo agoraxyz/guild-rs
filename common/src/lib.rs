@@ -3,17 +3,16 @@
 #![deny(clippy::cargo)]
 
 use async_trait::async_trait;
+use ethereum_types::Address;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-
-use ethereum_types::Address;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub enum Identity {
     EvmAddress(Address),
     SolAccount(String),
-    Telegram,
-    Discord,
+    Telegram(u64),
+    Discord(u64),
 }
 
 pub struct User {
