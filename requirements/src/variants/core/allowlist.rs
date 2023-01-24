@@ -1,58 +1,51 @@
-use crate::{Identity, Requirement, RequirementError, User};
+use crate::Requirement;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use std::{
+    cmp::PartialEq,
+    marker::{Send, Sync},
+};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct AllowList {
-    pub identities: Vec<Identity>,
+pub struct AllowList<T> {
+    pub identities: Vec<T>,
 }
 
 #[async_trait]
-impl Requirement for AllowList {
-    type Error = RequirementError;
+impl<T> Requirement for AllowList<T>
+where
+    T: Sync + Send + PartialEq,
+{
+    type Error = ();
+    type Identity = T;
 
-    async fn check_for_many(&self, users: &[User]) -> Result<Vec<bool>, Self::Error> {
-        Ok(users
+    async fn check_for_many(
+        &self,
+        identities: &[Self::Identity],
+    ) -> Result<Vec<bool>, Self::Error> {
+        Ok(identities
             .iter()
-            .map(|user| {
-                user.identities
-                    .iter()
-                    .any(|identity| self.identities.contains(identity))
-            })
+            .map(|identity| self.identities.contains(identity))
             .collect())
     }
 
-    async fn check(&self, user: User) -> Result<bool, Self::Error> {
-        self.check_for_many(&[user]).await.map(|res| res[0])
+    async fn check(&self, identity: Self::Identity) -> Result<bool, Self::Error> {
+        self.check_for_many(&[identity]).await.map(|res| res[0])
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::{AllowList, Requirement, User};
-    use crate::evm_addr;
+    use super::{AllowList, Requirement};
 
     #[tokio::test]
     async fn allowlist_requirement_check() {
         let req = AllowList {
-            identities: vec![
-                evm_addr!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
-                evm_addr!("0x20CC54c7ebc5f43b74866D839b4BD5c01BB23503"),
-            ],
+            identities: vec![69, 420],
         };
 
-        assert!(req
-            .check(User {
-                identities: vec![evm_addr!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE")]
-            })
-            .await
-            .unwrap());
+        assert!(req.check(69).await.unwrap());
 
-        assert!(!req
-            .check(User {
-                identities: vec![evm_addr!("0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3")]
-            })
-            .await
-            .unwrap());
+        assert!(!req.check(13).await.unwrap());
     }
 }

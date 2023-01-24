@@ -1,5 +1,6 @@
-use crate::{Address, Identity, Requirement, RequirementError, User, U256};
+use crate::{Requirement, RequirementError};
 use async_trait::async_trait;
+use ethereum_types::{Address, U256};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -45,22 +46,15 @@ pub struct Balance {
 #[async_trait]
 impl Requirement for Balance {
     type Error = RequirementError;
+    type Identity = Address;
 
-    async fn check_for_many(&self, users: &[User]) -> Result<Vec<bool>, Self::Error> {
-        let identities: Vec<Identity> = users
-            .iter()
-            .flat_map(|user| user.identities.clone())
-            .collect();
-
+    async fn check_for_many(
+        &self,
+        identities: &[Self::Identity],
+    ) -> Result<Vec<bool>, Self::Error> {
         // TODO: use providers to query balance
         // https://github.com/agoraxyz/requirement-engine-v2/issues/6#issue-1530872075
-        let balances: Vec<U256> = identities
-            .iter()
-            .map(|identity| match identity {
-                Identity::EvmAddress(_) | Identity::SolAccount(_) => U256::from(69),
-                _ => U256::from(0),
-            })
-            .collect();
+        let balances: Vec<U256> = identities.iter().map(|_| U256::from(69)).collect();
 
         // TODO: use the appropriate function of providers
         // https://github.com/agoraxyz/requirement-engine-v2/issues/6#issue-1530872075
@@ -77,15 +71,14 @@ impl Requirement for Balance {
             .collect())
     }
 
-    async fn check(&self, user: User) -> Result<bool, Self::Error> {
+    async fn check(&self, user: Self::Identity) -> Result<bool, Self::Error> {
         self.check_for_many(&[user]).await.map(|res| res[0])
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::{Balance, Identity, Relation, Requirement, TokenType, User, U256};
-    use crate::evm_addr;
+    use super::{Balance, Relation, Requirement, TokenType, U256};
 
     #[test]
     fn relations() {
@@ -118,6 +111,9 @@ mod test {
 
     #[tokio::test]
     async fn balance_requirement_check() {
+        use super::Address;
+        use std::str::FromStr;
+
         let req = Balance {
             chain: 69,
             token_type: TokenType::Coin,
@@ -125,23 +121,12 @@ mod test {
         };
 
         assert!(req
-            .check(User {
-                identities: vec![evm_addr!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE")]
-            })
+            .check(Address::from_str("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE").unwrap())
             .await
             .unwrap());
 
         assert!(req
-            .check(User {
-                identities: vec![evm_addr!("0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3")]
-            })
-            .await
-            .unwrap());
-
-        assert!(!req
-            .check(User {
-                identities: vec![Identity::Telegram(69)]
-            })
+            .check(Address::from_str("0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3").unwrap())
             .await
             .unwrap());
     }

@@ -28,9 +28,11 @@ pub enum RequirementError {
 #[async_trait]
 pub trait Requirement {
     type Error;
+    type Identity;
 
-    async fn check_for_many(&self, users: &[User]) -> Result<Vec<bool>, Self::Error>;
-    async fn check(&self, user: User) -> Result<bool, Self::Error>;
+    async fn check_for_many(&self, identities: &[Self::Identity])
+        -> Result<Vec<bool>, Self::Error>;
+    async fn check(&self, identity: Self::Identity) -> Result<bool, Self::Error>;
 }
 
 #[macro_export]
