@@ -14,3 +14,9 @@ edition = "2021"
 
 [dev-dependencies]
 shiba = { version = "0.1.1", default-features = false }
+
+[dependencies]
+async-trait = { workspace = true }
+ethereum-types = { workspace = true }
+thiserror = { workspace = true }
+rusty-gate-common = { path = "../common" }
