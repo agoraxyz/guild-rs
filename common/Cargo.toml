@@ -19,4 +19,4 @@ shiba = { version = "0.1.1", default-features = false }
 serde = { workspace = true }
 async-trait = { workspace = true }
 ethereum-types = { workspace = true }
-thiserror = { version = "1.0.24", default-features = false }
+thiserror = { workspace = true }
