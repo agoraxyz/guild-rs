@@ -3,7 +3,7 @@
 #![deny(clippy::cargo)]
 
 use async_trait::async_trait;
-use ethereum_types::Address;
+use ethereum_types::{Address, U256};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -15,8 +15,17 @@ pub enum Identity {
     Discord(u64),
 }
 
+#[derive(Deserialize, Serialize)]
 pub struct User {
     pub identities: Vec<Identity>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub enum TokenType {
+    Coin,
+    Fungible { address: Address },
+    NonFungible { address: Address, id: U256 },
+    Special { address: Address, id: U256 },
 }
 
 #[derive(Error, Debug)]

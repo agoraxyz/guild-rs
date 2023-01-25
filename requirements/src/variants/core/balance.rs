@@ -1,15 +1,8 @@
 use crate::{Requirement, RequirementError};
 use async_trait::async_trait;
 use ethereum_types::{Address, U256};
+use rusty_gate_common::TokenType;
 use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub enum TokenType {
-    Coin,
-    Fungible { address: Address },
-    NonFungible { address: Address, id: U256 },
-    Special { address: Address, id: U256 },
-}
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum Relation<T> {
