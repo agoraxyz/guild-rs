@@ -2,6 +2,7 @@ use crate::{Requirement, RequirementError};
 use async_trait::async_trait;
 use ethereum_types::{Address, U256};
 use rusty_gate_common::TokenType;
+use rusty_gate_providers::{evm::balancy::BALANCY_PROVIDER, BalanceQuerier};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -45,18 +46,10 @@ impl Requirement for Balance {
         &self,
         identities: &[Self::Identity],
     ) -> Result<Vec<bool>, Self::Error> {
-        // TODO: use providers to query balance
-        // https://github.com/agoraxyz/requirement-engine-v2/issues/6#issue-1530872075
-        let balances: Vec<U256> = identities.iter().map(|_| U256::from(69)).collect();
-
-        // TODO: use the appropriate function of providers
-        // https://github.com/agoraxyz/requirement-engine-v2/issues/6#issue-1530872075
-        // match self.token_type {
-        //     TokenType::Coin => {}
-        //     TokenType::Fungible { address } => {}
-        //     TokenType::NonFungible { address, id } => {}
-        //     TokenType::Special { address, id } => {}
-        // }
+        let balances: Vec<U256> = BALANCY_PROVIDER
+            .get_balance_for_many(self.token_type, identities)
+            .await
+            .map_err(|err| RequirementError::Other(err.to_string()))?;
 
         Ok(balances
             .iter()

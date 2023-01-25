@@ -20,7 +20,7 @@ pub struct User {
     pub identities: Vec<Identity>,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
 pub enum TokenType {
     Coin,
     Fungible { address: Address },

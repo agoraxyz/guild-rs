@@ -21,3 +21,4 @@ serde = { workspace = true }
 async-trait = { workspace = true }
 ethereum-types = { workspace = true }
 rusty-gate-common = { path = "../common" }
+rusty-gate-providers = { path = "../providers" }

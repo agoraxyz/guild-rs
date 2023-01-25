@@ -5,7 +5,9 @@ use rusty_gate_common::TokenType;
 
 mod types;
 
-struct BalancyProvider;
+pub struct BalancyProvider;
+
+pub const BALANCY_PROVIDER: BalancyProvider = BalancyProvider {};
 
 #[async_trait]
 impl BalanceQuerier for BalancyProvider {
