@@ -13,3 +13,4 @@ opt-level = 3
 serde = { version = "1.0.144", features = ["derive"] }
 async-trait = { version = "0.1.57", default-features = false }
 ethereum-types = { version = "0.14.1" }
+thiserror = { version = "1.0.24", default-features = false }
