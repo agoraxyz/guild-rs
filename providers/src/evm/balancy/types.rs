@@ -7,6 +7,8 @@ use thiserror::Error;
 pub enum BalancyError {
     #[error("Chain `{0}` is not supported by Balancy")]
     ChainNotSupported(String),
+    #[error("Unsupported token type")]
+    TokenTypeNotSupported(String),
     #[error("User doesn't have token associated with address `{0}`")]
     NoSuchTokenInWallet(Address),
     #[error("Invalid Balancy request")]

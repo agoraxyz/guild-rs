@@ -24,8 +24,8 @@ pub struct User {
 pub enum TokenType {
     Coin,
     Fungible { address: Address },
-    NonFungible { address: Address, id: U256 },
-    Special { address: Address, id: U256 },
+    NonFungible { address: Address, id: Option<U256> },
+    Special { address: Address, id: Option<U256> },
 }
 
 #[derive(Error, Debug)]

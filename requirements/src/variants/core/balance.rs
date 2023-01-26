@@ -102,7 +102,10 @@ mod test {
 
         let req = Balance {
             chain: 69,
-            token_type: TokenType::Coin,
+            token_type: TokenType::NonFungible {
+                address: Address::from_str("0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85").unwrap(),
+                id: None,
+            },
             relation: Relation::GreaterThan(U256::from(0)),
         };
 
