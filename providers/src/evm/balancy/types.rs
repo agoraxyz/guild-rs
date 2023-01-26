@@ -39,7 +39,8 @@ pub struct Erc721 {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "PascalCase")]
 pub struct Erc1155 {
-    pub addr: Address,
+    #[serde(rename = "Addr")]
+    pub address: Address,
     #[serde(deserialize_with = "u256_from_str")]
     pub token_id: U256,
     #[serde(deserialize_with = "u256_from_str")]
