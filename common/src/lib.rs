@@ -45,11 +45,9 @@ pub trait Requirement {
 }
 
 #[macro_export]
-macro_rules! evm_addr {
+macro_rules! address {
     ($addr:expr) => {{
         use std::str::FromStr;
-        let addr =
-            ethereum_types::H160::from_str($addr).expect(&format!("Invalid address {}", $addr));
-        $crate::Identity::EvmAddress(addr)
+        ethereum_types::H160::from_str($addr).expect(&format!("Invalid address {}", $addr))
     }};
 }
