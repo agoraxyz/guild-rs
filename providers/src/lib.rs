@@ -6,6 +6,7 @@ pub mod evm;
 
 use async_trait::async_trait;
 use ethereum_types::U256;
+use evm::EvmChain;
 use rusty_gate_common::TokenType;
 
 #[async_trait]
@@ -15,11 +16,13 @@ pub trait BalanceQuerier {
 
     async fn get_balance_for_many(
         &self,
+        chain: EvmChain,
         token_type: TokenType,
         addresses: &[Self::Address],
     ) -> Result<Vec<U256>, Self::Error>;
     async fn get_balance_for_one(
         &self,
+        chain: EvmChain,
         token_type: TokenType,
         address: Self::Address,
     ) -> Result<U256, Self::Error>;

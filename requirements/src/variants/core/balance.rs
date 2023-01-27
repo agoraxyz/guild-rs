@@ -2,7 +2,10 @@ use crate::{Requirement, RequirementError};
 use async_trait::async_trait;
 use ethereum_types::{Address, U256};
 use rusty_gate_common::TokenType;
-use rusty_gate_providers::{evm::balancy::BALANCY_PROVIDER, BalanceQuerier};
+use rusty_gate_providers::{
+    evm::{balancy::BALANCY_PROVIDER, EvmChain},
+    BalanceQuerier,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -32,7 +35,7 @@ impl<T: PartialEq + PartialOrd> Relation<T> {
 pub struct Balance {
     // TODO: use the Chain type from the providers crate
     // https://github.com/agoraxyz/requirement-engine-v2/issues/6#issue-1530872075
-    pub chain: u64,
+    pub chain: EvmChain,
     pub token_type: TokenType,
     pub relation: Relation<U256>,
 }
@@ -47,7 +50,7 @@ impl Requirement for Balance {
         identities: &[Self::Identity],
     ) -> Result<Vec<bool>, Self::Error> {
         let balances: Vec<U256> = BALANCY_PROVIDER
-            .get_balance_for_many(self.token_type, identities)
+            .get_balance_for_many(self.chain, self.token_type, identities)
             .await
             .map_err(|err| RequirementError::Other(err.to_string()))?;
 
@@ -65,6 +68,7 @@ impl Requirement for Balance {
 #[cfg(test)]
 mod test {
     use super::{Balance, Relation, Requirement, TokenType, U256};
+    use rusty_gate_providers::evm::EvmChain;
 
     #[test]
     fn relations() {
@@ -101,7 +105,7 @@ mod test {
         use std::str::FromStr;
 
         let req = Balance {
-            chain: 69,
+            chain: EvmChain::Ethereum,
             token_type: TokenType::NonFungible {
                 address: Address::from_str("0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85").unwrap(),
                 id: None,

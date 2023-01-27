@@ -68,12 +68,13 @@ impl BalanceQuerier for BalancyProvider {
 
     async fn get_balance_for_many(
         &self,
+        chain: EvmChain,
         token_type: TokenType,
         addresses: &[Self::Address],
     ) -> Result<Vec<U256>, Self::Error> {
         Ok(
             futures::future::join_all(addresses.iter().map(|address| async {
-                self.get_balance_for_one(token_type, *address)
+                self.get_balance_for_one(chain, token_type, *address)
                     .await
                     .unwrap_or(U256::from(0))
             }))
@@ -83,10 +84,11 @@ impl BalanceQuerier for BalancyProvider {
 
     async fn get_balance_for_one(
         &self,
+        chain: EvmChain,
         token_type: TokenType,
         address: Self::Address,
     ) -> Result<U256, Self::Error> {
-        let tokens = get_address_tokens(EvmChain::Ethereum, address).await?;
+        let tokens = get_address_tokens(chain, address).await?;
 
         match token_type {
             TokenType::Fungible { address } => {
@@ -179,7 +181,7 @@ mod test {
 
         assert_eq!(
             BALANCY_PROVIDER
-                .get_balance_for_one(token_type, address!(USER_2_ADDR))
+                .get_balance_for_one(EvmChain::Ethereum, token_type, address!(USER_2_ADDR))
                 .await
                 .unwrap(),
             U256::from(100000000000000000000_u128)
@@ -200,14 +202,14 @@ mod test {
 
         assert_eq!(
             BALANCY_PROVIDER
-                .get_balance_for_one(token_type_without_id, user_address)
+                .get_balance_for_one(EvmChain::Ethereum, token_type_without_id, user_address)
                 .await
                 .unwrap(),
             U256::from(1)
         );
         assert_eq!(
             BALANCY_PROVIDER
-                .get_balance_for_one(token_type_with_id, user_address)
+                .get_balance_for_one(EvmChain::Ethereum, token_type_with_id, user_address)
                 .await
                 .unwrap(),
             U256::from(1)
@@ -228,14 +230,14 @@ mod test {
 
         assert_eq!(
             BALANCY_PROVIDER
-                .get_balance_for_one(token_type_without_id, user_address)
+                .get_balance_for_one(EvmChain::Ethereum, token_type_without_id, user_address)
                 .await
                 .unwrap(),
             U256::from(6840)
         );
         assert_eq!(
             BALANCY_PROVIDER
-                .get_balance_for_one(token_type_with_id, user_address)
+                .get_balance_for_one(EvmChain::Ethereum, token_type_with_id, user_address)
                 .await
                 .unwrap(),
             U256::from(16)
