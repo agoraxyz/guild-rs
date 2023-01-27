@@ -6,6 +6,7 @@ use async_trait::async_trait;
 use ethereum_types::{Address, U256};
 use reqwest::StatusCode;
 use rusty_gate_common::TokenType;
+use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 use tokio::sync::RwLock;
 
@@ -34,10 +35,11 @@ pub struct BalancyProvider;
 
 pub const BALANCY_PROVIDER: BalancyProvider = BalancyProvider {};
 
-pub async fn get_address_tokens(
+async fn make_balancy_request<T: DeserializeOwned + 'static>(
     chain: EvmChain,
+    token: &str,
     address: Address,
-) -> Result<AddressTokenResponse, BalancyError> {
+) -> Result<BalancyResponse<T>, BalancyError> {
     let Some(id) = CHAIN_IDS.get(&(chain as u32)) else {
         return Err(BalancyError::ChainNotSupported(format!("{chain:?}")));
     };
@@ -46,7 +48,7 @@ pub async fn get_address_tokens(
         .read()
         .await
         .get(format!(
-            "{BASE_URL}/{ADDRESS_TOKENS}{address:#x}{BALANCY_CHAIN}{id}"
+            "{BASE_URL}/{token}/{ADDRESS_TOKENS}{address:#x}{BALANCY_CHAIN}{id}"
         ))
         .send()
         .await?;
@@ -54,7 +56,7 @@ pub async fn get_address_tokens(
     let status = res.status();
 
     match status {
-        StatusCode::OK => Ok(res.json::<AddressTokenResponse>().await?),
+        StatusCode::OK => Ok(res.json::<BalancyResponse<T>>().await?),
         StatusCode::BAD_REQUEST => Err(BalancyError::InvalidBalancyRequest),
         StatusCode::TOO_MANY_REQUESTS => Err(BalancyError::TooManyRequests),
         _ => Err(BalancyError::Unknown(status.as_u16())),
@@ -86,27 +88,29 @@ impl BalanceQuerier for BalancyProvider {
         &self,
         chain: EvmChain,
         token_type: TokenType,
-        address: Self::Address,
+        user_address: Self::Address,
     ) -> Result<U256, Self::Error> {
-        let tokens = get_address_tokens(chain, address).await?;
-
         match token_type {
             TokenType::Fungible { address } => {
-                let res = tokens
-                    .erc20
+                let tokens = make_balancy_request::<Erc20>(chain, "erc20", user_address).await?;
+
+                let amount = tokens
+                    .result
                     .iter()
-                    .find(|token| token.address == address)
+                    .find(|token| token.token_address == address)
                     .map(|token| token.amount)
                     .unwrap_or_default();
 
-                Ok(res)
+                Ok(amount)
             }
             TokenType::NonFungible { address, id } => {
-                let res = tokens
-                    .erc721
+                let tokens = make_balancy_request::<Erc721>(chain, "erc721", user_address).await?;
+
+                let amount = tokens
+                    .result
                     .iter()
                     .filter(|token| {
-                        token.address == address && {
+                        token.token_address == address && {
                             match id {
                                 Some(id) => token.token_id == id,
                                 None => true,
@@ -115,14 +119,17 @@ impl BalanceQuerier for BalancyProvider {
                     })
                     .count();
 
-                Ok(U256::from(res))
+                Ok(U256::from(amount))
             }
             TokenType::Special { address, id } => {
-                let res = tokens
-                    .erc1155
+                let tokens =
+                    make_balancy_request::<Erc1155>(chain, "erc1155", user_address).await?;
+
+                let amount = tokens
+                    .result
                     .iter()
                     .filter(|token| {
-                        token.address == address && {
+                        token.token_address == address && {
                             match id {
                                 Some(id) => token.token_id == id,
                                 None => true,
@@ -133,7 +140,7 @@ impl BalanceQuerier for BalancyProvider {
                     .reduce(|a, b| a + b)
                     .unwrap_or_default();
 
-                Ok(res)
+                Ok(amount)
             }
             TokenType::Coin => Err(BalancyError::TokenTypeNotSupported(format!(
                 "{token_type:?}"
@@ -146,7 +153,7 @@ impl BalanceQuerier for BalancyProvider {
 mod test {
     use crate::{
         evm::{
-            balancy::{get_address_tokens, BALANCY_PROVIDER},
+            balancy::{make_balancy_request, types::Erc20, BALANCY_PROVIDER},
             EvmChain,
         },
         BalanceQuerier,
@@ -167,7 +174,7 @@ mod test {
     #[tokio::test]
     async fn balancy_ethereum() {
         assert!(
-            get_address_tokens(EvmChain::Ethereum, address!(USER_1_ADDR))
+            make_balancy_request::<Erc20>(EvmChain::Ethereum, "erc20", address!(USER_1_ADDR))
                 .await
                 .is_ok()
         );
@@ -175,23 +182,29 @@ mod test {
 
     #[tokio::test]
     async fn balancy_bsc() {
-        assert!(get_address_tokens(EvmChain::Bsc, address!(USER_1_ADDR))
-            .await
-            .is_ok());
+        assert!(
+            make_balancy_request::<Erc20>(EvmChain::Bsc, "erc20", address!(USER_1_ADDR))
+                .await
+                .is_ok()
+        );
     }
 
     #[tokio::test]
     async fn balancy_gnosis() {
-        assert!(get_address_tokens(EvmChain::Gnosis, address!(USER_1_ADDR))
-            .await
-            .is_ok());
+        assert!(
+            make_balancy_request::<Erc20>(EvmChain::Gnosis, "erc20", address!(USER_1_ADDR))
+                .await
+                .is_ok()
+        );
     }
 
     #[tokio::test]
     async fn balancy_polygon() {
-        assert!(get_address_tokens(EvmChain::Polygon, address!(USER_1_ADDR))
-            .await
-            .is_ok());
+        assert!(
+            make_balancy_request::<Erc20>(EvmChain::Polygon, "erc20", address!(USER_1_ADDR))
+                .await
+                .is_ok()
+        );
     }
 
     #[tokio::test]

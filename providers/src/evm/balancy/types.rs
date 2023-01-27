@@ -22,8 +22,9 @@ pub enum BalancyError {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Erc20 {
-    pub address: Address,
+    pub token_address: Address,
     #[serde(deserialize_with = "u256_from_str")]
     pub amount: U256,
 }
@@ -31,16 +32,15 @@ pub struct Erc20 {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Erc721 {
-    pub address: Address,
+    pub token_address: Address,
     #[serde(deserialize_with = "u256_from_str")]
     pub token_id: U256,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename_all = "PascalCase")]
+#[serde(rename_all = "camelCase")]
 pub struct Erc1155 {
-    #[serde(rename = "Addr")]
-    pub address: Address,
+    pub token_address: Address,
     #[serde(deserialize_with = "u256_from_str")]
     pub token_id: U256,
     #[serde(deserialize_with = "u256_from_str")]
@@ -48,8 +48,6 @@ pub struct Erc1155 {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct AddressTokenResponse {
-    pub erc20: Vec<Erc20>,
-    pub erc721: Vec<Erc721>,
-    pub erc1155: Vec<Erc1155>,
+pub struct BalancyResponse<T> {
+    pub result: Vec<T>,
 }
