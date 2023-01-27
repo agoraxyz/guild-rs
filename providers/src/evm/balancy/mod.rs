@@ -165,12 +165,33 @@ mod test {
     const ERC1155_ID: &str = "10868";
 
     #[tokio::test]
-    async fn balancy_address_tokens() {
+    async fn balancy_ethereum() {
         assert!(
             get_address_tokens(EvmChain::Ethereum, address!(USER_1_ADDR))
                 .await
                 .is_ok()
         );
+    }
+
+    #[tokio::test]
+    async fn balancy_bsc() {
+        assert!(get_address_tokens(EvmChain::Bsc, address!(USER_1_ADDR))
+            .await
+            .is_ok());
+    }
+
+    #[tokio::test]
+    async fn balancy_gnosis() {
+        assert!(get_address_tokens(EvmChain::Gnosis, address!(USER_1_ADDR))
+            .await
+            .is_ok());
+    }
+
+    #[tokio::test]
+    async fn balancy_polygon() {
+        assert!(get_address_tokens(EvmChain::Polygon, address!(USER_1_ADDR))
+            .await
+            .is_ok());
     }
 
     #[tokio::test]
