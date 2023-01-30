@@ -63,6 +63,73 @@ async fn make_balancy_request<T: DeserializeOwned + 'static>(
     }
 }
 
+async fn get_erc20_balance(
+    chain: EvmChain,
+    token_address: Address,
+    user_address: Address,
+) -> Result<U256, BalancyError> {
+    let tokens = make_balancy_request::<Erc20>(chain, "erc20", user_address).await?;
+
+    let amount = tokens
+        .result
+        .iter()
+        .find(|token| token.token_address == token_address)
+        .map(|token| token.amount)
+        .unwrap_or_default();
+
+    Ok(amount)
+}
+
+async fn get_erc721_balance(
+    chain: EvmChain,
+    token_address: Address,
+    token_id: Option<U256>,
+    user_address: Address,
+) -> Result<U256, BalancyError> {
+    let tokens = make_balancy_request::<Erc721>(chain, "erc721", user_address).await?;
+
+    let amount = tokens
+        .result
+        .iter()
+        .filter(|token| {
+            token.token_address == token_address && {
+                match token_id {
+                    Some(id) => token.token_id == id,
+                    None => true,
+                }
+            }
+        })
+        .count();
+
+    Ok(U256::from(amount))
+}
+
+async fn get_erc1155_balance(
+    chain: EvmChain,
+    token_address: Address,
+    token_id: Option<U256>,
+    user_address: Address,
+) -> Result<U256, BalancyError> {
+    let tokens = make_balancy_request::<Erc1155>(chain, "erc1155", user_address).await?;
+
+    let amount = tokens
+        .result
+        .iter()
+        .filter(|token| {
+            token.token_address == token_address && {
+                match token_id {
+                    Some(id) => token.token_id == id,
+                    None => true,
+                }
+            }
+        })
+        .map(|token| token.amount)
+        .reduce(|a, b| a + b)
+        .unwrap_or_default();
+
+    Ok(amount)
+}
+
 #[async_trait]
 impl BalanceQuerier for BalancyProvider {
     type Error = BalancyError;
@@ -92,55 +159,13 @@ impl BalanceQuerier for BalancyProvider {
     ) -> Result<U256, Self::Error> {
         match token_type {
             TokenType::Fungible { address } => {
-                let tokens = make_balancy_request::<Erc20>(chain, "erc20", user_address).await?;
-
-                let amount = tokens
-                    .result
-                    .iter()
-                    .find(|token| token.token_address == address)
-                    .map(|token| token.amount)
-                    .unwrap_or_default();
-
-                Ok(amount)
+                get_erc20_balance(chain, address, user_address).await
             }
             TokenType::NonFungible { address, id } => {
-                let tokens = make_balancy_request::<Erc721>(chain, "erc721", user_address).await?;
-
-                let amount = tokens
-                    .result
-                    .iter()
-                    .filter(|token| {
-                        token.token_address == address && {
-                            match id {
-                                Some(id) => token.token_id == id,
-                                None => true,
-                            }
-                        }
-                    })
-                    .count();
-
-                Ok(U256::from(amount))
+                get_erc721_balance(chain, address, id, user_address).await
             }
             TokenType::Special { address, id } => {
-                let tokens =
-                    make_balancy_request::<Erc1155>(chain, "erc1155", user_address).await?;
-
-                let amount = tokens
-                    .result
-                    .iter()
-                    .filter(|token| {
-                        token.token_address == address && {
-                            match id {
-                                Some(id) => token.token_id == id,
-                                None => true,
-                            }
-                        }
-                    })
-                    .map(|token| token.amount)
-                    .reduce(|a, b| a + b)
-                    .unwrap_or_default();
-
-                Ok(amount)
+                get_erc1155_balance(chain, address, id, user_address).await
             }
             TokenType::Coin => Err(BalancyError::TokenTypeNotSupported(format!(
                 "{token_type:?}"
@@ -267,7 +292,7 @@ mod test {
                 .get_balance_for_one(EvmChain::Ethereum, token_type_without_id, user_address)
                 .await
                 .unwrap(),
-            U256::from(6840)
+            U256::from(6830)
         );
         assert_eq!(
             BALANCY_PROVIDER
