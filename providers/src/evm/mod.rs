@@ -1,4 +1,5 @@
 pub mod balancy;
+pub mod jsonrpc;
 
 use ethereum_types::U256;
 use serde::{de::Error, Deserialize, Deserializer, Serialize};
