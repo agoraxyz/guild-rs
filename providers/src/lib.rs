@@ -8,6 +8,12 @@ use async_trait::async_trait;
 use ethereum_types::U256;
 use evm::EvmChain;
 use rusty_gate_common::TokenType;
+use tokio::sync::RwLock;
+
+lazy_static::lazy_static! {
+    static ref CLIENT: RwLock<reqwest::Client> =
+        RwLock::new(reqwest::Client::new());
+}
 
 #[async_trait]
 pub trait BalanceQuerier {

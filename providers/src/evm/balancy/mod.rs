@@ -1,6 +1,6 @@
 use crate::{
     evm::{balancy::types::*, EvmChain},
-    BalanceQuerier,
+    BalanceQuerier, CLIENT,
 };
 use async_trait::async_trait;
 use ethereum_types::{Address, U256};
@@ -8,7 +8,6 @@ use reqwest::StatusCode;
 use rusty_gate_common::TokenType;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
-use tokio::sync::RwLock;
 
 mod types;
 
@@ -17,8 +16,6 @@ const ADDRESS_TOKENS: &str = "addressTokens?address=";
 const BALANCY_CHAIN: &str = "&chain=";
 
 lazy_static::lazy_static! {
-    static ref CLIENT: RwLock<reqwest::Client> =
-        RwLock::new(reqwest::Client::new());
     static ref CHAIN_IDS: HashMap<u32, u32> = {
         let mut h = HashMap::new();
 
