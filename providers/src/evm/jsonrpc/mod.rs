@@ -132,21 +132,11 @@ impl BalanceQuerier for RpcProvider {
 #[cfg(test)]
 mod test {
     use crate::{
-        evm::{jsonrpc::RPC_PROVIDER, EvmChain},
+        evm::{common::*, jsonrpc::RPC_PROVIDER, EvmChain},
         BalanceQuerier,
     };
     use ethereum_types::U256;
     use rusty_gate_common::{address, TokenType::*};
-
-    const USER_1_ADDR: &str = "0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE";
-    const USER_2_ADDR: &str = "0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3";
-    const USER_3_ADDR: &str = "0x283d678711daa088640c86a1ad3f12c00ec1252e";
-    const ERC20_ADDR: &str = "0x458691c1692cd82facfb2c5127e36d63213448a8";
-    const ERC721_ADDR: &str = "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85";
-    const ERC721_ID: &str =
-        "61313325075603536901663283754390960556726744542208800735045237225934362163454";
-    const ERC1155_ADDR: &str = "0x76be3b62873462d2142405439777e971754e8e77";
-    const ERC1155_ID: &str = "10868";
 
     #[tokio::test]
     async fn rpc_get_coin_balance() {
