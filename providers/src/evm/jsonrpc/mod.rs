@@ -177,12 +177,12 @@ mod test {
             get_erc1155_balance(
                 EvmChain::Ethereum,
                 address!("0x76be3b62873462d2142405439777e971754e8e77"),
-                None,
+                Some(U256::from(10868)),
                 address!("0x283d678711daa088640c86a1ad3f12c00ec1252e")
             )
             .await
             .unwrap(),
-            U256::from(1)
+            U256::from(16)
         );
     }
 }

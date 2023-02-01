@@ -67,6 +67,9 @@ pub async fn get_erc1155_balance(
     user_address: Address,
 ) -> Result<U256, RpcError> {
     let addr = format!("{user_address:?}")[2..].to_string();
-    let data = format!("0x70a08231000000000000000000000000{addr}");
+    let data = match token_id {
+        Some(id) => dbg!(format!("0x00fdd58e000000000000000000000000{addr}{id:064x}")),
+        None => format!("0x70a08231000000000000000000000000{addr}"),
+    };
     call_contract(chain, token_address, data).await
 }
