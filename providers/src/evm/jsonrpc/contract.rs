@@ -1,7 +1,7 @@
 use crate::{
     evm::{
-        jsonrpc::{create_payload, JsonRpcMethods, RpcError, RpcResponse, ETHEREUM},
-        EvmChain,
+        jsonrpc::{create_payload, JsonRpcMethods, RpcError, RpcResponse},
+        EvmChain, PROVIDERS,
     },
     CLIENT,
 };
@@ -14,6 +14,10 @@ async fn call_contract(
     contract_address: Address,
     data: String,
 ) -> Result<String, RpcError> {
+    let Some(provider) = PROVIDERS.get(&chain) else {
+       return Err(RpcError::ChainNotSupported(format!("{chain:?}")));
+    };
+
     let params = format!(
         "[
             {{
@@ -28,7 +32,7 @@ async fn call_contract(
     let res: RpcResponse = CLIENT
         .read()
         .await
-        .post(ETHEREUM)
+        .post(&provider.rpc_url)
         .body(payload)
         .send()
         .await?

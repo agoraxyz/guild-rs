@@ -11,6 +11,8 @@ mod contract;
 
 use serde::Deserialize;
 
+use super::PROVIDERS;
+
 #[derive(Deserialize)]
 pub struct RpcResponse {
     pub result: String,
@@ -61,9 +63,11 @@ fn create_payload(method: JsonRpcMethods, params: String, id: u32) -> String {
     )
 }
 
-const ETHEREUM: &str = "https://mainnet.infura.io/v3/";
-
 async fn get_coin_balance(chain: EvmChain, address: Address) -> Result<U256, RpcError> {
+    let Some(provider) = PROVIDERS.get(&chain) else {
+       return Err(RpcError::ChainNotSupported(format!("{chain:?}")));
+    };
+
     let payload = create_payload(
         JsonRpcMethods::EthGetBalance,
         format!("[\"{address:?}\", \"latest\"]"),
@@ -73,7 +77,7 @@ async fn get_coin_balance(chain: EvmChain, address: Address) -> Result<U256, Rpc
     let res: RpcResponse = CLIENT
         .read()
         .await
-        .post(ETHEREUM)
+        .post(&provider.rpc_url)
         .body(payload)
         .send()
         .await?
