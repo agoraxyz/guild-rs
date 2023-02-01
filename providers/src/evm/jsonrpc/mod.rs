@@ -1,5 +1,8 @@
 use crate::{
-    evm::{jsonrpc::types::RpcResponse, EvmChain},
+    evm::{
+        jsonrpc::{contract::*, types::RpcResponse},
+        EvmChain,
+    },
     BalanceQuerier, TokenType, CLIENT,
 };
 use async_trait::async_trait;
@@ -55,7 +58,7 @@ fn create_payload(method: JsonRpcMethods, params: String, id: u32) -> String {
 
 const ETHEREUM: &str = "https://mainnet.infura.io/v3/";
 
-async fn get_coin_balance(address: Address) -> Result<U256, RpcError> {
+async fn get_coin_balance(chain: EvmChain, address: Address) -> Result<U256, RpcError> {
     let payload = create_payload(
         JsonRpcMethods::EthGetBalance,
         format!("[\"{address:?}\", \"latest\"]"),
@@ -86,7 +89,14 @@ impl BalanceQuerier for RpcProvider {
         token_type: TokenType,
         addresses: &[Self::Address],
     ) -> Result<Vec<U256>, Self::Error> {
-        todo!()
+        Ok(
+            futures::future::join_all(addresses.iter().map(|address| async {
+                self.get_balance_for_one(chain, token_type, *address)
+                    .await
+                    .unwrap_or(U256::from(0))
+            }))
+            .await,
+        )
     }
 
     async fn get_balance_for_one(
@@ -96,25 +106,83 @@ impl BalanceQuerier for RpcProvider {
         user_address: Self::Address,
     ) -> Result<U256, Self::Error> {
         match token_type {
-            TokenType::Coin => get_coin_balance(user_address).await,
-            TokenType::Fungible { address } => contract::call_contract(address, user_address).await,
-            TokenType::NonFungible { address, id } => todo!(),
-            TokenType::Special { address, id } => todo!(),
+            TokenType::Coin => get_coin_balance(chain, user_address).await,
+            TokenType::Fungible { address } => {
+                get_erc20_balance(chain, address, user_address).await
+            }
+            TokenType::NonFungible { address, id } => {
+                get_erc721_balance(chain, address, id, user_address).await
+            }
+            TokenType::Special { address, id } => {
+                get_erc1155_balance(chain, address, id, user_address).await
+            }
         }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::get_coin_balance;
+    use crate::evm::{
+        jsonrpc::{
+            contract::{get_erc1155_balance, get_erc20_balance, get_erc721_balance},
+            get_coin_balance,
+        },
+        EvmChain,
+    };
+    use ethereum_types::U256;
     use rusty_gate_common::address;
 
     #[tokio::test]
-    async fn rpc_test() {
-        assert!(
-            get_coin_balance(address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"))
-                .await
-                .is_ok()
+    async fn rpc_get_coin_balance() {
+        assert!(get_coin_balance(
+            EvmChain::Ethereum,
+            address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE")
+        )
+        .await
+        .is_ok());
+    }
+
+    #[tokio::test]
+    async fn rpc_get_erc20_balance() {
+        assert_eq!(
+            get_erc20_balance(
+                EvmChain::Ethereum,
+                address!("0x458691c1692cd82facfb2c5127e36d63213448a8"),
+                address!("0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3")
+            )
+            .await
+            .unwrap(),
+            U256::from(100000000000000000000_u128)
+        );
+    }
+
+    #[tokio::test]
+    async fn rpc_get_erc721_balance() {
+        assert_eq!(
+            get_erc721_balance(
+                EvmChain::Ethereum,
+                address!("0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"),
+                None,
+                address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE")
+            )
+            .await
+            .unwrap(),
+            U256::from(1)
+        );
+    }
+
+    #[tokio::test]
+    async fn rpc_get_erc1155_balance() {
+        assert_eq!(
+            get_erc1155_balance(
+                EvmChain::Ethereum,
+                address!("0x76be3b62873462d2142405439777e971754e8e77"),
+                None,
+                address!("0x283d678711daa088640c86a1ad3f12c00ec1252e")
+            )
+            .await
+            .unwrap(),
+            U256::from(1)
         );
     }
 }
