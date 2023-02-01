@@ -1,17 +1,19 @@
 use crate::{
     evm::{
-        jsonrpc::{create_payload, types::RpcResponse, JsonRpcMethods, RpcError, ETHEREUM},
+        jsonrpc::{create_payload, JsonRpcMethods, RpcError, RpcResponse, ETHEREUM},
         EvmChain,
     },
     CLIENT,
 };
 use ethereum_types::{Address, U256};
+use rusty_gate_common::address;
+use std::str::FromStr;
 
 async fn call_contract(
     chain: EvmChain,
     contract_address: Address,
     data: String,
-) -> Result<U256, RpcError> {
+) -> Result<String, RpcError> {
     let params = format!(
         "[
             {{
@@ -43,7 +45,9 @@ pub async fn get_erc20_balance(
 ) -> Result<U256, RpcError> {
     let addr = format!("{user_address:?}")[2..].to_string();
     let data = format!("0x70a08231000000000000000000000000{addr}");
-    call_contract(chain, token_address, data).await
+    let balance = call_contract(chain, token_address, data).await?;
+
+    U256::from_str(&balance).map_err(|err| RpcError::Other(err.to_string()))
 }
 
 pub async fn get_erc721_balance(
@@ -53,23 +57,33 @@ pub async fn get_erc721_balance(
     user_address: Address,
 ) -> Result<U256, RpcError> {
     let addr = format!("{user_address:?}")[2..].to_string();
-    let data = match token_id {
-        Some(id) => format!("0x6352211e000000000000000000000000{addr}{id:064x}"),
-        None => format!("0x70a08231000000000000000000000000{addr}"),
-    };
-    call_contract(chain, token_address, data).await
+    match token_id {
+        Some(id) => {
+            let data = format!("0x6352211e{id:064x}");
+            let addr = call_contract(chain, token_address, data).await?;
+
+            Ok(U256::from(
+                (address!(&addr[26..].to_string()) == user_address) as u8,
+            ))
+        }
+        None => {
+            let data = format!("0x70a08231000000000000000000000000{addr}");
+            let balance = call_contract(chain, token_address, data).await?;
+
+            U256::from_str(&balance).map_err(|err| RpcError::Other(err.to_string()))
+        }
+    }
 }
 
 pub async fn get_erc1155_balance(
     chain: EvmChain,
     token_address: Address,
-    token_id: Option<U256>,
+    token_id: U256,
     user_address: Address,
 ) -> Result<U256, RpcError> {
     let addr = format!("{user_address:?}")[2..].to_string();
-    let data = match token_id {
-        Some(id) => dbg!(format!("0x00fdd58e000000000000000000000000{addr}{id:064x}")),
-        None => format!("0x70a08231000000000000000000000000{addr}"),
-    };
-    call_contract(chain, token_address, data).await
+    let data = format!("0x00fdd58e000000000000000000000000{addr}{token_id:064x}");
+    let balance = call_contract(chain, token_address, data).await?;
+
+    U256::from_str(&balance).map_err(|err| RpcError::Other(err.to_string()))
 }

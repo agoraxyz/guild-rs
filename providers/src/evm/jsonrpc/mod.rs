@@ -1,17 +1,20 @@
 use crate::{
-    evm::{
-        jsonrpc::{contract::*, types::RpcResponse},
-        EvmChain,
-    },
+    evm::{balancy::BALANCY_PROVIDER, jsonrpc::contract::*, EvmChain},
     BalanceQuerier, TokenType, CLIENT,
 };
 use async_trait::async_trait;
 use ethereum_types::{Address, U256};
-use std::fmt;
+use std::{fmt, str::FromStr};
 use thiserror::Error;
 
 mod contract;
-mod types;
+
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+pub struct RpcResponse {
+    pub result: String,
+}
 
 pub struct RpcProvider;
 
@@ -25,6 +28,8 @@ pub enum RpcError {
     Reqwest(#[from] reqwest::Error),
     #[error("Got response with status code `{0}`")]
     Unknown(u16),
+    #[error("{0}")]
+    Other(String),
 }
 
 enum JsonRpcMethods {
@@ -75,7 +80,7 @@ async fn get_coin_balance(chain: EvmChain, address: Address) -> Result<U256, Rpc
         .json()
         .await?;
 
-    Ok(res.result)
+    U256::from_str(&res.result).map_err(|err| RpcError::Other(err.to_string()))
 }
 
 #[async_trait]
@@ -113,75 +118,115 @@ impl BalanceQuerier for RpcProvider {
             TokenType::NonFungible { address, id } => {
                 get_erc721_balance(chain, address, id, user_address).await
             }
-            TokenType::Special { address, id } => {
-                get_erc1155_balance(chain, address, id, user_address).await
-            }
+            TokenType::Special { address, id } => match id {
+                Some(token_id) => get_erc1155_balance(chain, address, token_id, user_address).await,
+                None => BALANCY_PROVIDER
+                    .get_balance_for_one(chain, token_type, user_address)
+                    .await
+                    .map_err(|err| RpcError::Other(err.to_string())),
+            },
         }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::evm::{
-        jsonrpc::{
-            contract::{get_erc1155_balance, get_erc20_balance, get_erc721_balance},
-            get_coin_balance,
-        },
-        EvmChain,
+    use crate::{
+        evm::{jsonrpc::RPC_PROVIDER, EvmChain},
+        BalanceQuerier,
     };
     use ethereum_types::U256;
-    use rusty_gate_common::address;
+    use rusty_gate_common::{address, TokenType::*};
+
+    const USER_1_ADDR: &str = "0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE";
+    const USER_2_ADDR: &str = "0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3";
+    const USER_3_ADDR: &str = "0x283d678711daa088640c86a1ad3f12c00ec1252e";
+    const ERC20_ADDR: &str = "0x458691c1692cd82facfb2c5127e36d63213448a8";
+    const ERC721_ADDR: &str = "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85";
+    const ERC721_ID: &str =
+        "61313325075603536901663283754390960556726744542208800735045237225934362163454";
+    const ERC1155_ADDR: &str = "0x76be3b62873462d2142405439777e971754e8e77";
+    const ERC1155_ID: &str = "10868";
 
     #[tokio::test]
     async fn rpc_get_coin_balance() {
-        assert!(get_coin_balance(
-            EvmChain::Ethereum,
-            address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE")
-        )
-        .await
-        .is_ok());
+        assert!(RPC_PROVIDER
+            .get_balance_for_one(
+                EvmChain::Ethereum,
+                Coin,
+                address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE")
+            )
+            .await
+            .is_ok());
     }
 
     #[tokio::test]
     async fn rpc_get_erc20_balance() {
+        let token_type = Fungible {
+            address: address!(ERC20_ADDR),
+        };
+
         assert_eq!(
-            get_erc20_balance(
-                EvmChain::Ethereum,
-                address!("0x458691c1692cd82facfb2c5127e36d63213448a8"),
-                address!("0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3")
-            )
-            .await
-            .unwrap(),
+            RPC_PROVIDER
+                .get_balance_for_one(EvmChain::Ethereum, token_type, address!(USER_2_ADDR))
+                .await
+                .unwrap(),
             U256::from(100000000000000000000_u128)
         );
     }
 
     #[tokio::test]
     async fn rpc_get_erc721_balance() {
+        let token_type_without_id = NonFungible {
+            address: address!(ERC721_ADDR),
+            id: None,
+        };
+        let token_type_with_id = NonFungible {
+            address: address!(ERC721_ADDR),
+            id: Some(U256::from_dec_str(ERC721_ID).unwrap()),
+        };
+        let user_address = address!(USER_1_ADDR);
+
         assert_eq!(
-            get_erc721_balance(
-                EvmChain::Ethereum,
-                address!("0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"),
-                None,
-                address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE")
-            )
-            .await
-            .unwrap(),
+            RPC_PROVIDER
+                .get_balance_for_one(EvmChain::Ethereum, token_type_without_id, user_address)
+                .await
+                .unwrap(),
+            U256::from(1)
+        );
+        assert_eq!(
+            RPC_PROVIDER
+                .get_balance_for_one(EvmChain::Ethereum, token_type_with_id, user_address)
+                .await
+                .unwrap(),
             U256::from(1)
         );
     }
 
     #[tokio::test]
     async fn rpc_get_erc1155_balance() {
+        let token_type_without_id = Special {
+            address: address!(ERC1155_ADDR),
+            id: None,
+        };
+        let token_type_with_id = Special {
+            address: address!(ERC1155_ADDR),
+            id: Some(U256::from_dec_str(ERC1155_ID).unwrap()),
+        };
+        let user_address = address!(USER_3_ADDR);
+
         assert_eq!(
-            get_erc1155_balance(
-                EvmChain::Ethereum,
-                address!("0x76be3b62873462d2142405439777e971754e8e77"),
-                Some(U256::from(10868)),
-                address!("0x283d678711daa088640c86a1ad3f12c00ec1252e")
-            )
-            .await
-            .unwrap(),
+            RPC_PROVIDER
+                .get_balance_for_one(EvmChain::Ethereum, token_type_without_id, user_address)
+                .await
+                .unwrap(),
+            U256::from(6830)
+        );
+        assert_eq!(
+            RPC_PROVIDER
+                .get_balance_for_one(EvmChain::Ethereum, token_type_with_id, user_address)
+                .await
+                .unwrap(),
             U256::from(16)
         );
     }
