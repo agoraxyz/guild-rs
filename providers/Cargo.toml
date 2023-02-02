@@ -12,6 +12,9 @@ categories = [
 ]
 edition = "2021"
 
+[features]
+balancy = []
+
 [dev-dependencies]
 shiba = { version = "0.1.1", default-features = false }
 

@@ -1,8 +1,10 @@
 mod balancy;
 mod jsonrpc;
 
+#[cfg(feature = "balancy")]
 pub use balancy::BALANCY_PROVIDER;
 use ethereum_types::{Address, U256};
+#[cfg(not(feature = "balancy"))]
 pub use jsonrpc::RPC_PROVIDER;
 use rusty_gate_common::address;
 use serde::{de::Error, Deserialize, Deserializer, Serialize};
@@ -31,8 +33,11 @@ pub enum EvmChain {
     Palm,
 }
 
-pub struct Provider {
+struct Provider {
     pub rpc_url: String,
+    // TODO: implement multicall
+    // https://github.com/agoraxyz/requirement-engine-v2/issues/9
+    #[allow(dead_code)]
     pub multicall_contract: Address,
 }
 
@@ -46,7 +51,7 @@ macro_rules! dotenv {
 }
 
 lazy_static::lazy_static! {
-    pub static ref PROVIDERS: Arc<HashMap<EvmChain, Provider>> = Arc::new({
+    static ref PROVIDERS: Arc<HashMap<EvmChain, Provider>> = Arc::new({
         dotenv::dotenv().ok();
 
         let mut providers = HashMap::new();
@@ -98,7 +103,7 @@ lazy_static::lazy_static! {
     });
 }
 
-pub fn u256_from_str<'de, D>(deserializer: D) -> Result<U256, D::Error>
+fn u256_from_str<'de, D>(deserializer: D) -> Result<U256, D::Error>
 where
     D: Deserializer<'de>,
 {

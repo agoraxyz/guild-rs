@@ -9,8 +9,6 @@ pub enum BalancyError {
     ChainNotSupported(String),
     #[error("Unsupported token type")]
     TokenTypeNotSupported(String),
-    #[error("User doesn't have token associated with address `{0}`")]
-    NoSuchTokenInWallet(Address),
     #[error("Invalid Balancy request")]
     InvalidBalancyRequest,
     #[error("Too many requests to Balancy")]
