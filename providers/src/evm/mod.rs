@@ -1,7 +1,9 @@
-pub mod balancy;
-pub mod jsonrpc;
+mod balancy;
+mod jsonrpc;
 
+pub use balancy::BALANCY_PROVIDER;
 use ethereum_types::{Address, U256};
+pub use jsonrpc::RPC_PROVIDER;
 use rusty_gate_common::address;
 use serde::{de::Error, Deserialize, Deserializer, Serialize};
 use std::{collections::HashMap, sync::Arc};

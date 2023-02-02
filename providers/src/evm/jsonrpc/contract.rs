@@ -1,6 +1,6 @@
 use crate::{
     evm::{
-        jsonrpc::{create_payload, JsonRpcMethods, RpcError, RpcResponse},
+        jsonrpc::{create_payload, RpcError, RpcResponse},
         EvmChain, PROVIDERS,
     },
     CLIENT,
@@ -21,13 +21,13 @@ async fn call_contract(
     let params = format!(
         "[
             {{
-                \"to\": \"{contract_address:?}\",
-                \"data\": \"{data}\"
+                \"to\"   : \"{contract_address:?}\",
+                \"data\" : \"{data}\"
             }},
             \"latest\"
         ]"
     );
-    let payload = create_payload(JsonRpcMethods::EthCall, params, 1);
+    let payload = create_payload("eth_call", params, 1);
 
     let res: RpcResponse = CLIENT
         .read()
@@ -66,9 +66,7 @@ pub async fn get_erc721_balance(
             let data = format!("0x6352211e{id:064x}");
             let addr = call_contract(chain, token_address, data).await?;
 
-            Ok(U256::from(
-                (address!(&addr[26..].to_string()) == user_address) as u8,
-            ))
+            Ok(U256::from((address!(&addr[26..]) == user_address) as u8))
         }
         None => {
             let data = format!("0x70a08231000000000000000000000000{addr}");

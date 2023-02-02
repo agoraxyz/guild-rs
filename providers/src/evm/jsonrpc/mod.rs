@@ -1,17 +1,14 @@
 use crate::{
-    evm::{balancy::BALANCY_PROVIDER, jsonrpc::contract::*, EvmChain},
+    evm::{balancy::BALANCY_PROVIDER, jsonrpc::contract::*, EvmChain, PROVIDERS},
     BalanceQuerier, TokenType, CLIENT,
 };
 use async_trait::async_trait;
 use ethereum_types::{Address, U256};
-use std::{fmt, str::FromStr};
+use serde::Deserialize;
+use std::str::FromStr;
 use thiserror::Error;
 
 mod contract;
-
-use serde::Deserialize;
-
-use super::PROVIDERS;
 
 #[derive(Deserialize)]
 pub struct RpcResponse {
@@ -34,25 +31,7 @@ pub enum RpcError {
     Other(String),
 }
 
-enum JsonRpcMethods {
-    EthGetBalance,
-    EthCall,
-}
-
-impl fmt::Display for JsonRpcMethods {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                JsonRpcMethods::EthGetBalance => "eth_getBalance",
-                JsonRpcMethods::EthCall => "eth_call",
-            }
-        )
-    }
-}
-
-fn create_payload(method: JsonRpcMethods, params: String, id: u32) -> String {
+fn create_payload(method: &str, params: String, id: u32) -> String {
     format!(
         "{{
             \"method\"  : \"{method}\",
@@ -69,7 +48,7 @@ async fn get_coin_balance(chain: EvmChain, address: Address) -> Result<U256, Rpc
     };
 
     let payload = create_payload(
-        JsonRpcMethods::EthGetBalance,
+        "eth_getBalance",
         format!("[\"{address:?}\", \"latest\"]"),
         1,
     );
