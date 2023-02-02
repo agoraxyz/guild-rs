@@ -124,7 +124,7 @@ async fn get_coin_balance(chain: EvmChain, address: Address) -> Result<U256, Rpc
     );
 
     let res: RpcResponse = CLIENT
-        .write()
+        .read()
         .await
         .post(&provider.rpc_url)
         .body(payload)
