@@ -1,7 +1,7 @@
 use crate::{
     evm::{
-        jsonrpc::{create_payload, RpcError, RpcResponse},
-        EvmChain, PROVIDERS,
+        jsonrpc::{create_payload, RpcError, RpcResponse, PROVIDERS},
+        EvmChain,
     },
     CLIENT,
 };
