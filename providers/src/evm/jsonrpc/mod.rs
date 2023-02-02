@@ -97,8 +97,6 @@ pub enum RpcError {
     ChainNotSupported(String),
     #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
-    #[error("Got response with status code `{0}`")]
-    Unknown(u16),
     #[error("{0}")]
     Other(String),
 }
