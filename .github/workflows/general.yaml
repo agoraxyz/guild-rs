@@ -40,4 +40,4 @@ jobs:
         run: cargo clippy --color=always --all-targets --examples --tests
 
       - name: test
-        run: cargo t -- --test-threads 1
+        run: cargo t

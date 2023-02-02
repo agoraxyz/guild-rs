@@ -30,7 +30,7 @@ async fn call_contract(
     let payload = create_payload("eth_call", params, 1);
 
     let res: RpcResponse = CLIENT
-        .read()
+        .write()
         .await
         .post(&provider.rpc_url)
         .body(payload)

@@ -42,7 +42,7 @@ async fn make_balancy_request<T: DeserializeOwned + 'static>(
     };
 
     let res = CLIENT
-        .read()
+        .write()
         .await
         .get(format!(
             "{BASE_URL}/{token}/{ADDRESS_TOKENS}{address:#x}{BALANCY_CHAIN}{id}"
