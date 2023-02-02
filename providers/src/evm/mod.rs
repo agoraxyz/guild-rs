@@ -3,11 +3,11 @@ mod jsonrpc;
 
 #[cfg(feature = "balancy")]
 pub use balancy::BALANCY_PROVIDER;
-use ethereum_types::{Address, U256};
+use ethereum_types::Address;
 #[cfg(not(feature = "balancy"))]
 pub use jsonrpc::RPC_PROVIDER;
 use rusty_gate_common::address;
-use serde::{de::Error, Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Copy, std::hash::Hash)]
@@ -101,15 +101,6 @@ lazy_static::lazy_static! {
 
         providers
     });
-}
-
-fn u256_from_str<'de, D>(deserializer: D) -> Result<U256, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s: &str = Deserialize::deserialize(deserializer)?;
-
-    U256::from_dec_str(s).map_err(D::Error::custom)
 }
 
 #[cfg(test)]

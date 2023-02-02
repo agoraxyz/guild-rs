@@ -1,6 +1,5 @@
-use crate::evm::u256_from_str;
 use ethereum_types::{Address, U256};
-use serde::Deserialize;
+use serde::{de::Error, Deserialize, Deserializer};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -17,6 +16,15 @@ pub enum BalancyError {
     Reqwest(#[from] reqwest::Error),
     #[error("Got response with status code `{0}`")]
     Unknown(u16),
+}
+
+fn u256_from_str<'de, D>(deserializer: D) -> Result<U256, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: &str = Deserialize::deserialize(deserializer)?;
+
+    U256::from_dec_str(s).map_err(D::Error::custom)
 }
 
 #[derive(Deserialize, Debug)]
