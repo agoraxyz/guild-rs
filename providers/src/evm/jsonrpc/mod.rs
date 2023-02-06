@@ -4,7 +4,6 @@ use crate::{
 };
 use async_trait::async_trait;
 use ethereum_types::{Address, U256};
-use rusty_gate_common::address;
 use serde::Deserialize;
 use std::str::FromStr;
 use std::{collections::HashMap, sync::Arc};
@@ -14,10 +13,6 @@ mod contract;
 
 struct Provider {
     pub rpc_url: String,
-    // TODO: implement multicall
-    // https://github.com/agoraxyz/requirement-engine-v2/issues/9
-    #[allow(dead_code)]
-    pub multicall_contract: Address,
 }
 
 macro_rules! dotenv {
@@ -39,42 +34,36 @@ lazy_static::lazy_static! {
             EvmChain::Ethereum,
             Provider {
                 rpc_url: dotenv!("ETHEREUM_RPC"),
-                multicall_contract: address!("0x5ba1e12693dc8f9c48aad8770482f4739beed696"),
             }
         );
         providers.insert(
             EvmChain::Polygon,
             Provider {
                 rpc_url: dotenv!("POLYGON_RPC"),
-                multicall_contract: address!("0x11ce4B23bD875D7F5C6a31084f55fDe1e9A87507"),
             }
         );
         providers.insert(
             EvmChain::Bsc,
             Provider {
                 rpc_url: dotenv!("BSC_RPC"),
-                multicall_contract: address!("0x41263cba59eb80dc200f3e2544eda4ed6a90e76c")
             }
         );
         providers.insert(
             EvmChain::Gnosis,
             Provider {
                 rpc_url: dotenv!("GNOSIS_RPC"),
-                multicall_contract: address!("0xb5b692a88bdfc81ca69dcb1d924f59f0413a602a")
             }
         );
         providers.insert(
             EvmChain::Arbitrum,
             Provider {
                 rpc_url: dotenv!("ARBITRUM_RPC"),
-                multicall_contract: address!("0x52bfe8fE06c8197a8e3dCcE57cE012e13a7315EB")
             }
         );
         providers.insert(
             EvmChain::Goerli,
             Provider {
                 rpc_url: dotenv!("GOERLI_RPC"),
-                multicall_contract: address!("0x77dCa2C955b15e9dE4dbBCf1246B4B85b651e50e")
             }
         );
 
