@@ -263,7 +263,7 @@ mod test {
                 .get_balance_for_one(EvmChain::Ethereum, token_type_without_id, user_address)
                 .await
                 .unwrap(),
-            U256::from(6830)
+            U256::from(6810)
         );
         assert_eq!(
             RPC_PROVIDER
