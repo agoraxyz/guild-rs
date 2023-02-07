@@ -16,8 +16,6 @@ const BALANCY_CHAIN: &str = "&chain=";
 
 pub struct BalancyProvider;
 
-pub const BALANCY_PROVIDER: BalancyProvider = BalancyProvider {};
-
 fn get_chain_id(chain: EvmChain) -> Option<u8> {
     match chain {
         EvmChain::Ethereum => Some(1),
@@ -171,7 +169,7 @@ impl BalanceQuerier for BalancyProvider {
 mod test {
     use crate::{
         evm::{
-            balancy::{get_chain_id, make_balancy_request, types::Erc20, BALANCY_PROVIDER},
+            balancy::{get_chain_id, make_balancy_request, types::Erc20, BalancyProvider},
             common::*,
             EvmChain,
         },
@@ -232,7 +230,7 @@ mod test {
         };
 
         assert_eq!(
-            BALANCY_PROVIDER
+            BalancyProvider
                 .get_balance_for_one(EvmChain::Ethereum, token_type, address!(USER_2_ADDR))
                 .await
                 .unwrap(),
@@ -253,14 +251,14 @@ mod test {
         let user_address = address!(USER_1_ADDR);
 
         assert_eq!(
-            BALANCY_PROVIDER
+            BalancyProvider
                 .get_balance_for_one(EvmChain::Ethereum, token_type_without_id, user_address)
                 .await
                 .unwrap(),
             U256::from(1)
         );
         assert_eq!(
-            BALANCY_PROVIDER
+            BalancyProvider
                 .get_balance_for_one(EvmChain::Ethereum, token_type_with_id, user_address)
                 .await
                 .unwrap(),
@@ -281,14 +279,14 @@ mod test {
         let user_address = address!(USER_3_ADDR);
 
         assert_eq!(
-            BALANCY_PROVIDER
+            BalancyProvider
                 .get_balance_for_one(EvmChain::Ethereum, token_type_without_id, user_address)
                 .await
                 .unwrap(),
             U256::from(6810)
         );
         assert_eq!(
-            BALANCY_PROVIDER
+            BalancyProvider
                 .get_balance_for_one(EvmChain::Ethereum, token_type_with_id, user_address)
                 .await
                 .unwrap(),

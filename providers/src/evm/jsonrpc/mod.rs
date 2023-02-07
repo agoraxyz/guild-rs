@@ -1,5 +1,5 @@
 use crate::{
-    evm::{balancy::BALANCY_PROVIDER, jsonrpc::contract::*, EvmChain},
+    evm::{balancy::BalancyProvider, jsonrpc::contract::*, EvmChain},
     BalanceQuerier, TokenType, CLIENT,
 };
 use async_trait::async_trait;
@@ -77,8 +77,6 @@ pub struct RpcResponse {
 }
 
 pub struct RpcProvider;
-
-pub const RPC_PROVIDER: RpcProvider = RpcProvider {};
 
 #[derive(Error, Debug)]
 pub enum RpcError {
@@ -162,7 +160,7 @@ impl BalanceQuerier for RpcProvider {
             }
             TokenType::Special { address, id } => match id {
                 Some(token_id) => get_erc1155_balance(chain, address, token_id, user_address).await,
-                None => BALANCY_PROVIDER
+                None => BalancyProvider
                     .get_balance_for_one(chain, token_type, user_address)
                     .await
                     .map_err(|err| RpcError::Other(err.to_string())),
@@ -174,7 +172,7 @@ impl BalanceQuerier for RpcProvider {
 #[cfg(test)]
 mod test {
     use crate::{
-        evm::{common::*, jsonrpc::RPC_PROVIDER, EvmChain},
+        evm::{common::*, jsonrpc::RpcProvider, EvmChain},
         BalanceQuerier,
     };
     use ethereum_types::U256;
@@ -182,7 +180,7 @@ mod test {
 
     #[tokio::test]
     async fn rpc_get_coin_balance() {
-        assert!(RPC_PROVIDER
+        assert!(RpcProvider
             .get_balance_for_one(
                 EvmChain::Ethereum,
                 Coin,
@@ -199,7 +197,7 @@ mod test {
         };
 
         assert_eq!(
-            RPC_PROVIDER
+            RpcProvider
                 .get_balance_for_one(EvmChain::Ethereum, token_type, address!(USER_2_ADDR))
                 .await
                 .unwrap(),
@@ -220,14 +218,14 @@ mod test {
         let user_address = address!(USER_1_ADDR);
 
         assert_eq!(
-            RPC_PROVIDER
+            RpcProvider
                 .get_balance_for_one(EvmChain::Ethereum, token_type_without_id, user_address)
                 .await
                 .unwrap(),
             U256::from(1)
         );
         assert_eq!(
-            RPC_PROVIDER
+            RpcProvider
                 .get_balance_for_one(EvmChain::Ethereum, token_type_with_id, user_address)
                 .await
                 .unwrap(),
@@ -248,14 +246,14 @@ mod test {
         let user_address = address!(USER_3_ADDR);
 
         assert_eq!(
-            RPC_PROVIDER
+            RpcProvider
                 .get_balance_for_one(EvmChain::Ethereum, token_type_without_id, user_address)
                 .await
                 .unwrap(),
             U256::from(6810)
         );
         assert_eq!(
-            RPC_PROVIDER
+            RpcProvider
                 .get_balance_for_one(EvmChain::Ethereum, token_type_with_id, user_address)
                 .await
                 .unwrap(),

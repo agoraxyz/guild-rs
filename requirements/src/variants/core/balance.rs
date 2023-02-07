@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use ethereum_types::{Address, U256};
 use rusty_gate_common::TokenType;
 use rusty_gate_providers::{
-    evm::{EvmChain, RPC_PROVIDER},
+    evm::{EvmChain, RpcProvider},
     BalanceQuerier,
 };
 use serde::{Deserialize, Serialize};
@@ -49,7 +49,7 @@ impl Requirement for Balance {
         &self,
         identities: &[Self::Identity],
     ) -> Result<Vec<bool>, Self::Error> {
-        let balances: Vec<U256> = RPC_PROVIDER
+        let balances: Vec<U256> = RpcProvider
             .get_balance_for_many(self.chain, self.token_type, identities)
             .await
             .map_err(|err| RequirementError::Other(err.to_string()))?;
