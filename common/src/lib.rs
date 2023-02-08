@@ -38,10 +38,18 @@ pub enum RequirementError {
 pub trait Requirement {
     type Error;
     type Identity;
+    type Client;
 
-    async fn check_for_many(&self, identities: &[Self::Identity])
-        -> Result<Vec<bool>, Self::Error>;
-    async fn check(&self, identity: Self::Identity) -> Result<bool, Self::Error>;
+    async fn check_for_many(
+        &self,
+        client: &Self::Client,
+        identities: &[Self::Identity],
+    ) -> Result<Vec<bool>, Self::Error>;
+    async fn check(
+        &self,
+        client: &Self::Client,
+        identity: Self::Identity,
+    ) -> Result<bool, Self::Error>;
 }
 
 #[macro_export]

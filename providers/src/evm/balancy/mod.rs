@@ -1,6 +1,6 @@
 use crate::{
     evm::{balancy::types::*, EvmChain},
-    BalanceQuerier, CLIENT,
+    BalanceQuerier,
 };
 use async_trait::async_trait;
 use ethereum_types::{Address, U256};
@@ -27,6 +27,7 @@ fn get_chain_id(chain: EvmChain) -> Option<u8> {
 }
 
 async fn make_balancy_request<T: DeserializeOwned + 'static>(
+    client: &reqwest::Client,
     chain: EvmChain,
     token: &str,
     address: Address,
@@ -35,9 +36,7 @@ async fn make_balancy_request<T: DeserializeOwned + 'static>(
         return Err(BalancyError::ChainNotSupported(format!("{chain:?}")));
     };
 
-    let res = CLIENT
-        .read()
-        .await
+    let res = client
         .get(format!(
             "{BASE_URL}/{token}/{ADDRESS_TOKENS}{address:#x}{BALANCY_CHAIN}{id}"
         ))
@@ -55,11 +54,12 @@ async fn make_balancy_request<T: DeserializeOwned + 'static>(
 }
 
 async fn get_erc20_balance(
+    client: &reqwest::Client,
     chain: EvmChain,
     token_address: Address,
     user_address: Address,
 ) -> Result<U256, BalancyError> {
-    let tokens = make_balancy_request::<Erc20>(chain, "erc20", user_address).await?;
+    let tokens = make_balancy_request::<Erc20>(client, chain, "erc20", user_address).await?;
 
     let amount = tokens
         .result
@@ -72,12 +72,13 @@ async fn get_erc20_balance(
 }
 
 async fn get_erc721_balance(
+    client: &reqwest::Client,
     chain: EvmChain,
     token_address: Address,
     token_id: Option<U256>,
     user_address: Address,
 ) -> Result<U256, BalancyError> {
-    let tokens = make_balancy_request::<Erc721>(chain, "erc721", user_address).await?;
+    let tokens = make_balancy_request::<Erc721>(client, chain, "erc721", user_address).await?;
 
     let amount = tokens
         .result
@@ -96,12 +97,13 @@ async fn get_erc721_balance(
 }
 
 async fn get_erc1155_balance(
+    client: &reqwest::Client,
     chain: EvmChain,
     token_address: Address,
     token_id: Option<U256>,
     user_address: Address,
 ) -> Result<U256, BalancyError> {
-    let tokens = make_balancy_request::<Erc1155>(chain, "erc1155", user_address).await?;
+    let tokens = make_balancy_request::<Erc1155>(client, chain, "erc1155", user_address).await?;
 
     let amount = tokens
         .result
@@ -128,13 +130,14 @@ impl BalanceQuerier for BalancyProvider {
 
     async fn get_balance_for_many(
         &self,
+        client: &reqwest::Client,
         chain: EvmChain,
         token_type: TokenType,
         addresses: &[Self::Address],
     ) -> Result<Vec<U256>, Self::Error> {
         Ok(
             futures::future::join_all(addresses.iter().map(|address| async {
-                self.get_balance_for_one(chain, token_type, *address)
+                self.get_balance_for_one(client, chain, token_type, *address)
                     .await
                     .unwrap_or(U256::from(0))
             }))
@@ -144,19 +147,20 @@ impl BalanceQuerier for BalancyProvider {
 
     async fn get_balance_for_one(
         &self,
+        client: &reqwest::Client,
         chain: EvmChain,
         token_type: TokenType,
         user_address: Self::Address,
     ) -> Result<U256, Self::Error> {
         match token_type {
             TokenType::Fungible { address } => {
-                get_erc20_balance(chain, address, user_address).await
+                get_erc20_balance(client, chain, address, user_address).await
             }
             TokenType::NonFungible { address, id } => {
-                get_erc721_balance(chain, address, id, user_address).await
+                get_erc721_balance(client, chain, address, id, user_address).await
             }
             TokenType::Special { address, id } => {
-                get_erc1155_balance(chain, address, id, user_address).await
+                get_erc1155_balance(client, chain, address, id, user_address).await
             }
             TokenType::Coin => Err(BalancyError::TokenTypeNotSupported(format!(
                 "{token_type:?}"
@@ -189,38 +193,50 @@ mod test {
 
     #[tokio::test]
     async fn balancy_ethereum() {
-        assert!(
-            make_balancy_request::<Erc20>(EvmChain::Ethereum, "erc20", address!(USER_1_ADDR))
-                .await
-                .is_ok()
-        );
+        assert!(make_balancy_request::<Erc20>(
+            &reqwest::Client::new(),
+            EvmChain::Ethereum,
+            "erc20",
+            address!(USER_1_ADDR)
+        )
+        .await
+        .is_ok());
     }
 
     #[tokio::test]
     async fn balancy_bsc() {
-        assert!(
-            make_balancy_request::<Erc20>(EvmChain::Bsc, "erc20", address!(USER_1_ADDR))
-                .await
-                .is_ok()
-        );
+        assert!(make_balancy_request::<Erc20>(
+            &reqwest::Client::new(),
+            EvmChain::Bsc,
+            "erc20",
+            address!(USER_1_ADDR)
+        )
+        .await
+        .is_ok());
     }
 
     #[tokio::test]
     async fn balancy_gnosis() {
-        assert!(
-            make_balancy_request::<Erc20>(EvmChain::Gnosis, "erc20", address!(USER_1_ADDR))
-                .await
-                .is_ok()
-        );
+        assert!(make_balancy_request::<Erc20>(
+            &reqwest::Client::new(),
+            EvmChain::Gnosis,
+            "erc20",
+            address!(USER_1_ADDR)
+        )
+        .await
+        .is_ok());
     }
 
     #[tokio::test]
     async fn balancy_polygon() {
-        assert!(
-            make_balancy_request::<Erc20>(EvmChain::Polygon, "erc20", address!(USER_1_ADDR))
-                .await
-                .is_ok()
-        );
+        assert!(make_balancy_request::<Erc20>(
+            &reqwest::Client::new(),
+            EvmChain::Polygon,
+            "erc20",
+            address!(USER_1_ADDR)
+        )
+        .await
+        .is_ok());
     }
 
     #[tokio::test]
@@ -231,7 +247,12 @@ mod test {
 
         assert_eq!(
             BalancyProvider
-                .get_balance_for_one(EvmChain::Ethereum, token_type, address!(USER_2_ADDR))
+                .get_balance_for_one(
+                    &reqwest::Client::new(),
+                    EvmChain::Ethereum,
+                    token_type,
+                    address!(USER_2_ADDR)
+                )
                 .await
                 .unwrap(),
             U256::from(100000000000000000000_u128)
@@ -252,14 +273,24 @@ mod test {
 
         assert_eq!(
             BalancyProvider
-                .get_balance_for_one(EvmChain::Ethereum, token_type_without_id, user_address)
+                .get_balance_for_one(
+                    &reqwest::Client::new(),
+                    EvmChain::Ethereum,
+                    token_type_without_id,
+                    user_address
+                )
                 .await
                 .unwrap(),
             U256::from(1)
         );
         assert_eq!(
             BalancyProvider
-                .get_balance_for_one(EvmChain::Ethereum, token_type_with_id, user_address)
+                .get_balance_for_one(
+                    &reqwest::Client::new(),
+                    EvmChain::Ethereum,
+                    token_type_with_id,
+                    user_address
+                )
                 .await
                 .unwrap(),
             U256::from(1)
@@ -280,14 +311,24 @@ mod test {
 
         assert_eq!(
             BalancyProvider
-                .get_balance_for_one(EvmChain::Ethereum, token_type_without_id, user_address)
+                .get_balance_for_one(
+                    &reqwest::Client::new(),
+                    EvmChain::Ethereum,
+                    token_type_without_id,
+                    user_address
+                )
                 .await
                 .unwrap(),
             U256::from(6810)
         );
         assert_eq!(
             BalancyProvider
-                .get_balance_for_one(EvmChain::Ethereum, token_type_with_id, user_address)
+                .get_balance_for_one(
+                    &reqwest::Client::new(),
+                    EvmChain::Ethereum,
+                    token_type_with_id,
+                    user_address
+                )
                 .await
                 .unwrap(),
             U256::from(16)

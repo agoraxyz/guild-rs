@@ -18,9 +18,11 @@ where
 {
     type Error = ();
     type Identity = T;
+    type Client = ();
 
     async fn check_for_many(
         &self,
+        _client: &Self::Client,
         identities: &[Self::Identity],
     ) -> Result<Vec<bool>, Self::Error> {
         Ok(identities
@@ -29,8 +31,14 @@ where
             .collect())
     }
 
-    async fn check(&self, identity: Self::Identity) -> Result<bool, Self::Error> {
-        self.check_for_many(&[identity]).await.map(|res| res[0])
+    async fn check(
+        &self,
+        client: &Self::Client,
+        identity: Self::Identity,
+    ) -> Result<bool, Self::Error> {
+        self.check_for_many(client, &[identity])
+            .await
+            .map(|res| res[0])
     }
 }
 
@@ -44,8 +52,8 @@ mod test {
             identities: vec![69, 420],
         };
 
-        assert!(req.check(69).await.unwrap());
+        assert!(req.check(&(), 69).await.unwrap());
 
-        assert!(!req.check(13).await.unwrap());
+        assert!(!req.check(&(), 13).await.unwrap());
     }
 }

@@ -10,15 +10,21 @@ pub struct Free;
 impl Requirement for Free {
     type Error = ();
     type Identity = Box<dyn Send + Sync>;
+    type Client = ();
 
     async fn check_for_many(
         &self,
+        _client: &Self::Client,
         identities: &[Self::Identity],
     ) -> Result<Vec<bool>, Self::Error> {
         Ok(identities.iter().map(|_| true).collect())
     }
 
-    async fn check(&self, _identity: Self::Identity) -> Result<bool, Self::Error> {
+    async fn check(
+        &self,
+        _client: &Self::Client,
+        _identity: Self::Identity,
+    ) -> Result<bool, Self::Error> {
         Ok(true)
     }
 }
@@ -31,6 +37,6 @@ mod test {
     async fn free_requirement_check() {
         let req = Free;
 
-        assert!(req.check(Box::new(69)).await.unwrap());
+        assert!(req.check(&(), Box::new(69)).await.unwrap());
     }
 }

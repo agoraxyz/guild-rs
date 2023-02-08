@@ -1,6 +1,6 @@
 use crate::{
     evm::{balancy::BalancyProvider, jsonrpc::contract::*, EvmChain},
-    BalanceQuerier, TokenType, CLIENT,
+    BalanceQuerier, TokenType,
 };
 use async_trait::async_trait;
 use ethereum_types::{Address, U256};
@@ -99,7 +99,11 @@ fn create_payload(method: &str, params: String, id: u32) -> String {
     )
 }
 
-async fn get_coin_balance(chain: EvmChain, address: Address) -> Result<U256, RpcError> {
+async fn get_coin_balance(
+    client: &reqwest::Client,
+    chain: EvmChain,
+    address: Address,
+) -> Result<U256, RpcError> {
     let Some(provider) = PROVIDERS.get(&chain) else {
        return Err(RpcError::ChainNotSupported(format!("{chain:?}")));
     };
@@ -110,9 +114,7 @@ async fn get_coin_balance(chain: EvmChain, address: Address) -> Result<U256, Rpc
         1,
     );
 
-    let res: RpcResponse = CLIENT
-        .read()
-        .await
+    let res: RpcResponse = client
         .post(&provider.rpc_url)
         .body(payload)
         .send()
@@ -130,13 +132,14 @@ impl BalanceQuerier for RpcProvider {
 
     async fn get_balance_for_many(
         &self,
+        client: &reqwest::Client,
         chain: EvmChain,
         token_type: TokenType,
         addresses: &[Self::Address],
     ) -> Result<Vec<U256>, Self::Error> {
         Ok(
             futures::future::join_all(addresses.iter().map(|address| async {
-                self.get_balance_for_one(chain, token_type, *address)
+                self.get_balance_for_one(client, chain, token_type, *address)
                     .await
                     .unwrap_or(U256::from(0))
             }))
@@ -146,22 +149,25 @@ impl BalanceQuerier for RpcProvider {
 
     async fn get_balance_for_one(
         &self,
+        client: &reqwest::Client,
         chain: EvmChain,
         token_type: TokenType,
         user_address: Self::Address,
     ) -> Result<U256, Self::Error> {
         match token_type {
-            TokenType::Coin => get_coin_balance(chain, user_address).await,
+            TokenType::Coin => get_coin_balance(client, chain, user_address).await,
             TokenType::Fungible { address } => {
-                get_erc20_balance(chain, address, user_address).await
+                get_erc20_balance(client, chain, address, user_address).await
             }
             TokenType::NonFungible { address, id } => {
-                get_erc721_balance(chain, address, id, user_address).await
+                get_erc721_balance(client, chain, address, id, user_address).await
             }
             TokenType::Special { address, id } => match id {
-                Some(token_id) => get_erc1155_balance(chain, address, token_id, user_address).await,
+                Some(token_id) => {
+                    get_erc1155_balance(client, chain, address, token_id, user_address).await
+                }
                 None => BalancyProvider
-                    .get_balance_for_one(chain, token_type, user_address)
+                    .get_balance_for_one(client, chain, token_type, user_address)
                     .await
                     .map_err(|err| RpcError::Other(err.to_string())),
             },
@@ -182,6 +188,7 @@ mod test {
     async fn rpc_get_coin_balance() {
         assert!(RpcProvider
             .get_balance_for_one(
+                &reqwest::Client::new(),
                 EvmChain::Ethereum,
                 Coin,
                 address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE")
@@ -198,7 +205,12 @@ mod test {
 
         assert_eq!(
             RpcProvider
-                .get_balance_for_one(EvmChain::Ethereum, token_type, address!(USER_2_ADDR))
+                .get_balance_for_one(
+                    &reqwest::Client::new(),
+                    EvmChain::Ethereum,
+                    token_type,
+                    address!(USER_2_ADDR)
+                )
                 .await
                 .unwrap(),
             U256::from(100000000000000000000_u128)
@@ -219,14 +231,24 @@ mod test {
 
         assert_eq!(
             RpcProvider
-                .get_balance_for_one(EvmChain::Ethereum, token_type_without_id, user_address)
+                .get_balance_for_one(
+                    &reqwest::Client::new(),
+                    EvmChain::Ethereum,
+                    token_type_without_id,
+                    user_address
+                )
                 .await
                 .unwrap(),
             U256::from(1)
         );
         assert_eq!(
             RpcProvider
-                .get_balance_for_one(EvmChain::Ethereum, token_type_with_id, user_address)
+                .get_balance_for_one(
+                    &reqwest::Client::new(),
+                    EvmChain::Ethereum,
+                    token_type_with_id,
+                    user_address
+                )
                 .await
                 .unwrap(),
             U256::from(1)
@@ -247,14 +269,24 @@ mod test {
 
         assert_eq!(
             RpcProvider
-                .get_balance_for_one(EvmChain::Ethereum, token_type_without_id, user_address)
+                .get_balance_for_one(
+                    &reqwest::Client::new(),
+                    EvmChain::Ethereum,
+                    token_type_without_id,
+                    user_address
+                )
                 .await
                 .unwrap(),
             U256::from(6810)
         );
         assert_eq!(
             RpcProvider
-                .get_balance_for_one(EvmChain::Ethereum, token_type_with_id, user_address)
+                .get_balance_for_one(
+                    &reqwest::Client::new(),
+                    EvmChain::Ethereum,
+                    token_type_with_id,
+                    user_address
+                )
                 .await
                 .unwrap(),
             U256::from(16)
