@@ -134,7 +134,7 @@ impl BalanceQuerier for RpcProvider {
         &self,
         client: &reqwest::Client,
         chain: EvmChain,
-        token_type: TokenType,
+        token_type: TokenType<Self::Address, U256>,
         addresses: &[Self::Address],
     ) -> Result<Vec<U256>, Self::Error> {
         Ok(
@@ -151,11 +151,11 @@ impl BalanceQuerier for RpcProvider {
         &self,
         client: &reqwest::Client,
         chain: EvmChain,
-        token_type: TokenType,
+        token_type: TokenType<Self::Address, U256>,
         user_address: Self::Address,
     ) -> Result<U256, Self::Error> {
         match token_type {
-            TokenType::Coin => get_coin_balance(client, chain, user_address).await,
+            TokenType::Native => get_coin_balance(client, chain, user_address).await,
             TokenType::Fungible { address } => {
                 get_erc20_balance(client, chain, address, user_address).await
             }
@@ -190,7 +190,7 @@ mod test {
             .get_balance_for_one(
                 &reqwest::Client::new(),
                 EvmChain::Ethereum,
-                Coin,
+                Native,
                 address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE")
             )
             .await

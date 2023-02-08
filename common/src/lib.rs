@@ -3,7 +3,7 @@
 #![deny(clippy::cargo)]
 
 use async_trait::async_trait;
-use ethereum_types::{Address, U256};
+use ethereum_types::Address;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -21,11 +21,11 @@ pub struct User {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Copy)]
-pub enum TokenType {
-    Coin,
-    Fungible { address: Address },
-    NonFungible { address: Address, id: Option<U256> },
-    Special { address: Address, id: Option<U256> },
+pub enum TokenType<T, U> {
+    Native,
+    Fungible { address: T },
+    NonFungible { address: T, id: Option<U> },
+    Special { address: T, id: Option<U> },
 }
 
 #[derive(Error, Debug)]

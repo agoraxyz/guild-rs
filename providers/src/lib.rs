@@ -18,14 +18,14 @@ pub trait BalanceQuerier {
         &self,
         client: &reqwest::Client,
         chain: EvmChain,
-        token_type: TokenType,
+        token_type: TokenType<Self::Address, U256>,
         addresses: &[Self::Address],
     ) -> Result<Vec<U256>, Self::Error>;
     async fn get_balance_for_one(
         &self,
         client: &reqwest::Client,
         chain: EvmChain,
-        token_type: TokenType,
+        token_type: TokenType<Self::Address, U256>,
         address: Self::Address,
     ) -> Result<U256, Self::Error>;
 }

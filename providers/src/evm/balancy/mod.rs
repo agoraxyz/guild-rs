@@ -132,7 +132,7 @@ impl BalanceQuerier for BalancyProvider {
         &self,
         client: &reqwest::Client,
         chain: EvmChain,
-        token_type: TokenType,
+        token_type: TokenType<Self::Address, U256>,
         addresses: &[Self::Address],
     ) -> Result<Vec<U256>, Self::Error> {
         Ok(
@@ -149,7 +149,7 @@ impl BalanceQuerier for BalancyProvider {
         &self,
         client: &reqwest::Client,
         chain: EvmChain,
-        token_type: TokenType,
+        token_type: TokenType<Self::Address, U256>,
         user_address: Self::Address,
     ) -> Result<U256, Self::Error> {
         match token_type {
@@ -162,7 +162,7 @@ impl BalanceQuerier for BalancyProvider {
             TokenType::Special { address, id } => {
                 get_erc1155_balance(client, chain, address, id, user_address).await
             }
-            TokenType::Coin => Err(BalancyError::TokenTypeNotSupported(format!(
+            TokenType::Native => Err(BalancyError::TokenTypeNotSupported(format!(
                 "{token_type:?}"
             ))),
         }

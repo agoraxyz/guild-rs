@@ -32,14 +32,14 @@ impl<T: PartialEq + PartialOrd> Relation<T> {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct Balance {
+pub struct Balance<T, U> {
     pub chain: EvmChain,
-    pub token_type: TokenType,
+    pub token_type: TokenType<T, U>,
     pub relation: Relation<U256>,
 }
 
 #[async_trait]
-impl Requirement for Balance {
+impl Requirement for Balance<Address, U256> {
     type Error = RequirementError;
     type Identity = Address;
     type Client = reqwest::Client;
