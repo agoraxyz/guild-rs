@@ -1,7 +1,7 @@
 use crate::{Requirement, RequirementError};
 use async_trait::async_trait;
 use ethereum_types::{Address, U256};
-use rusty_gate_common::TokenType;
+use rusty_gate_common::{TokenType, VerificationData};
 use rusty_gate_providers::{
     evm::{EvmChain, RpcProvider},
     BalanceQuerier,
@@ -38,40 +38,51 @@ pub struct Balance<T, U> {
     pub relation: Relation<U256>,
 }
 
-#[async_trait]
 impl Requirement for Balance<Address, U256> {
+    type Error = RequirementError;
+    type VerificationData = U256;
+
+    fn verify(&self, vd: &Self::VerificationData) -> bool {
+        self.relation.assert(vd)
+    }
+
+    fn verify_batch(&self, vd: &[Self::VerificationData]) -> Vec<bool> {
+        vd.iter().map(|v| self.verify(v)).collect()
+    }
+}
+
+#[async_trait]
+impl VerificationData for Balance<Address, U256> {
     type Error = RequirementError;
     type Identity = Address;
     type Client = reqwest::Client;
+    type Res = U256;
 
-    async fn check_for_many(
+    async fn retrieve(
+        &self,
+        client: &Self::Client,
+        identity: &Self::Identity,
+    ) -> Result<Self::Res, Self::Error> {
+        self.retrieve_batch(client, &[*identity])
+            .await
+            .map(|res| res[0])
+    }
+
+    async fn retrieve_batch(
         &self,
         client: &Self::Client,
         identities: &[Self::Identity],
-    ) -> Result<Vec<bool>, Self::Error> {
-        let balances: Vec<U256> = RpcProvider
+    ) -> Result<Vec<Self::Res>, Self::Error> {
+        RpcProvider
             .get_balance_for_many(client, self.chain, self.token_type, identities)
             .await
-            .map_err(|err| RequirementError::Other(err.to_string()))?;
-
-        Ok(balances
-            .iter()
-            .map(|balance| self.relation.assert(balance))
-            .collect())
-    }
-
-    async fn check(
-        &self,
-        client: &Self::Client,
-        user: Self::Identity,
-    ) -> Result<bool, Self::Error> {
-        self.check_for_many(client, &[user]).await.map(|res| res[0])
+            .map_err(|err| RequirementError::Other(err.to_string()))
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::{Balance, Relation, Requirement, TokenType, U256};
+    use super::{Balance, Relation, Requirement, TokenType, VerificationData, U256};
     use rusty_gate_common::address;
     use rusty_gate_providers::evm::EvmChain;
 
@@ -117,20 +128,22 @@ mod test {
 
         let client = reqwest::Client::new();
 
-        assert!(req
-            .check(
+        let balance_1 = req
+            .retrieve(
                 &client,
-                address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE")
+                &address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
             )
             .await
-            .unwrap());
+            .unwrap();
+        let balance_2 = req
+            .retrieve(
+                &client,
+                &address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
+            )
+            .await
+            .unwrap();
 
-        assert!(req
-            .check(
-                &client,
-                address!("0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3")
-            )
-            .await
-            .unwrap());
+        assert!(req.verify(&balance_1));
+        assert!(req.verify(&balance_2));
     }
 }
