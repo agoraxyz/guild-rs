@@ -16,13 +16,19 @@ const BALANCY_CHAIN: &str = "&chain=";
 
 pub struct BalancyProvider;
 
-fn get_chain_id(chain: EvmChain) -> Option<u8> {
-    match chain {
-        EvmChain::Ethereum => Some(1),
-        EvmChain::Bsc => Some(56),
-        EvmChain::Gnosis => Some(100),
-        EvmChain::Polygon => Some(137),
-        _ => None,
+trait BalancyId {
+    fn balancy_id(&self) -> Option<u8>;
+}
+
+impl BalancyId for EvmChain {
+    fn balancy_id(&self) -> Option<u8> {
+        match self {
+            EvmChain::Ethereum => Some(1),
+            EvmChain::Bsc => Some(56),
+            EvmChain::Gnosis => Some(100),
+            EvmChain::Polygon => Some(137),
+            _ => None,
+        }
     }
 }
 
@@ -32,7 +38,7 @@ async fn make_balancy_request<T: DeserializeOwned + 'static>(
     token: &str,
     address: Address,
 ) -> Result<BalancyResponse<T>, BalancyError> {
-    let Some(id) = get_chain_id(chain) else {
+    let Some(id) = chain.balancy_id() else {
         return Err(BalancyError::ChainNotSupported(format!("{chain:?}")));
     };
 
@@ -173,7 +179,7 @@ impl BalanceQuerier for BalancyProvider {
 mod test {
     use crate::{
         evm::{
-            balancy::{get_chain_id, make_balancy_request, types::Erc20, BalancyProvider},
+            balancy::{make_balancy_request, types::Erc20, BalancyId, BalancyProvider},
             common::*,
             EvmChain,
         },
@@ -184,11 +190,11 @@ mod test {
 
     #[test]
     fn balancy_get_chain_id() {
-        assert_eq!(get_chain_id(EvmChain::Ethereum), Some(1));
-        assert_eq!(get_chain_id(EvmChain::Bsc), Some(56));
-        assert_eq!(get_chain_id(EvmChain::Gnosis), Some(100));
-        assert_eq!(get_chain_id(EvmChain::Polygon), Some(137));
-        assert_eq!(get_chain_id(EvmChain::Goerli), None);
+        assert_eq!(EvmChain::Ethereum.balancy_id(), Some(1));
+        assert_eq!(EvmChain::Bsc.balancy_id(), Some(56));
+        assert_eq!(EvmChain::Gnosis.balancy_id(), Some(100));
+        assert_eq!(EvmChain::Polygon.balancy_id(), Some(137));
+        assert_eq!(EvmChain::Goerli.balancy_id(), None);
     }
 
     #[tokio::test]
@@ -261,6 +267,7 @@ mod test {
 
     #[tokio::test]
     async fn balancy_get_erc721_balance() {
+        let client = reqwest::Client::new();
         let token_type_without_id = NonFungible {
             address: address!(ERC721_ADDR),
             id: None,
@@ -274,7 +281,7 @@ mod test {
         assert_eq!(
             BalancyProvider
                 .get_balance_for_one(
-                    &reqwest::Client::new(),
+                    &client,
                     EvmChain::Ethereum,
                     token_type_without_id,
                     user_address
@@ -286,7 +293,7 @@ mod test {
         assert_eq!(
             BalancyProvider
                 .get_balance_for_one(
-                    &reqwest::Client::new(),
+                    &client,
                     EvmChain::Ethereum,
                     token_type_with_id,
                     user_address
@@ -299,6 +306,7 @@ mod test {
 
     #[tokio::test]
     async fn balancy_get_erc1155_balance() {
+        let client = reqwest::Client::new();
         let token_type_without_id = Special {
             address: address!(ERC1155_ADDR),
             id: None,
@@ -312,7 +320,7 @@ mod test {
         assert_eq!(
             BalancyProvider
                 .get_balance_for_one(
-                    &reqwest::Client::new(),
+                    &client,
                     EvmChain::Ethereum,
                     token_type_without_id,
                     user_address
@@ -324,7 +332,7 @@ mod test {
         assert_eq!(
             BalancyProvider
                 .get_balance_for_one(
-                    &reqwest::Client::new(),
+                    &client,
                     EvmChain::Ethereum,
                     token_type_with_id,
                     user_address
