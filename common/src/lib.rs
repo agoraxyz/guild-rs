@@ -34,22 +34,31 @@ pub enum RequirementError {
     Other(String),
 }
 
-#[async_trait]
 pub trait Requirement {
+    type Error;
+    type VerificationData;
+
+    fn verify(&self, vd: &Self::VerificationData) -> bool;
+    fn verify_batch(&self, vd: &[Self::VerificationData]) -> Vec<bool>;
+}
+
+#[async_trait]
+pub trait VerificationData {
     type Error;
     type Identity;
     type Client;
+    type Res;
 
-    async fn check_for_many(
+    async fn retrieve(
+        &self,
+        client: &Self::Client,
+        identity: &Self::Identity,
+    ) -> Result<Self::Res, Self::Error>;
+    async fn retrieve_batch(
         &self,
         client: &Self::Client,
         identities: &[Self::Identity],
-    ) -> Result<Vec<bool>, Self::Error>;
-    async fn check(
-        &self,
-        client: &Self::Client,
-        identity: Self::Identity,
-    ) -> Result<bool, Self::Error>;
+    ) -> Result<Vec<Self::Res>, Self::Error>;
 }
 
 #[macro_export]
