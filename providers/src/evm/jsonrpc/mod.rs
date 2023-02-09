@@ -219,6 +219,7 @@ mod test {
 
     #[tokio::test]
     async fn rpc_get_erc721_balance() {
+        let client = reqwest::Client::new();
         let token_type_without_id = NonFungible {
             address: address!(ERC721_ADDR),
             id: None,
@@ -232,7 +233,7 @@ mod test {
         assert_eq!(
             RpcProvider
                 .get_balance_for_one(
-                    &reqwest::Client::new(),
+                    &client,
                     EvmChain::Ethereum,
                     token_type_without_id,
                     user_address
@@ -244,7 +245,7 @@ mod test {
         assert_eq!(
             RpcProvider
                 .get_balance_for_one(
-                    &reqwest::Client::new(),
+                    &client,
                     EvmChain::Ethereum,
                     token_type_with_id,
                     user_address
@@ -257,6 +258,7 @@ mod test {
 
     #[tokio::test]
     async fn rpc_get_erc1155_balance() {
+        let client = reqwest::Client::new();
         let token_type_without_id = Special {
             address: address!(ERC1155_ADDR),
             id: None,
@@ -270,7 +272,7 @@ mod test {
         assert_eq!(
             RpcProvider
                 .get_balance_for_one(
-                    &reqwest::Client::new(),
+                    &client,
                     EvmChain::Ethereum,
                     token_type_without_id,
                     user_address
@@ -282,7 +284,7 @@ mod test {
         assert_eq!(
             RpcProvider
                 .get_balance_for_one(
-                    &reqwest::Client::new(),
+                    &client,
                     EvmChain::Ethereum,
                     token_type_with_id,
                     user_address
