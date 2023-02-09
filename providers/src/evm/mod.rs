@@ -2,9 +2,9 @@ mod balancy;
 mod jsonrpc;
 
 #[cfg(feature = "balancy")]
-pub use balancy::BalancyProvider;
+pub use balancy::BalancyProvider as Provider;
 #[cfg(not(feature = "balancy"))]
-pub use jsonrpc::RpcProvider;
+pub use jsonrpc::RpcProvider as Provider;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Copy, std::hash::Hash)]

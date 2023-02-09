@@ -2,10 +2,8 @@ use crate::{Requirement, RequirementError};
 use async_trait::async_trait;
 use ethereum_types::{Address, U256};
 use rusty_gate_common::{TokenType, VerificationData};
-use rusty_gate_providers::{
-    evm::{EvmChain, RpcProvider},
-    BalanceQuerier,
-};
+use rusty_gate_providers::evm::Provider;
+use rusty_gate_providers::{evm::EvmChain, BalanceQuerier};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -38,7 +36,7 @@ pub struct Balance<T, U> {
     pub relation: Relation<U256>,
 }
 
-impl Requirement for Balance<Address, U256> {
+impl<T, U> Requirement for Balance<T, U> {
     type Error = RequirementError;
     type VerificationData = U256;
 
@@ -73,7 +71,7 @@ impl VerificationData for Balance<Address, U256> {
         client: &Self::Client,
         identities: &[Self::Identity],
     ) -> Result<Vec<Self::Res>, Self::Error> {
-        RpcProvider
+        Provider
             .get_balance_for_many(client, self.chain, self.token_type, identities)
             .await
             .map_err(|err| RequirementError::Other(err.to_string()))
