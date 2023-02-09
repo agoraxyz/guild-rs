@@ -18,7 +18,7 @@ where
     type VerificationData = T;
 
     fn verify(&self, vd: &Self::VerificationData) -> bool {
-        self.verification_data.contains(&vd)
+        self.verification_data.contains(vd)
     }
 
     fn verify_batch(&self, vd: &[Self::VerificationData]) -> Vec<bool> {
