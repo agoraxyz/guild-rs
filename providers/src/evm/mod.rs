@@ -30,7 +30,7 @@ pub enum EvmChain {
     Palm,
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nomock"))]
 mod common {
     pub const USER_1_ADDR: &str = "0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE";
     pub const USER_2_ADDR: &str = "0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3";

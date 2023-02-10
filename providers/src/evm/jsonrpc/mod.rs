@@ -175,7 +175,7 @@ impl BalanceQuerier for RpcProvider {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nomock"))]
 mod test {
     use crate::{
         evm::{common::*, jsonrpc::RpcProvider, EvmChain},

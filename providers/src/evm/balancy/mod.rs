@@ -175,7 +175,7 @@ impl BalanceQuerier for BalancyProvider {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nomock"))]
 mod test {
     use crate::{
         evm::{
