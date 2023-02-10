@@ -80,7 +80,9 @@ impl VerificationData for Balance<Address, U256> {
 
 #[cfg(test)]
 mod test {
-    use super::{Balance, Relation, Requirement, TokenType, VerificationData, U256};
+    #[cfg(feature = "nomock")]
+    use super::VerificationData;
+    use super::{Balance, Relation, Requirement, TokenType, U256};
     use rusty_gate_common::address;
     use rusty_gate_providers::evm::EvmChain;
 
@@ -119,29 +121,41 @@ mod test {
             chain: EvmChain::Ethereum,
             token_type: TokenType::NonFungible {
                 address: address!("0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"),
-                id: None,
+                id: None::<U256>,
             },
             relation: Relation::GreaterThan(U256::from(0)),
         };
 
-        let client = reqwest::Client::new();
+        #[cfg(feature = "nomock")]
+        {
+            let client = reqwest::Client::new();
 
-        let balance_1 = req
-            .retrieve(
-                &client,
-                &address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
-            )
-            .await
-            .unwrap();
-        let balance_2 = req
-            .retrieve(
-                &client,
-                &address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
-            )
-            .await
-            .unwrap();
+            let balance_1 = req
+                .retrieve(
+                    &client,
+                    &address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
+                )
+                .await
+                .unwrap();
+            let balance_2 = req
+                .retrieve(
+                    &client,
+                    &address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
+                )
+                .await
+                .unwrap();
 
-        assert!(req.verify(&balance_1));
-        assert!(req.verify(&balance_2));
+            assert!(req.verify(&balance_1));
+            assert!(req.verify(&balance_2));
+        }
+
+        #[cfg(not(feature = "nomock"))]
+        {
+            let balance_1 = U256::from(69);
+            let balance_2 = U256::from(420);
+
+            assert!(req.verify(&balance_1));
+            assert!(req.verify(&balance_2));
+        }
     }
 }
