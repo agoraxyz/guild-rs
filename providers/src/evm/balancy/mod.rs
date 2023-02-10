@@ -132,15 +132,18 @@ async fn get_erc1155_balance(
 #[async_trait]
 impl BalanceQuerier for BalancyProvider {
     type Error = BalancyError;
-    type Address = ethereum_types::H160;
+    type Chain = EvmChain;
+    type Address = Address;
+    type Id = U256;
+    type Balance = U256;
 
     async fn get_balance_for_many(
         &self,
         client: &reqwest::Client,
-        chain: EvmChain,
-        token_type: TokenType<Self::Address, U256>,
+        chain: Self::Chain,
+        token_type: TokenType<Self::Address, Self::Id>,
         addresses: &[Self::Address],
-    ) -> Result<Vec<U256>, Self::Error> {
+    ) -> Result<Vec<Self::Balance>, Self::Error> {
         Ok(
             futures::future::join_all(addresses.iter().map(|address| async {
                 self.get_balance_for_one(client, chain, token_type, *address)
@@ -154,10 +157,10 @@ impl BalanceQuerier for BalancyProvider {
     async fn get_balance_for_one(
         &self,
         client: &reqwest::Client,
-        chain: EvmChain,
-        token_type: TokenType<Self::Address, U256>,
+        chain: Self::Chain,
+        token_type: TokenType<Self::Address, Self::Id>,
         user_address: Self::Address,
-    ) -> Result<U256, Self::Error> {
+    ) -> Result<Self::Balance, Self::Error> {
         match token_type {
             TokenType::Fungible { address } => {
                 get_erc20_balance(client, chain, address, user_address).await

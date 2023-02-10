@@ -129,15 +129,18 @@ async fn get_coin_balance(
 #[async_trait]
 impl BalanceQuerier for RpcProvider {
     type Error = RpcError;
+    type Chain = EvmChain;
     type Address = Address;
+    type Id = U256;
+    type Balance = U256;
 
     async fn get_balance_for_many(
         &self,
         client: &reqwest::Client,
-        chain: EvmChain,
-        token_type: TokenType<Self::Address, U256>,
+        chain: Self::Chain,
+        token_type: TokenType<Self::Address, Self::Id>,
         addresses: &[Self::Address],
-    ) -> Result<Vec<U256>, Self::Error> {
+    ) -> Result<Vec<Self::Balance>, Self::Error> {
         Ok(
             futures::future::join_all(addresses.iter().map(|address| async {
                 self.get_balance_for_one(client, chain, token_type, *address)
@@ -151,10 +154,10 @@ impl BalanceQuerier for RpcProvider {
     async fn get_balance_for_one(
         &self,
         client: &reqwest::Client,
-        chain: EvmChain,
-        token_type: TokenType<Self::Address, U256>,
+        chain: Self::Chain,
+        token_type: TokenType<Self::Address, Self::Id>,
         user_address: Self::Address,
-    ) -> Result<U256, Self::Error> {
+    ) -> Result<Self::Balance, Self::Error> {
         match token_type {
             TokenType::Native => get_coin_balance(client, chain, user_address).await,
             TokenType::Fungible { address } => {
