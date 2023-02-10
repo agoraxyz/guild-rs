@@ -38,6 +38,17 @@ async fn call_contract(
     Ok(res.result)
 }
 
+pub async fn get_erc20_decimals(
+    client: &reqwest::Client,
+    chain: EvmChain,
+    token_address: Address,
+) -> Result<U256, RpcError> {
+    let data = "0x313ce567".to_string();
+    let decimals = call_contract(client, chain, token_address, data).await?;
+
+    U256::from_str(&decimals).map_err(|err| RpcError::Other(err.to_string()))
+}
+
 pub async fn get_erc20_balance(
     client: &reqwest::Client,
     chain: EvmChain,
@@ -87,4 +98,39 @@ pub async fn get_erc1155_balance(
     let balance = call_contract(client, chain, token_address, data).await?;
 
     U256::from_str(&balance).map_err(|err| RpcError::Other(err.to_string()))
+}
+
+#[cfg(all(test, feature = "nomock"))]
+mod test {
+    use crate::evm::{common::*, jsonrpc::get_erc20_decimals, EvmChain};
+    use ethereum_types::U256;
+    use rusty_gate_common::address;
+
+    #[tokio::test]
+    async fn rpc_get_erc20_decimals() {
+        let client = reqwest::Client::new();
+        let chain = EvmChain::Ethereum;
+        let token_1 = ERC20_ADDR;
+        let token_2 = "0x343e59d9d835e35b07fe80f5bb544f8ed1cd3b11";
+        let token_3 = "0xaba8cac6866b83ae4eec97dd07ed254282f6ad8a";
+        let token_4 = "0x0a9f693fce6f00a51a8e0db4351b5a8078b4242e";
+
+        let decimals_1 = get_erc20_decimals(&client, chain, address!(token_1))
+            .await
+            .unwrap();
+        let decimals_2 = get_erc20_decimals(&client, chain, address!(token_2))
+            .await
+            .unwrap();
+        let decimals_3 = get_erc20_decimals(&client, chain, address!(token_3))
+            .await
+            .unwrap();
+        let decimals_4 = get_erc20_decimals(&client, chain, address!(token_4))
+            .await
+            .unwrap();
+
+        assert_eq!(decimals_1, U256::from(18));
+        assert_eq!(decimals_2, U256::from(9));
+        assert_eq!(decimals_3, U256::from(24));
+        assert_eq!(decimals_4, U256::from(5));
+    }
 }

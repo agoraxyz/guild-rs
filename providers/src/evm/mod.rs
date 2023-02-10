@@ -3,6 +3,7 @@ mod jsonrpc;
 
 #[cfg(feature = "balancy")]
 pub use balancy::BalancyProvider as Provider;
+pub use jsonrpc::get_erc20_decimals;
 #[cfg(not(feature = "balancy"))]
 pub use jsonrpc::RpcProvider as Provider;
 use serde::{Deserialize, Serialize};

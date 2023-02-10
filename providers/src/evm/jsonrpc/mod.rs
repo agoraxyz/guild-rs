@@ -3,6 +3,7 @@ use crate::{
     BalanceQuerier, TokenType,
 };
 use async_trait::async_trait;
+pub use contract::get_erc20_decimals;
 use ethereum_types::{Address, U256};
 use serde::Deserialize;
 use std::str::FromStr;
