@@ -30,15 +30,18 @@ impl<T: PartialEq + PartialOrd> Relation<T> {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct Balance<T, U> {
+pub struct Balance<T, U, V> {
     pub chain: EvmChain,
     pub token_type: TokenType<T, U>,
-    pub relation: Relation<U256>,
+    pub relation: Relation<V>,
 }
 
-impl<T, U> Requirement for Balance<T, U> {
+impl<T, U, V> Requirement for Balance<T, U, V>
+where
+    V: PartialEq + PartialOrd,
+{
     type Error = RequirementError;
-    type VerificationData = U256;
+    type VerificationData = V;
 
     fn verify(&self, vd: &Self::VerificationData) -> bool {
         self.relation.assert(vd)
@@ -50,7 +53,7 @@ impl<T, U> Requirement for Balance<T, U> {
 }
 
 #[async_trait]
-impl VerificationData for Balance<Address, U256> {
+impl VerificationData for Balance<Address, U256, U256> {
     type Error = RequirementError;
     type Identity = Address;
     type Client = reqwest::Client;
