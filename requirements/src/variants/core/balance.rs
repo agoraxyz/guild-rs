@@ -61,9 +61,10 @@ impl VerificationData for Balance<Address, U256> {
         client: &Self::Client,
         identity: &Self::Identity,
     ) -> Result<Self::Res, Self::Error> {
-        self.retrieve_batch(client, &[*identity])
+        Provider
+            .get_balance(client, self.chain, self.token_type, *identity)
             .await
-            .map(|res| res[0])
+            .map_err(|err| RequirementError::Other(err.to_string()))
     }
 
     async fn retrieve_batch(
@@ -72,7 +73,7 @@ impl VerificationData for Balance<Address, U256> {
         identities: &[Self::Identity],
     ) -> Result<Vec<Self::Res>, Self::Error> {
         Provider
-            .get_balance_for_many(client, self.chain, self.token_type, identities)
+            .get_balance_batch(client, self.chain, self.token_type, identities)
             .await
             .map_err(|err| RequirementError::Other(err.to_string()))
     }
