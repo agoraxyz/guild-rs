@@ -191,7 +191,7 @@ mod test {
     #[tokio::test]
     async fn rpc_get_coin_balance() {
         assert!(RpcProvider
-            .get_balance_for_one(
+            .get_balance(
                 &reqwest::Client::new(),
                 EvmChain::Ethereum,
                 Native,
@@ -209,7 +209,7 @@ mod test {
 
         assert_eq!(
             RpcProvider
-                .get_balance_for_one(
+                .get_balance(
                     &reqwest::Client::new(),
                     EvmChain::Ethereum,
                     token_type,
@@ -236,7 +236,7 @@ mod test {
 
         assert_eq!(
             RpcProvider
-                .get_balance_for_one(
+                .get_balance(
                     &client,
                     EvmChain::Ethereum,
                     token_type_without_id,
@@ -248,7 +248,7 @@ mod test {
         );
         assert_eq!(
             RpcProvider
-                .get_balance_for_one(
+                .get_balance(
                     &client,
                     EvmChain::Ethereum,
                     token_type_with_id,
@@ -275,7 +275,7 @@ mod test {
 
         assert_eq!(
             RpcProvider
-                .get_balance_for_one(
+                .get_balance(
                     &client,
                     EvmChain::Ethereum,
                     token_type_without_id,
@@ -287,7 +287,7 @@ mod test {
         );
         assert_eq!(
             RpcProvider
-                .get_balance_for_one(
+                .get_balance(
                     &client,
                     EvmChain::Ethereum,
                     token_type_with_id,

@@ -256,7 +256,7 @@ mod test {
 
         assert_eq!(
             BalancyProvider
-                .get_balance_for_one(
+                .get_balance(
                     &reqwest::Client::new(),
                     EvmChain::Ethereum,
                     token_type,
@@ -283,7 +283,7 @@ mod test {
 
         assert_eq!(
             BalancyProvider
-                .get_balance_for_one(
+                .get_balance(
                     &client,
                     EvmChain::Ethereum,
                     token_type_without_id,
@@ -295,7 +295,7 @@ mod test {
         );
         assert_eq!(
             BalancyProvider
-                .get_balance_for_one(
+                .get_balance(
                     &client,
                     EvmChain::Ethereum,
                     token_type_with_id,
@@ -322,7 +322,7 @@ mod test {
 
         assert_eq!(
             BalancyProvider
-                .get_balance_for_one(
+                .get_balance(
                     &client,
                     EvmChain::Ethereum,
                     token_type_without_id,
@@ -334,7 +334,7 @@ mod test {
         );
         assert_eq!(
             BalancyProvider
-                .get_balance_for_one(
+                .get_balance(
                     &client,
                     EvmChain::Ethereum,
                     token_type_with_id,
