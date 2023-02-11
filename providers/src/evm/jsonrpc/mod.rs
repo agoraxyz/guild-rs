@@ -134,24 +134,7 @@ impl BalanceQuerier for RpcProvider {
     type Id = U256;
     type Balance = U256;
 
-    async fn get_balance_for_many(
-        &self,
-        client: &reqwest::Client,
-        chain: Self::Chain,
-        token_type: TokenType<Self::Address, Self::Id>,
-        addresses: &[Self::Address],
-    ) -> Result<Vec<Self::Balance>, Self::Error> {
-        Ok(
-            futures::future::join_all(addresses.iter().map(|address| async {
-                self.get_balance_for_one(client, chain, token_type, *address)
-                    .await
-                    .unwrap_or(U256::from(0))
-            }))
-            .await,
-        )
-    }
-
-    async fn get_balance_for_one(
+    async fn get_balance(
         &self,
         client: &reqwest::Client,
         chain: Self::Chain,
@@ -171,11 +154,28 @@ impl BalanceQuerier for RpcProvider {
                     get_erc1155_balance(client, chain, address, token_id, user_address).await
                 }
                 None => BalancyProvider
-                    .get_balance_for_one(client, chain, token_type, user_address)
+                    .get_balance(client, chain, token_type, user_address)
                     .await
                     .map_err(|err| RpcError::Other(err.to_string())),
             },
         }
+    }
+
+    async fn get_balance_batch(
+        &self,
+        client: &reqwest::Client,
+        chain: Self::Chain,
+        token_type: TokenType<Self::Address, Self::Id>,
+        addresses: &[Self::Address],
+    ) -> Result<Vec<Self::Balance>, Self::Error> {
+        Ok(
+            futures::future::join_all(addresses.iter().map(|address| async {
+                self.get_balance(client, chain, token_type, *address)
+                    .await
+                    .unwrap_or(U256::from(0))
+            }))
+            .await,
+        )
     }
 }
 
