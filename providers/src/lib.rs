@@ -15,18 +15,18 @@ pub trait BalanceQuerier {
     type Id;
     type Balance;
 
-    async fn get_balance_for_many(
-        &self,
-        client: &reqwest::Client,
-        chain: Self::Chain,
-        token_type: TokenType<Self::Address, Self::Id>,
-        addresses: &[Self::Address],
-    ) -> Result<Vec<Self::Balance>, Self::Error>;
-    async fn get_balance_for_one(
+    async fn get_balance(
         &self,
         client: &reqwest::Client,
         chain: Self::Chain,
         token_type: TokenType<Self::Address, Self::Id>,
         address: Self::Address,
     ) -> Result<Self::Balance, Self::Error>;
+    async fn get_balance_batch(
+        &self,
+        client: &reqwest::Client,
+        chain: Self::Chain,
+        token_type: TokenType<Self::Address, Self::Id>,
+        addresses: &[Self::Address],
+    ) -> Result<Vec<Self::Balance>, Self::Error>;
 }
