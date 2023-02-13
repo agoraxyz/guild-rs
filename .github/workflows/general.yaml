@@ -42,7 +42,7 @@ jobs:
       - name: test
         run: |
           cargo t
-          cat > providers.json << EOF
+          cat > ../providers.json << EOF
           {
             "ETHEREUM_RPC": {
               "rpc_url": "${{ secrets.ETHEREUM_RPC }}"
