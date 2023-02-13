@@ -1,10 +1,12 @@
 use crate::evm::{
-    jsonrpc::{create_payload, RpcError, RpcResponse, PROVIDERS},
+    jsonrpc::{create_payload, RpcError, RpcResponse},
     EvmChain,
 };
 use ethereum_types::{Address, U256};
 use rusty_gate_common::address;
 use std::str::FromStr;
+
+use super::GetProvider;
 
 async fn call_contract(
     client: &reqwest::Client,
@@ -12,9 +14,9 @@ async fn call_contract(
     contract_address: Address,
     data: String,
 ) -> Result<String, RpcError> {
-    let Some(provider) = PROVIDERS.get(&chain) else {
-       return Err(RpcError::ChainNotSupported(format!("{chain:?}")));
-    };
+    let provider = chain
+        .provider()
+        .map_err(|err| RpcError::Other(err.to_string()))?;
 
     let params = format!(
         "[
