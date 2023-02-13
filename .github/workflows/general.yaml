@@ -18,6 +18,12 @@ jobs:
 
     env:
       RUSTFLAGS: -Dwarnings # fails on warnings as well
+      ETHEREUM_RPC: ${{ secrets.ETHEREUM_RPC }}
+      POLYGON_RPC: ${{ secrets.POLYGON_RPC }}
+      BSC_RPC: ${{ secrets.BSC_RPC }}
+      GNOSIS_RPC: ${{ secrets.GNOSIS_RPC }}
+      ARBITRUM_RPC: ${{ secrets.ARBITRUM_RPC }}
+      GOERLI_RPC: ${{ secrets.GOERLI_RPC }}
 
     steps:
       - uses: actions-rs/toolchain@v1
@@ -39,29 +45,32 @@ jobs:
       - name: clippy
         run: cargo clippy --color=always --all-targets --examples --tests
 
-      - name: test
+      - name: config
         run: |
-          cargo t
-          cat > ../providers.json << EOF
+          cat > ./providers.json << EOF
           {
             "ETHEREUM_RPC": {
-              "rpc_url": "${{ secrets.ETHEREUM_RPC }}"
+              "rpc_url": "${ETHEREUM_RPC}"
             },
             "POLYGON_RPC": {
-              "rpc_url": "${{ secrets.POLYGON_RPC }}"
+              "rpc_url": "${secrets.POLYGON_RPC}"
             },
             "BSC_RPC": {
-              "rpc_url": "${{ secrets.BSC_RPC }}"
+              "rpc_url": "${secrets.BSC_RPC}"
             },
             "GNOSIS_RPC": {
-              "rpc_url": "${{ secrets.GNOSIS_RPC }}"
+              "rpc_url": "${secrets.GNOSIS_RPC}"
             },
             "ARBITRUM_RPC": {
-              "rpc_url": "${{ secrets.ARBITRUM_RPC }}"
+              "rpc_url": "${secrets.ARBITRUM_RPC}"
             },
             "GOERLI_RPC": {
-              "rpc_url": "${{ secrets.GOERLI_RPC }}"
+              "rpc_url": "${secrets.GOERLI_RPC}"
             },
           }
           EOF
+
+      - name: test
+        run: |
+          cargo t
           cargo t --features nomock
