@@ -40,27 +40,27 @@ jobs:
         run: cargo clippy --color=always --all-targets --examples --tests
 
       - name: test
-        run: cargo t
         run: |
+          cargo t
           cat > providers.json << EOF
           {
             "ETHEREUM_RPC": {
-              "rpc_url": ${{ secrets.ETHEREUM_RPC }}
+              "rpc_url": "${{ secrets.ETHEREUM_RPC }}"
             },
             "POLYGON_RPC": {
-              "rpc_url": ${{ secrets.POLYGON_RPC }}
+              "rpc_url": "${{ secrets.POLYGON_RPC }}"
             },
             "BSC_RPC": {
-              "rpc_url": ${{ secrets.BSC_RPC }}
+              "rpc_url": "${{ secrets.BSC_RPC }}"
             },
             "GNOSIS_RPC": {
-              "rpc_url": ${{ secrets.GNOSIS_RPC }}
+              "rpc_url": "${{ secrets.GNOSIS_RPC }}"
             },
             "ARBITRUM_RPC": {
-              "rpc_url": ${{ secrets.ARBITRUM_RPC }}
+              "rpc_url": "${{ secrets.ARBITRUM_RPC }}"
             },
             "GOERLI_RPC": {
-              "rpc_url": ${{ secrets.GOERLI_RPC }}
+              "rpc_url": "${{ secrets.GOERLI_RPC }}"
             },
           }
           EOF
