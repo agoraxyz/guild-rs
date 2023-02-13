@@ -19,12 +19,10 @@ struct Provider {
 
 #[derive(Error, Debug)]
 pub enum RpcConfigError {
+    #[error(transparent)]
+    ConfigError(#[from] config::ConfigError),
     #[error("Chain `{0}` is not supported")]
     ChainNotSupported(String),
-    #[error("Config `{0}` not found")]
-    FileNotFound(String),
-    #[error("Failed to parse config")]
-    ParsingFailed,
     #[error("Field `{0}` has not been set")]
     FieldNotSet(String),
 }
@@ -37,19 +35,18 @@ impl GetProvider for EvmChain {
     fn provider(&self) -> Result<Provider, RpcConfigError> {
         use RpcConfigError::*;
 
+        #[cfg(not(any(test, feature = "nomock")))]
         let path = "providers.json";
+        #[cfg(any(test, feature = "nomock"))]
+        let path = "../providers.json";
 
-        let Ok(settings) = Config::builder()
+        println!("WD: {:?}", std::env::current_dir());
+
+        let settings = Config::builder()
             .add_source(File::from(Path::new(path)))
-            .build()
-        else {
-            return Err(FileNotFound(path.to_string()));
-        };
+            .build()?;
 
-        let Ok(map) = settings.try_deserialize::<HashMap<String, Provider>>()
-        else {
-            return  Err(ParsingFailed);
-        };
+        let map = settings.try_deserialize::<HashMap<String, Provider>>()?;
 
         let get_value = |name: &str| {
             let Some(value) = map.get(name) else {

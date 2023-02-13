@@ -72,5 +72,6 @@ jobs:
 
       - name: test
         run: |
+          pwd
           cargo t
-          cargo t --features nomock
+          cargo t --features nomock -- --nocapture
