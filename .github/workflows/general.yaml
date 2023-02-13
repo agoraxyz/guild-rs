@@ -69,12 +69,8 @@ jobs:
             },
           }
           EOF
-          pwd
-          ls
 
       - name: test
         run: |
-          pwd
-          ls
           cargo t
           cargo t --features nomock

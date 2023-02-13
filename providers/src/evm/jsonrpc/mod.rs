@@ -37,10 +37,7 @@ impl GetProvider for EvmChain {
     fn provider(&self) -> Result<Provider, RpcConfigError> {
         use RpcConfigError::*;
 
-        #[cfg(not(any(test, feature = "nomock")))]
         let path = "providers.json";
-        #[cfg(any(test, feature = "nomock"))]
-        let path = "../providers.json";
 
         let Ok(settings) = Config::builder()
             .add_source(File::from(Path::new(path)))
