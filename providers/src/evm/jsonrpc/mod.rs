@@ -40,8 +40,6 @@ impl GetProvider for EvmChain {
         #[cfg(any(test, feature = "nomock"))]
         let path = "../providers.json";
 
-        println!("WD: {:?}", std::env::current_dir());
-
         let settings = Config::builder()
             .add_source(File::from(Path::new(path)))
             .build()?;
