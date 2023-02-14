@@ -55,7 +55,7 @@ pub async fn get_erc20_balance(
     token_address: Address,
     user_address: Address,
 ) -> Result<U256, RpcError> {
-    let addr = format!("{user_address:?}")[2..].to_string();
+    let addr = format!("{user_address:x}");
     let data = format!("0x70a08231000000000000000000000000{addr}");
     let balance = call_contract(client, chain, token_address, data).await?;
 
@@ -69,7 +69,7 @@ pub async fn get_erc721_balance(
     token_id: Option<U256>,
     user_address: Address,
 ) -> Result<U256, RpcError> {
-    let addr = format!("{user_address:?}")[2..].to_string();
+    let addr = format!("{user_address:x}");
     match token_id {
         Some(id) => {
             let data = format!("0x6352211e{id:064x}");
@@ -93,7 +93,7 @@ pub async fn get_erc1155_balance(
     token_id: U256,
     user_address: Address,
 ) -> Result<U256, RpcError> {
-    let addr = format!("{user_address:?}")[2..].to_string();
+    let addr = format!("{user_address:x}");
     let data = format!("0x00fdd58e000000000000000000000000{addr}{token_id:064x}");
     let balance = call_contract(client, chain, token_address, data).await?;
 
