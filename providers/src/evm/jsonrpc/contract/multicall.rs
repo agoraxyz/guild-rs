@@ -1,8 +1,7 @@
-use super::Call;
+use super::{Call, ZEROES};
 
 const FUNC_SIG: &str = "252dba42";
 const PARAM_COUNT_LEN: usize = 32;
-const ZEROES: &str = "000000000000000000000000";
 const DATA_PART_LEN: usize = 64;
 
 pub fn aggregate(calls: &[Call]) -> String {
@@ -38,14 +37,30 @@ mod test {
     #[test]
     fn aggregate_test() {
         let data = vec![
-            // function signature
+            // first 4 bytes of the keccak256 hash of the function signature
+            // (balanceOf)
             "252dba42",
             // parameters count length (32 bytes)
             "0000000000000000000000000000000000000000000000000000000000000020",
-            // parameters count (1)
-            "0000000000000000000000000000000000000000000000000000000000000001",
-            // offset of first parameter ((address,bytes))
-            "0000000000000000000000000000000000000000000000000000000000000020",
+            // parameters count (array length = 2)
+            "0000000000000000000000000000000000000000000000000000000000000002",
+            // offset of first parameter (64 bytes)
+            "0000000000000000000000000000000000000000000000000000000000000040",
+            // offset of second parameter (224 bytes)
+            "00000000000000000000000000000000000000000000000000000000000000e0",
+            // first element of the array
+
+            // target contract address
+            "000000000000000000000000458691c1692cd82facfb2c5127e36d63213448a8",
+            // data part length (64 bytes)
+            "0000000000000000000000000000000000000000000000000000000000000040",
+            // data actual length (36 bytes)
+            "0000000000000000000000000000000000000000000000000000000000000024",
+            // data (erc20 balanceOf function signature, user address)
+            "70a08231000000000000000000000000e43878ce78934fe8007748ff481f03b8",
+            "ee3b97de00000000000000000000000000000000000000000000000000000000",
+            // second element of the array
+
             // target contract address
             "000000000000000000000000458691c1692cd82facfb2c5127e36d63213448a8",
             // data part length (64 bytes)
@@ -58,13 +73,17 @@ mod test {
         ]
         .join("");
 
-        let call = erc20_call(
-            address!("0x458691c1692cd82facfb2c5127e36d63213448a8"),
+        let erc20_addr = "0x458691c1692cd82facfb2c5127e36d63213448a8";
+
+        let call_1 = erc20_call(
+            address!(erc20_addr),
+            address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
+        );
+        let call_2 = erc20_call(
+            address!(erc20_addr),
             address!("0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3"),
         );
 
-        let call_data = aggregate(&vec![call]);
-
-        assert_eq!(call_data, data);
+        assert_eq!(aggregate(&vec![call_1, call_2]), data);
     }
 }

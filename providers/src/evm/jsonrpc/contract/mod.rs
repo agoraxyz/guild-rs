@@ -1,14 +1,14 @@
 use crate::evm::{
-    jsonrpc::{create_payload, GetProvider, RpcError, RpcResponse},
+    jsonrpc::{contract::multicall::aggregate, create_payload, GetProvider, RpcError, RpcResponse},
     EvmChain,
 };
 use ethereum_types::{Address, U256};
 use rusty_gate_common::address;
 use std::str::FromStr;
 
-use self::multicall::aggregate;
-
 mod multicall;
+
+const ZEROES: &str = "000000000000000000000000";
 
 #[derive(Clone, Debug)]
 pub struct Call {
@@ -59,7 +59,7 @@ pub async fn get_eth_balance_batch(
         .iter()
         .map(|addr| Call {
             target,
-            call_data: format!("4d2301cc000000000000000000000000{addr:x}"),
+            call_data: format!("4d2301cc{ZEROES}{addr:x}"),
         })
         .collect::<Vec<Call>>();
 
@@ -68,7 +68,7 @@ pub async fn get_eth_balance_batch(
         call_data: aggregate(&calls),
     };
 
-    let balance = dbg!(call_contract(client, chain, call).await?);
+    let _balance = dbg!(call_contract(client, chain, call).await?);
 
     Ok(vec![])
 }
@@ -87,13 +87,10 @@ pub async fn get_erc20_decimals(
     U256::from_str(&decimals).map_err(|err| RpcError::Other(err.to_string()))
 }
 
-pub fn erc20_call(token_address: Address, user_address: Address) -> Call {
-    let addr = format!("{user_address:x}");
-    let call_data = format!("70a08231000000000000000000000000{addr}");
-
+fn erc20_call(token_address: Address, user_address: Address) -> Call {
     Call {
         target: token_address,
-        call_data,
+        call_data: format!("70a08231{ZEROES}{user_address:x}"),
     }
 }
 
@@ -125,22 +122,19 @@ pub async fn get_erc20_balance_batch(
         call_data: aggregate(&calls),
     };
 
-    let balance = dbg!(call_contract(client, chain, call).await?);
+    let _balance = dbg!(call_contract(client, chain, call).await?);
 
     Ok(vec![])
 }
 
 pub fn erc721_call(token_address: Address, user_address: Address) -> Call {
-    let addr = format!("{user_address:x}");
-    let call_data = format!("70a08231000000000000000000000000{addr}");
-
     Call {
         target: token_address,
-        call_data,
+        call_data: format!("70a08231{ZEROES}{user_address:x}"),
     }
 }
 
-pub fn erc721_id_call(token_address: Address, id: U256) -> Call {
+fn erc721_id_call(token_address: Address, id: U256) -> Call {
     let call_data = format!("6352211e{id:064x}");
 
     Call {
@@ -188,18 +182,15 @@ pub async fn get_erc721_balance_batch(
         call_data: aggregate(&calls),
     };
 
-    let balance = dbg!(call_contract(client, chain, call).await?);
+    let _balance = dbg!(call_contract(client, chain, call).await?);
 
     Ok(vec![])
 }
 
-pub fn erc1155_call(token_address: Address, id: U256, user_address: Address) -> Call {
-    let addr = format!("{user_address:x}");
-    let call_data = format!("00fdd58e000000000000000000000000{addr}{id:064x}");
-
+fn erc1155_call(token_address: Address, id: U256, user_address: Address) -> Call {
     Call {
         target: token_address,
-        call_data,
+        call_data: format!("00fdd58e{ZEROES}{user_address:x}{id:064x}"),
     }
 }
 
@@ -225,7 +216,7 @@ pub async fn get_erc1155_balance_batch(
 ) -> Result<Vec<U256>, RpcError> {
     let addresses = user_addresses
         .iter()
-        .map(|user_address| format!("000000000000000000000000{user_address:x}"))
+        .map(|user_address| format!("{ZEROES}{user_address:x}"))
         .collect::<String>();
 
     let len = 64;
@@ -240,7 +231,7 @@ pub async fn get_erc1155_balance_batch(
         call_data,
     };
 
-    let balance = dbg!(call_contract(client, chain, call).await?);
+    let _balance = dbg!(call_contract(client, chain, call).await?);
 
     Ok(vec![])
 }
