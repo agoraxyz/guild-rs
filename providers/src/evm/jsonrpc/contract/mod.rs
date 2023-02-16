@@ -4,7 +4,7 @@ use crate::evm::{
 };
 use ethereum_types::{Address, U256};
 use rusty_gate_common::address;
-use std::{fmt::format, str::FromStr};
+use std::str::FromStr;
 
 use self::multicall::aggregate;
 
@@ -46,6 +46,31 @@ async fn call_contract(
         .await?;
 
     Ok(res.result)
+}
+
+pub async fn get_eth_balance_batch(
+    client: &reqwest::Client,
+    chain: EvmChain,
+    user_addresses: &[Address],
+) -> Result<Vec<U256>, RpcError> {
+    let target = chain.provider()?.contract;
+
+    let calls = user_addresses
+        .iter()
+        .map(|addr| Call {
+            target,
+            call_data: format!("4d2301cc000000000000000000000000{addr:x}"),
+        })
+        .collect::<Vec<Call>>();
+
+    let call = Call {
+        target,
+        call_data: aggregate(&calls),
+    };
+
+    let balance = dbg!(call_contract(client, chain, call).await?);
+
+    Ok(vec![])
 }
 
 pub async fn get_erc20_decimals(
