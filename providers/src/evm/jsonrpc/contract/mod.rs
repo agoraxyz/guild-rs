@@ -1,18 +1,23 @@
 use crate::evm::{
-    jsonrpc::{create_payload, RpcError, RpcResponse},
+    jsonrpc::{create_payload, GetProvider, RpcError, RpcResponse},
     EvmChain,
 };
 use ethereum_types::{Address, U256};
 use rusty_gate_common::address;
 use std::str::FromStr;
 
-use super::GetProvider;
+mod multicall;
+
+#[derive(Clone, Debug)]
+pub struct Call {
+    pub target: Address,
+    pub call_data: String,
+}
 
 async fn call_contract(
     client: &reqwest::Client,
     chain: EvmChain,
-    contract_address: Address,
-    data: String,
+    call: Call,
 ) -> Result<String, RpcError> {
     let provider = chain
         .provider()
@@ -21,11 +26,12 @@ async fn call_contract(
     let params = format!(
         "[
             {{
-                \"to\"   : \"{contract_address:?}\",
-                \"data\" : \"{data}\"
+                \"to\"   : \"{:?}\",
+                \"data\" : \"0x{}\"
             }},
             \"latest\"
-        ]"
+        ]",
+        call.target, call.call_data
     );
     let payload = create_payload("eth_call", params, 1);
 
@@ -40,13 +46,55 @@ async fn call_contract(
     Ok(res.result)
 }
 
+pub fn erc20_call(token_address: Address, user_address: Address) -> Call {
+    let addr = format!("{user_address:x}");
+    let call_data = format!("70a08231000000000000000000000000{addr}");
+
+    Call {
+        target: token_address,
+        call_data,
+    }
+}
+
+pub fn erc721_call(token_address: Address, user_address: Address) -> Call {
+    let addr = format!("{user_address:x}");
+    let call_data = format!("70a08231000000000000000000000000{addr}");
+
+    Call {
+        target: token_address,
+        call_data,
+    }
+}
+
+pub fn erc721_id_call(token_address: Address, id: U256) -> Call {
+    let call_data = format!("6352211e{id:064x}");
+
+    Call {
+        target: token_address,
+        call_data,
+    }
+}
+
+pub fn erc1155_call(token_address: Address, id: U256, user_address: Address) -> Call {
+    let addr = format!("{user_address:x}");
+    let call_data = format!("00fdd58e000000000000000000000000{addr}{id:064x}");
+
+    Call {
+        target: token_address,
+        call_data,
+    }
+}
+
 pub async fn get_erc20_decimals(
     client: &reqwest::Client,
     chain: EvmChain,
     token_address: Address,
 ) -> Result<U256, RpcError> {
-    let data = "0x313ce567".to_string();
-    let decimals = call_contract(client, chain, token_address, data).await?;
+    let call = Call {
+        target: token_address,
+        call_data: "313ce567".to_string(),
+    };
+    let decimals = call_contract(client, chain, call).await?;
 
     U256::from_str(&decimals).map_err(|err| RpcError::Other(err.to_string()))
 }
@@ -57,9 +105,8 @@ pub async fn get_erc20_balance(
     token_address: Address,
     user_address: Address,
 ) -> Result<U256, RpcError> {
-    let addr = format!("{user_address:?}")[2..].to_string();
-    let data = format!("0x70a08231000000000000000000000000{addr}");
-    let balance = call_contract(client, chain, token_address, data).await?;
+    let call = erc20_call(token_address, user_address);
+    let balance = call_contract(client, chain, call).await?;
 
     U256::from_str(&balance).map_err(|err| RpcError::Other(err.to_string()))
 }
@@ -71,17 +118,16 @@ pub async fn get_erc721_balance(
     token_id: Option<U256>,
     user_address: Address,
 ) -> Result<U256, RpcError> {
-    let addr = format!("{user_address:?}")[2..].to_string();
     match token_id {
         Some(id) => {
-            let data = format!("0x6352211e{id:064x}");
-            let addr = call_contract(client, chain, token_address, data).await?;
+            let call = erc721_id_call(token_address, id);
+            let addr = call_contract(client, chain, call).await?;
 
             Ok(U256::from((address!(&addr[26..]) == user_address) as u8))
         }
         None => {
-            let data = format!("0x70a08231000000000000000000000000{addr}");
-            let balance = call_contract(client, chain, token_address, data).await?;
+            let call = erc721_call(token_address, user_address);
+            let balance = call_contract(client, chain, call).await?;
 
             U256::from_str(&balance).map_err(|err| RpcError::Other(err.to_string()))
         }
@@ -95,9 +141,8 @@ pub async fn get_erc1155_balance(
     token_id: U256,
     user_address: Address,
 ) -> Result<U256, RpcError> {
-    let addr = format!("{user_address:?}")[2..].to_string();
-    let data = format!("0x00fdd58e000000000000000000000000{addr}{token_id:064x}");
-    let balance = call_contract(client, chain, token_address, data).await?;
+    let call = erc1155_call(token_address, token_id, user_address);
+    let balance = call_contract(client, chain, call).await?;
 
     U256::from_str(&balance).map_err(|err| RpcError::Other(err.to_string()))
 }
