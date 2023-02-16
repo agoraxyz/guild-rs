@@ -6,6 +6,7 @@ use async_trait::async_trait;
 use config::{Config, File};
 pub use contract::get_erc20_decimals;
 use ethereum_types::{Address, U256};
+use futures::future::join_all;
 use serde::Deserialize;
 use std::{collections::HashMap, path::Path, str::FromStr};
 use thiserror::Error;
@@ -79,7 +80,9 @@ pub enum RpcError {
     #[error("Chain `{0}` is not supported")]
     ChainNotSupported(String),
     #[error(transparent)]
-    Reqwest(#[from] reqwest::Error),
+    Config(#[from] reqwest::Error),
+    #[error(transparent)]
+    Reqwest(#[from] RpcConfigError),
     #[error("{0}")]
     Other(String),
 }
@@ -163,14 +166,31 @@ impl BalanceQuerier for RpcProvider {
         token_type: TokenType<Self::Address, Self::Id>,
         addresses: &[Self::Address],
     ) -> Result<Vec<Self::Balance>, Self::Error> {
-        Ok(
-            futures::future::join_all(addresses.iter().map(|address| async {
-                self.get_balance(client, chain, token_type, *address)
-                    .await
-                    .unwrap_or(U256::from(0))
-            }))
-            .await,
-        )
+        match token_type {
+            TokenType::Native => todo!(),
+            TokenType::Fungible { address } => {
+                get_erc20_balance_batch(client, chain, address, addresses).await
+            }
+            TokenType::NonFungible { address, id: _ } => {
+                get_erc721_balance_batch(client, chain, address, addresses).await
+            }
+            TokenType::Special { address, id } => match id {
+                Some(token_id) => {
+                    get_erc1155_balance_batch(client, chain, address, token_id, addresses).await
+                }
+                None => {
+                    let res = join_all(addresses.iter().map(|addr| async {
+                        BalancyProvider
+                            .get_balance(client, chain, token_type, *addr)
+                            .await
+                            .unwrap_or_default()
+                    }))
+                    .await;
+
+                    Ok(res)
+                }
+            },
+        }
     }
 }
 
@@ -264,7 +284,7 @@ mod test {
         };
         let token_type_with_id = Special {
             address: address!(ERC1155_ADDR),
-            id: Some(U256::from_dec_str(ERC1155_ID).unwrap()),
+            id: Some(U256::from(ERC1155_ID)),
         };
         let user_address = address!(USER_3_ADDR);
 
