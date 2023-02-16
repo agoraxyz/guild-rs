@@ -167,7 +167,7 @@ impl BalanceQuerier for RpcProvider {
         addresses: &[Self::Address],
     ) -> Result<Vec<Self::Balance>, Self::Error> {
         match token_type {
-            TokenType::Native => todo!(),
+            TokenType::Native => get_eth_balance_batch(client, chain, addresses).await,
             TokenType::Fungible { address } => {
                 get_erc20_balance_batch(client, chain, address, addresses).await
             }
