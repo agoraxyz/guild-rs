@@ -1,13 +1,12 @@
 use super::Call;
 
-const AGGREGATE_FUNC_SIG: &str = "252dba42";
+const FUNC_SIG: &str = "252dba42";
 const PARAM_COUNT_LEN: usize = 32;
-const ADDR_LEN: usize = 32;
 const ZEROES: &str = "000000000000000000000000";
 const DATA_PART_LEN: usize = 64;
 
 fn aggregate(calls: &[Call]) -> String {
-    let param_count_len = format!("{:064x}", PARAM_COUNT_LEN);
+    let param_count_len = format!("{PARAM_COUNT_LEN:064x}");
     let param_count = format!("{:064x}", calls.len());
 
     let aggregated = calls
@@ -17,29 +16,18 @@ fn aggregate(calls: &[Call]) -> String {
             let padding = vec!["0"; (DATA_PART_LEN - data_len) * 2].join("");
 
             format!(
-                "{ZEROES}{:x}{:064x}{data_len:064x}{}{padding}",
-                call.target, DATA_PART_LEN, call.call_data
+                "{ZEROES}{:x}{DATA_PART_LEN:064x}{data_len:064x}{}{padding}",
+                call.target, call.call_data
             )
         })
-        .reduce(|a, b| format!("{a}{b}"))
-        .unwrap_or_default();
+        .collect::<String>();
 
-    let mut offset = String::new();
-    let mut factor = calls.len();
+    let offset = (0..(calls.len() * 5))
+        .step_by(5)
+        .map(|idx| format!("{:064x}", (idx + calls.len()) * 32))
+        .collect::<String>();
 
-    for _ in 0..calls.len() {
-        offset += &format!("{:064x}", factor * 32);
-        factor += 5;
-    }
-
-    let data = String::new()
-        + AGGREGATE_FUNC_SIG
-        + &param_count_len
-        + &param_count
-        + &offset
-        + &aggregated;
-
-    data
+    format!("{FUNC_SIG}{param_count_len}{param_count}{offset}{aggregated}")
 }
 
 #[cfg(test)]
