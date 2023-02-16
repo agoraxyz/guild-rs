@@ -15,6 +15,7 @@ mod contract;
 #[derive(Clone, Deserialize)]
 struct Provider {
     pub rpc_url: String,
+    pub contract: Address,
 }
 
 #[derive(Error, Debug)]
@@ -55,12 +56,12 @@ impl GetProvider for EvmChain {
         };
 
         match self {
-            EvmChain::Ethereum => get_value("ETHEREUM_RPC"),
-            EvmChain::Polygon => get_value("POLYGON_RPC"),
-            EvmChain::Bsc => get_value("BSC_RPC"),
-            EvmChain::Gnosis => get_value("GNOSIS_RPC"),
-            EvmChain::Arbitrum => get_value("ARBITRUM_RPC"),
-            EvmChain::Goerli => get_value("GOERLI_RPC"),
+            EvmChain::Ethereum => get_value("ethereum"),
+            EvmChain::Polygon => get_value("polygon"),
+            EvmChain::Bsc => get_value("bsc"),
+            EvmChain::Gnosis => get_value("gnosis"),
+            EvmChain::Arbitrum => get_value("arbitrum"),
+            EvmChain::Goerli => get_value("goerli"),
             _ => Err(ChainNotSupported(format!("{self:?}"))),
         }
     }
