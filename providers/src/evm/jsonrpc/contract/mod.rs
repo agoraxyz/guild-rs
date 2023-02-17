@@ -1,5 +1,8 @@
 use crate::evm::{
-    jsonrpc::{contract::multicall::aggregate, create_payload, GetProvider, RpcError, RpcResponse},
+    jsonrpc::{
+        contract::multicall::{aggregate, parse_multicall_result},
+        create_payload, GetProvider, RpcError, RpcResponse,
+    },
     EvmChain,
 };
 use ethereum_types::{Address, U256};
@@ -68,9 +71,10 @@ pub async fn get_eth_balance_batch(
         call_data: aggregate(&calls),
     };
 
-    let _balance = dbg!(call_contract(client, chain, call).await?);
+    let res = call_contract(client, chain, call).await?;
+    let balances = parse_multicall_result(&res);
 
-    Ok(vec![])
+    Ok(balances)
 }
 
 pub async fn get_erc20_decimals(
@@ -122,9 +126,10 @@ pub async fn get_erc20_balance_batch(
         call_data: aggregate(&calls),
     };
 
-    let _balance = dbg!(call_contract(client, chain, call).await?);
+    let res = call_contract(client, chain, call).await?;
+    let balances = parse_multicall_result(&res);
 
-    Ok(vec![])
+    Ok(balances)
 }
 
 pub fn erc721_call(token_address: Address, user_address: Address) -> Call {
@@ -182,9 +187,10 @@ pub async fn get_erc721_balance_batch(
         call_data: aggregate(&calls),
     };
 
-    let _balance = dbg!(call_contract(client, chain, call).await?);
+    let res = call_contract(client, chain, call).await?;
+    let balances = parse_multicall_result(&res);
 
-    Ok(vec![])
+    Ok(balances)
 }
 
 fn erc1155_call(token_address: Address, id: U256, user_address: Address) -> Call {
@@ -231,9 +237,17 @@ pub async fn get_erc1155_balance_batch(
         call_data,
     };
 
-    let _balance = dbg!(call_contract(client, chain, call).await?);
+    let res = call_contract(client, chain, call).await?;
+    let balances = res
+        .chars()
+        .skip(2)
+        .collect::<Vec<char>>()
+        .chunks(64)
+        .skip(2)
+        .map(|c| U256::from_str(&c.iter().collect::<String>()).unwrap_or_default())
+        .collect::<Vec<U256>>();
 
-    Ok(vec![])
+    Ok(balances)
 }
 
 #[cfg(all(test, feature = "nomock"))]

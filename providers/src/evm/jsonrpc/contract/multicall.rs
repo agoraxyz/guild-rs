@@ -1,4 +1,6 @@
 use super::{Call, ZEROES};
+use ethereum_types::U256;
+use std::str::FromStr;
 
 const FUNC_SIG: &str = "252dba42";
 const PARAM_COUNT_LEN: usize = 32;
@@ -29,6 +31,26 @@ pub fn aggregate(calls: &[Call]) -> String {
     format!("{FUNC_SIG}{param_count_len}{param_count}{offset}{aggregated}")
 }
 
+pub fn parse_multicall_result(multicall_result: &str) -> Vec<U256> {
+    let lines = multicall_result
+        .chars()
+        .skip(2)
+        .collect::<Vec<char>>()
+        .chunks(64)
+        .map(|c| c.iter().collect::<String>())
+        .collect::<Vec<String>>();
+
+    let count = U256::from_str(&lines[2]).unwrap_or_default().as_usize();
+
+    lines
+        .iter()
+        .skip(count + 3)
+        .enumerate()
+        .filter(|(idx, _)| idx % 2 != 0)
+        .map(|(_, balance)| U256::from_str(balance).unwrap_or_default())
+        .collect::<Vec<U256>>()
+}
+
 #[cfg(test)]
 mod test {
     use crate::evm::jsonrpc::contract::{erc20_call, multicall::aggregate};
@@ -49,7 +71,6 @@ mod test {
             // offset of second parameter (224 bytes)
             "00000000000000000000000000000000000000000000000000000000000000e0",
             // first element of the array
-
             // target contract address
             "000000000000000000000000458691c1692cd82facfb2c5127e36d63213448a8",
             // data part length (64 bytes)
@@ -60,7 +81,6 @@ mod test {
             "70a08231000000000000000000000000e43878ce78934fe8007748ff481f03b8",
             "ee3b97de00000000000000000000000000000000000000000000000000000000",
             // second element of the array
-
             // target contract address
             "000000000000000000000000458691c1692cd82facfb2c5127e36d63213448a8",
             // data part length (64 bytes)
