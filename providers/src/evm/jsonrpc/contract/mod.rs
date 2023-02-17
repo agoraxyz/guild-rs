@@ -140,11 +140,9 @@ pub fn erc721_call(token_address: Address, user_address: Address) -> Call {
 }
 
 fn erc721_id_call(token_address: Address, id: U256) -> Call {
-    let call_data = format!("6352211e{id:064x}");
-
     Call {
         target: token_address,
-        call_data,
+        call_data: format!("6352211e{id:064x}"),
     }
 }
 
@@ -225,12 +223,13 @@ pub async fn get_erc1155_balance_batch(
         .map(|user_address| format!("{ZEROES}{user_address:x}"))
         .collect::<String>();
 
+    let func = "4e1273f4";
     let len = 64;
     let count = user_addresses.len();
-    let ids = vec![format!("{token_id:064x}"); count].join("");
     let offset = (count + 3) * 32;
+    let ids = vec![format!("{token_id:064x}"); count].join("");
     let call_data =
-        format!("4e1273f4{len:064x}{offset:064x}{count:064x}{addresses}{count:064x}{ids}",);
+        format!("{func}{len:064x}{offset:064x}{count:064x}{addresses}{count:064x}{ids}",);
 
     let call = Call {
         target: token_address,
@@ -238,6 +237,7 @@ pub async fn get_erc1155_balance_batch(
     };
 
     let res = call_contract(client, chain, call).await?;
+
     let balances = res
         .chars()
         .skip(2)

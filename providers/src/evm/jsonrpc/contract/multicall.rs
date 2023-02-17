@@ -104,6 +104,6 @@ mod test {
             address!("0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3"),
         );
 
-        assert_eq!(aggregate(&vec![call_1, call_2]), data);
+        assert_eq!(aggregate(&[call_1, call_2]), data);
     }
 }
