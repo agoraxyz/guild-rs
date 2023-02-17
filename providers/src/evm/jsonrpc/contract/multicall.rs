@@ -44,10 +44,9 @@ pub fn parse_multicall_result(multicall_result: &str) -> Vec<U256> {
 
     lines
         .iter()
-        .skip(count + 3)
-        .enumerate()
-        .filter(|(idx, _)| idx % 2 != 0)
-        .map(|(_, balance)| U256::from_str(balance).unwrap_or_default())
+        .skip(count + 4)
+        .step_by(2)
+        .map(|balance| U256::from_str(balance).unwrap_or_default())
         .collect::<Vec<U256>>()
 }
 

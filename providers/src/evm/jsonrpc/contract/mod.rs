@@ -240,11 +240,11 @@ pub async fn get_erc1155_balance_batch(
 
     let balances = res
         .chars()
-        .skip(2)
+        .skip(2 /* "0x" prefix */ + 2 * 64 /* first two lines */)
         .collect::<Vec<char>>()
         .chunks(64)
-        .skip(2)
-        .map(|c| U256::from_str(&c.iter().collect::<String>()).unwrap_or_default())
+        .map(|c| c.iter().collect::<String>())
+        .map(|balance| U256::from_str(&balance).unwrap_or_default())
         .collect::<Vec<U256>>();
 
     Ok(balances)
