@@ -205,15 +205,37 @@ mod test {
 
     #[tokio::test]
     async fn rpc_get_coin_balance() {
-        assert!(RpcProvider
-            .get_balance(
-                &reqwest::Client::new(),
-                EvmChain::Ethereum,
-                Native,
-                address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE")
-            )
-            .await
-            .is_ok());
+        assert_eq!(
+            RpcProvider
+                .get_balance(
+                    &reqwest::Client::new(),
+                    EvmChain::Ethereum,
+                    Native,
+                    address!(USER_1_ADDR)
+                )
+                .await
+                .unwrap(),
+            U256::from(464468855704627_u128)
+        );
+    }
+
+    #[tokio::test]
+    async fn rpc_get_coin_balance_batch() {
+        assert_eq!(
+            RpcProvider
+                .get_balance_batch(
+                    &reqwest::Client::new(),
+                    EvmChain::Ethereum,
+                    Native,
+                    &vec![address!(USER_1_ADDR), address!(USER_2_ADDR)]
+                )
+                .await
+                .unwrap(),
+            vec![
+                U256::from(464468855704627_u128),
+                U256::from(391945502449693859_u128)
+            ]
+        );
     }
 
     #[tokio::test]
@@ -233,6 +255,26 @@ mod test {
                 .await
                 .unwrap(),
             U256::from(100000000000000000000_u128)
+        );
+    }
+
+    #[tokio::test]
+    async fn rpc_get_erc20_balance_batch() {
+        let token_type = Fungible {
+            address: address!(ERC20_ADDR),
+        };
+
+        assert_eq!(
+            RpcProvider
+                .get_balance_batch(
+                    &reqwest::Client::new(),
+                    EvmChain::Ethereum,
+                    token_type,
+                    &vec![address!(USER_1_ADDR), address!(USER_2_ADDR)]
+                )
+                .await
+                .unwrap(),
+            vec![U256::from(0), U256::from(100000000000000000000_u128)]
         );
     }
 
@@ -276,6 +318,28 @@ mod test {
     }
 
     #[tokio::test]
+    async fn rpc_get_erc721_balance_batch() {
+        let client = reqwest::Client::new();
+        let token_type_without_id = NonFungible {
+            address: address!(ERC721_ADDR),
+            id: None,
+        };
+
+        assert_eq!(
+            RpcProvider
+                .get_balance_batch(
+                    &client,
+                    EvmChain::Ethereum,
+                    token_type_without_id,
+                    &vec![address!(USER_1_ADDR), address!(USER_2_ADDR)]
+                )
+                .await
+                .unwrap(),
+            vec![U256::from(1), U256::from(1)]
+        );
+    }
+
+    #[tokio::test]
     async fn rpc_get_erc1155_balance() {
         let client = reqwest::Client::new();
         let token_type_without_id = Special {
@@ -311,6 +375,28 @@ mod test {
                 .await
                 .unwrap(),
             U256::from(16)
+        );
+    }
+
+    #[tokio::test]
+    async fn rpc_get_erc1155_balance_batch() {
+        let client = reqwest::Client::new();
+        let token_type_with_id = Special {
+            address: address!(ERC1155_ADDR),
+            id: Some(U256::from(ERC1155_ID)),
+        };
+
+        assert_eq!(
+            RpcProvider
+                .get_balance_batch(
+                    &client,
+                    EvmChain::Ethereum,
+                    token_type_with_id,
+                    &vec![address!(USER_1_ADDR), address!(USER_3_ADDR)]
+                )
+                .await
+                .unwrap(),
+            vec![U256::from(0), U256::from(16)]
         );
     }
 }
