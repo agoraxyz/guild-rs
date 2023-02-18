@@ -16,13 +16,13 @@ edition = "2021"
 nomock = []
 
 [dev-dependencies]
-shiba = { version = "0.1.1", default-features = false }
 tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
+shiba = { version = "0.1.1", default-features = false }
 
 [dependencies]
-serde = { workspace = true }
-reqwest = { workspace = true }
 async-trait = { workspace = true }
 ethereum-types = { workspace = true }
+reqwest = { workspace = true }
 rusty-gate-common = { path = "../common" }
 rusty-gate-providers = { path = "../providers" }
+serde = { workspace = true }

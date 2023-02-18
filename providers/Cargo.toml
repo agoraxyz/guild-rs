@@ -20,13 +20,13 @@ nomock = []
 shiba = { version = "0.1.1", default-features = false }
 
 [dependencies]
-serde = { workspace = true }
-reqwest = { workspace = true }
 async-trait = { workspace = true }
-ethereum-types = { workspace = true }
-thiserror = { workspace = true }
-rusty-gate-common = { path = "../common" }
-lazy_static = { version = "1.4.0", default-features = false }
-tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
-futures = { version = "0.3.17" }
 config = { version = "0.13.3", default-features = false, features = ["json"] }
+ethereum-types = { workspace = true }
+futures = { version = "0.3.17" }
+lazy_static = { version = "1.4.0", default-features = false }
+reqwest = { workspace = true }
+rusty-gate-common = { path = "../common" }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
