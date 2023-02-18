@@ -1,5 +1,4 @@
 use crate::Requirement;
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::{
     cmp::PartialEq,
@@ -8,29 +7,23 @@ use std::{
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct AllowList<T> {
-    pub identities: Vec<T>,
+    pub verification_data: Vec<T>,
+    pub deny_list: bool,
 }
 
-#[async_trait]
 impl<T> Requirement for AllowList<T>
 where
     T: Sync + Send + PartialEq,
 {
     type Error = ();
-    type Identity = T;
+    type VerificationData = T;
 
-    async fn check_for_many(
-        &self,
-        identities: &[Self::Identity],
-    ) -> Result<Vec<bool>, Self::Error> {
-        Ok(identities
-            .iter()
-            .map(|identity| self.identities.contains(identity))
-            .collect())
+    fn verify(&self, vd: &Self::VerificationData) -> bool {
+        self.deny_list != self.verification_data.contains(vd)
     }
 
-    async fn check(&self, identity: Self::Identity) -> Result<bool, Self::Error> {
-        self.check_for_many(&[identity]).await.map(|res| res[0])
+    fn verify_batch(&self, vd: &[Self::VerificationData]) -> Vec<bool> {
+        vd.iter().map(|v| self.verify(v)).collect()
     }
 }
 
@@ -38,14 +31,22 @@ where
 mod test {
     use super::{AllowList, Requirement};
 
-    #[tokio::test]
-    async fn allowlist_requirement_check() {
-        let req = AllowList {
-            identities: vec![69, 420],
+    #[test]
+    fn allowlist_requirement_check() {
+        let allowlist = AllowList {
+            verification_data: vec![69, 420],
+            deny_list: false,
         };
 
-        assert!(req.check(69).await.unwrap());
+        assert!(allowlist.verify(&69));
+        assert!(!allowlist.verify(&13));
 
-        assert!(!req.check(13).await.unwrap());
+        let denylist = AllowList {
+            verification_data: vec![69, 420],
+            deny_list: true,
+        };
+
+        assert!(!denylist.verify(&69));
+        assert!(denylist.verify(&13));
     }
 }

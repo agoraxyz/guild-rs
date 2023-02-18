@@ -1,15 +1,11 @@
 use crate::{Requirement, RequirementError};
 use async_trait::async_trait;
+use core::ops::{Range, RangeInclusive};
 use ethereum_types::{Address, U256};
+use rusty_gate_common::{TokenType, VerificationData};
+use rusty_gate_providers::evm::Provider;
+use rusty_gate_providers::{evm::EvmChain, BalanceQuerier};
 use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub enum TokenType {
-    Coin,
-    Fungible { address: Address },
-    NonFungible { address: Address, id: U256 },
-    Special { address: Address, id: U256 },
-}
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum Relation<T> {
@@ -18,7 +14,8 @@ pub enum Relation<T> {
     GreaterOrEqualTo(T),
     LessThan(T),
     LessOrEqualTo(T),
-    Between(core::ops::Range<T>),
+    Between(Range<T>),
+    BetweenInclusive(RangeInclusive<T>),
 }
 
 impl<T: PartialEq + PartialOrd> Relation<T> {
@@ -30,55 +27,71 @@ impl<T: PartialEq + PartialOrd> Relation<T> {
             Relation::LessThan(a) => x < a,
             Relation::LessOrEqualTo(a) => x <= a,
             Relation::Between(range) => range.contains(x),
+            Relation::BetweenInclusive(range) => range.contains(x),
         }
     }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct Balance {
-    // TODO: use the Chain type from the providers crate
-    // https://github.com/agoraxyz/requirement-engine-v2/issues/6#issue-1530872075
-    pub chain: u64,
-    pub token_type: TokenType,
-    pub relation: Relation<U256>,
+pub struct Balance<T, U, V> {
+    pub chain: EvmChain,
+    pub token_type: TokenType<T, U>,
+    pub relation: Relation<V>,
+}
+
+impl<T, U, V> Requirement for Balance<T, U, V>
+where
+    V: PartialEq + PartialOrd,
+{
+    type Error = RequirementError;
+    type VerificationData = V;
+
+    fn verify(&self, vd: &Self::VerificationData) -> bool {
+        self.relation.assert(vd)
+    }
+
+    fn verify_batch(&self, vd: &[Self::VerificationData]) -> Vec<bool> {
+        vd.iter().map(|v| self.verify(v)).collect()
+    }
 }
 
 #[async_trait]
-impl Requirement for Balance {
+impl VerificationData for Balance<Address, U256, U256> {
     type Error = RequirementError;
     type Identity = Address;
+    type Client = reqwest::Client;
+    type Res = U256;
 
-    async fn check_for_many(
+    async fn retrieve(
         &self,
-        identities: &[Self::Identity],
-    ) -> Result<Vec<bool>, Self::Error> {
-        // TODO: use providers to query balance
-        // https://github.com/agoraxyz/requirement-engine-v2/issues/6#issue-1530872075
-        let balances: Vec<U256> = identities.iter().map(|_| U256::from(69)).collect();
-
-        // TODO: use the appropriate function of providers
-        // https://github.com/agoraxyz/requirement-engine-v2/issues/6#issue-1530872075
-        // match self.token_type {
-        //     TokenType::Coin => {}
-        //     TokenType::Fungible { address } => {}
-        //     TokenType::NonFungible { address, id } => {}
-        //     TokenType::Special { address, id } => {}
-        // }
-
-        Ok(balances
-            .iter()
-            .map(|balance| self.relation.assert(balance))
-            .collect())
+        client: &Self::Client,
+        identity: &Self::Identity,
+    ) -> Result<Self::Res, Self::Error> {
+        Provider
+            .get_balance(client, self.chain, self.token_type, *identity)
+            .await
+            .map_err(|err| RequirementError::Other(err.to_string()))
     }
 
-    async fn check(&self, user: Self::Identity) -> Result<bool, Self::Error> {
-        self.check_for_many(&[user]).await.map(|res| res[0])
+    async fn retrieve_batch(
+        &self,
+        client: &Self::Client,
+        identities: &[Self::Identity],
+    ) -> Result<Vec<Self::Res>, Self::Error> {
+        Provider
+            .get_balance_batch(client, self.chain, self.token_type, identities)
+            .await
+            .map_err(|err| RequirementError::Other(err.to_string()))
     }
 }
 
 #[cfg(test)]
 mod test {
+    #[cfg(feature = "nomock")]
+    use super::VerificationData;
     use super::{Balance, Relation, Requirement, TokenType, U256};
+    use rusty_gate_common::address;
+    use rusty_gate_providers::evm::EvmChain;
 
     #[test]
     fn relations() {
@@ -107,27 +120,55 @@ mod test {
         assert!(!Relation::<u32>::Between(50..100).assert(&100));
         assert!(Relation::<u32>::Between(50..100).assert(&77));
         assert!(Relation::<u32>::Between(50..100).assert(&50));
+
+        assert!(!Relation::<u32>::BetweenInclusive(0..=100).assert(&230));
+        assert!(!Relation::<u32>::BetweenInclusive(50..=100).assert(&15));
+        assert!(Relation::<u32>::BetweenInclusive(50..=100).assert(&100));
+        assert!(Relation::<u32>::BetweenInclusive(50..=100).assert(&77));
+        assert!(Relation::<u32>::BetweenInclusive(50..=100).assert(&50));
     }
 
     #[tokio::test]
     async fn balance_requirement_check() {
-        use super::Address;
-        use std::str::FromStr;
-
         let req = Balance {
-            chain: 69,
-            token_type: TokenType::Coin,
+            chain: EvmChain::Ethereum,
+            token_type: TokenType::NonFungible {
+                address: address!("0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"),
+                id: None::<U256>,
+            },
             relation: Relation::GreaterThan(U256::from(0)),
         };
 
-        assert!(req
-            .check(Address::from_str("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE").unwrap())
-            .await
-            .unwrap());
+        #[cfg(feature = "nomock")]
+        {
+            let client = reqwest::Client::new();
 
-        assert!(req
-            .check(Address::from_str("0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3").unwrap())
-            .await
-            .unwrap());
+            let balance_1 = req
+                .retrieve(
+                    &client,
+                    &address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
+                )
+                .await
+                .unwrap();
+            let balance_2 = req
+                .retrieve(
+                    &client,
+                    &address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
+                )
+                .await
+                .unwrap();
+
+            assert!(req.verify(&balance_1));
+            assert!(req.verify(&balance_2));
+        }
+
+        #[cfg(not(feature = "nomock"))]
+        {
+            let balance_1 = U256::from(69);
+            let balance_2 = U256::from(420);
+
+            assert!(req.verify(&balance_1));
+            assert!(req.verify(&balance_2));
+        }
     }
 }

@@ -1,25 +1,19 @@
 use crate::Requirement;
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use std::marker::{Send, Sync};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Free;
 
-#[async_trait]
 impl Requirement for Free {
     type Error = ();
-    type Identity = Box<dyn Send + Sync>;
+    type VerificationData = ();
 
-    async fn check_for_many(
-        &self,
-        identities: &[Self::Identity],
-    ) -> Result<Vec<bool>, Self::Error> {
-        Ok(identities.iter().map(|_| true).collect())
+    fn verify(&self, _v: &Self::VerificationData) -> bool {
+        true
     }
 
-    async fn check(&self, _identity: Self::Identity) -> Result<bool, Self::Error> {
-        Ok(true)
+    fn verify_batch(&self, v: &[Self::VerificationData]) -> Vec<bool> {
+        vec![true; v.len()]
     }
 }
 
@@ -27,10 +21,10 @@ impl Requirement for Free {
 mod test {
     use super::{Free, Requirement};
 
-    #[tokio::test]
-    async fn free_requirement_check() {
+    #[test]
+    fn free_requirement_check() {
         let req = Free;
 
-        assert!(req.check(Box::new(69)).await.unwrap());
+        assert!(req.verify(&()));
     }
 }

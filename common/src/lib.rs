@@ -15,8 +15,17 @@ pub enum Identity {
     Discord(u64),
 }
 
+#[derive(Deserialize, Serialize)]
 pub struct User {
     pub identities: Vec<Identity>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
+pub enum TokenType<T, U> {
+    Native,
+    Fungible { address: T },
+    NonFungible { address: T, id: Option<U> },
+    Special { address: T, id: Option<U> },
 }
 
 #[derive(Error, Debug)]
@@ -25,22 +34,37 @@ pub enum RequirementError {
     Other(String),
 }
 
-#[async_trait]
 pub trait Requirement {
     type Error;
-    type Identity;
+    type VerificationData;
 
-    async fn check_for_many(&self, identities: &[Self::Identity])
-        -> Result<Vec<bool>, Self::Error>;
-    async fn check(&self, identity: Self::Identity) -> Result<bool, Self::Error>;
+    fn verify(&self, vd: &Self::VerificationData) -> bool;
+    fn verify_batch(&self, vd: &[Self::VerificationData]) -> Vec<bool>;
+}
+
+#[async_trait]
+pub trait VerificationData {
+    type Error;
+    type Identity;
+    type Client;
+    type Res;
+
+    async fn retrieve(
+        &self,
+        client: &Self::Client,
+        identity: &Self::Identity,
+    ) -> Result<Self::Res, Self::Error>;
+    async fn retrieve_batch(
+        &self,
+        client: &Self::Client,
+        identities: &[Self::Identity],
+    ) -> Result<Vec<Self::Res>, Self::Error>;
 }
 
 #[macro_export]
-macro_rules! evm_addr {
+macro_rules! address {
     ($addr:expr) => {{
         use std::str::FromStr;
-        let addr =
-            ethereum_types::H160::from_str($addr).expect(&format!("Invalid address {}", $addr));
-        $crate::Identity::EvmAddress(addr)
+        ethereum_types::H160::from_str($addr).expect(&format!("Invalid address {}", $addr))
     }};
 }
