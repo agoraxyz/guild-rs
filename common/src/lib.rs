@@ -1,6 +1,7 @@
 #![deny(clippy::all)]
 #![deny(clippy::dbg_macro)]
 #![deny(clippy::cargo)]
+#![deny(unused_crate_dependencies)]
 
 use async_trait::async_trait;
 use ethereum_types::Address;
