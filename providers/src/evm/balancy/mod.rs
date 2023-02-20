@@ -3,7 +3,7 @@ use crate::{
     BalanceQuerier,
 };
 use async_trait::async_trait;
-use ethereum_types::{Address, U256};
+use primitive_types::{H160 as Address, U256};
 use reqwest::StatusCode;
 use rusty_gate_common::TokenType;
 use serde::de::DeserializeOwned;
@@ -188,7 +188,7 @@ mod test {
         },
         BalanceQuerier,
     };
-    use ethereum_types::U256;
+    use primitive_types::U256;
     use rusty_gate_common::{address, TokenType::*};
 
     #[test]

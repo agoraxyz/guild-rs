@@ -1,5 +1,5 @@
 use super::{Call, ZEROES};
-use ethereum_types::U256;
+use primitive_types::U256;
 use std::str::FromStr;
 
 const FUNC_SIG: &str = "252dba42";

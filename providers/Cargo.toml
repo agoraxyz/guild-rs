@@ -19,7 +19,7 @@ nomock = ["dep:tokio"]
 [dependencies]
 async-trait = { workspace = true }
 config = { version = "0.13.3", default-features = false, features = ["json"] }
-ethereum-types = { workspace = true }
+primitive-types = { workspace = true }
 futures = { version = "0.3.17" }
 reqwest = { workspace = true }
 rusty-gate-common = { path = "../common" }

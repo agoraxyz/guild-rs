@@ -5,7 +5,7 @@ use crate::evm::{
     },
     EvmChain,
 };
-use ethereum_types::{Address, U256};
+use primitive_types::{H160 as Address, U256};
 use rusty_gate_common::address;
 use std::str::FromStr;
 
@@ -253,7 +253,7 @@ pub async fn get_erc1155_balance_batch(
 #[cfg(all(test, feature = "nomock"))]
 mod test {
     use crate::evm::{common::*, jsonrpc::get_erc20_decimals, EvmChain};
-    use ethereum_types::U256;
+    use primitive_types::U256;
     use rusty_gate_common::address;
 
     #[tokio::test]

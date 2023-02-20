@@ -1,4 +1,4 @@
-use ethereum_types::{Address, U256};
+use primitive_types::{H160 as Address, U256};
 use serde::{de::Error, Deserialize, Deserializer};
 use thiserror::Error;
 

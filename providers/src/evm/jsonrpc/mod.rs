@@ -5,8 +5,8 @@ use crate::{
 use async_trait::async_trait;
 use config::{Config, File};
 pub use contract::get_erc20_decimals;
-use ethereum_types::{Address, U256};
 use futures::future::join_all;
+use primitive_types::{H160 as Address, U256};
 use serde::Deserialize;
 use std::{collections::HashMap, path::Path, str::FromStr};
 use thiserror::Error;
@@ -200,7 +200,7 @@ mod test {
         evm::{common::*, jsonrpc::RpcProvider, EvmChain},
         BalanceQuerier,
     };
-    use ethereum_types::U256;
+    use primitive_types::U256;
     use rusty_gate_common::{address, TokenType::*};
 
     #[tokio::test]
