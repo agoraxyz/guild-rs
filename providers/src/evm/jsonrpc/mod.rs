@@ -3,73 +3,67 @@ use crate::{
     BalanceQuerier, TokenType,
 };
 use async_trait::async_trait;
+use config::{Config, File};
 pub use contract::get_erc20_decimals;
 use ethereum_types::{Address, U256};
 use serde::Deserialize;
-use std::str::FromStr;
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, path::Path, str::FromStr};
 use thiserror::Error;
 
 mod contract;
 
+#[cfg(not(any(test, feature = "nomock")))]
+const CONFIG_PATH: &str = "providers.json";
+#[cfg(any(test, feature = "nomock"))]
+const CONFIG_PATH: &str = "../providers.json";
+
+#[derive(Clone, Deserialize)]
 struct Provider {
     pub rpc_url: String,
 }
 
-macro_rules! dotenv {
-    ($var: expr) => {
-        match std::env::var($var) {
-            Ok(val) => val,
-            Err(_) => panic!("Environment variable `{}` not found", $var),
-        }
-    };
+#[derive(Error, Debug)]
+pub enum RpcConfigError {
+    #[error(transparent)]
+    ConfigError(#[from] config::ConfigError),
+    #[error("Chain `{0}` is not supported")]
+    ChainNotSupported(String),
+    #[error("Field `{0}` has not been set")]
+    FieldNotSet(String),
 }
 
-lazy_static::lazy_static! {
-    static ref PROVIDERS: Arc<HashMap<EvmChain, Provider>> = Arc::new({
-        dotenv::dotenv().ok();
+trait GetProvider {
+    fn provider(&self) -> Result<Provider, RpcConfigError>;
+}
 
-        let mut providers = HashMap::new();
+impl GetProvider for EvmChain {
+    fn provider(&self) -> Result<Provider, RpcConfigError> {
+        use RpcConfigError::*;
 
-        providers.insert(
-            EvmChain::Ethereum,
-            Provider {
-                rpc_url: dotenv!("ETHEREUM_RPC"),
-            }
-        );
-        providers.insert(
-            EvmChain::Polygon,
-            Provider {
-                rpc_url: dotenv!("POLYGON_RPC"),
-            }
-        );
-        providers.insert(
-            EvmChain::Bsc,
-            Provider {
-                rpc_url: dotenv!("BSC_RPC"),
-            }
-        );
-        providers.insert(
-            EvmChain::Gnosis,
-            Provider {
-                rpc_url: dotenv!("GNOSIS_RPC"),
-            }
-        );
-        providers.insert(
-            EvmChain::Arbitrum,
-            Provider {
-                rpc_url: dotenv!("ARBITRUM_RPC"),
-            }
-        );
-        providers.insert(
-            EvmChain::Goerli,
-            Provider {
-                rpc_url: dotenv!("GOERLI_RPC"),
-            }
-        );
+        let settings = Config::builder()
+            .add_source(File::from(Path::new(CONFIG_PATH)))
+            .build()?;
 
-        providers
-    });
+        let map = settings.try_deserialize::<HashMap<String, Provider>>()?;
+
+        let get_value = |name: &str| {
+            let Some(value) = map.get(name) else {
+                return Err(FieldNotSet(name.to_string()));
+            };
+
+            Ok(value.clone())
+        };
+
+        match self {
+            EvmChain::Ethereum => get_value("ETHEREUM_RPC"),
+            EvmChain::Polygon => get_value("POLYGON_RPC"),
+            EvmChain::Bsc => get_value("BSC_RPC"),
+            EvmChain::Gnosis => get_value("GNOSIS_RPC"),
+            EvmChain::Arbitrum => get_value("ARBITRUM_RPC"),
+            EvmChain::Goerli => get_value("GOERLI_RPC"),
+            _ => Err(ChainNotSupported(format!("{self:?}"))),
+        }
+    }
 }
 
 #[derive(Deserialize)]
@@ -105,9 +99,9 @@ async fn get_coin_balance(
     chain: EvmChain,
     address: Address,
 ) -> Result<U256, RpcError> {
-    let Some(provider) = PROVIDERS.get(&chain) else {
-       return Err(RpcError::ChainNotSupported(format!("{chain:?}")));
-    };
+    let provider = chain
+        .provider()
+        .map_err(|err| RpcError::Other(err.to_string()))?;
 
     let payload = create_payload(
         "eth_getBalance",

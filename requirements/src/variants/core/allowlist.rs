@@ -8,7 +8,6 @@ use std::{
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct AllowList<T> {
     pub verification_data: Vec<T>,
-    pub deny_list: bool,
 }
 
 impl<T> Requirement for AllowList<T>
@@ -19,7 +18,7 @@ where
     type VerificationData = T;
 
     fn verify(&self, vd: &Self::VerificationData) -> bool {
-        self.deny_list != self.verification_data.contains(vd)
+        self.verification_data.contains(vd)
     }
 
     fn verify_batch(&self, vd: &[Self::VerificationData]) -> Vec<bool> {
@@ -33,20 +32,11 @@ mod test {
 
     #[test]
     fn allowlist_requirement_check() {
-        let allowlist = AllowList {
+        let req = AllowList {
             verification_data: vec![69, 420],
-            deny_list: false,
         };
 
-        assert!(allowlist.verify(&69));
-        assert!(!allowlist.verify(&13));
-
-        let denylist = AllowList {
-            verification_data: vec![69, 420],
-            deny_list: true,
-        };
-
-        assert!(!denylist.verify(&69));
-        assert!(denylist.verify(&13));
+        assert!(req.verify(&69));
+        assert!(!req.verify(&13));
     }
 }

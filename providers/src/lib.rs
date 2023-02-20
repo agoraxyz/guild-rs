@@ -1,11 +1,14 @@
 #![deny(clippy::all)]
 #![deny(clippy::dbg_macro)]
 #![deny(clippy::cargo)]
-
-pub mod evm;
+#![deny(unused_crate_dependencies)]
 
 use async_trait::async_trait;
 use rusty_gate_common::TokenType;
+#[cfg(feature = "nomock")]
+use tokio as _;
+
+pub mod evm;
 
 #[async_trait]
 pub trait BalanceQuerier {

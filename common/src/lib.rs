@@ -1,6 +1,7 @@
 #![deny(clippy::all)]
 #![deny(clippy::dbg_macro)]
 #![deny(clippy::cargo)]
+#![deny(unused_crate_dependencies)]
 
 use async_trait::async_trait;
 use ethereum_types::Address;
@@ -67,4 +68,9 @@ macro_rules! address {
         use std::str::FromStr;
         ethereum_types::H160::from_str($addr).expect(&format!("Invalid address {}", $addr))
     }};
+}
+
+#[cfg(test)]
+mod test {
+    use shiba as _;
 }

@@ -11,6 +11,3 @@ categories = [
     "cryptography", "cryptography::cryptocurrencies", "data-structures"
 ]
 edition = "2021"
-
-[dev-dependencies]
-shiba = { version = "0.1.1", default-features = false }

@@ -14,10 +14,7 @@ edition = "2021"
 
 [features]
 balancy = []
-nomock = []
-
-[dev-dependencies]
-shiba = { version = "0.1.1", default-features = false }
+nomock = ["dep:tokio"]
 
 [dependencies]
 serde = { workspace = true }
@@ -26,7 +23,6 @@ async-trait = { workspace = true }
 ethereum-types = { workspace = true }
 thiserror = { workspace = true }
 rusty-gate-common = { path = "../common" }
-lazy_static = { version = "1.4.0", default-features = false }
-tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
 futures = { version = "0.3.17" }
-dotenv = { version = "0.15.0", default-features = false }
+config = { version = "0.13.3", default-features = false, features = ["json"] }
+tokio = { workspace = true, optional = true }

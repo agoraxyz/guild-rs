@@ -1,10 +1,12 @@
 use crate::evm::{
-    jsonrpc::{create_payload, RpcError, RpcResponse, PROVIDERS},
+    jsonrpc::{create_payload, RpcError, RpcResponse},
     EvmChain,
 };
 use ethereum_types::{Address, U256};
 use rusty_gate_common::address;
 use std::str::FromStr;
+
+use super::GetProvider;
 
 async fn call_contract(
     client: &reqwest::Client,
@@ -12,9 +14,9 @@ async fn call_contract(
     contract_address: Address,
     data: String,
 ) -> Result<String, RpcError> {
-    let Some(provider) = PROVIDERS.get(&chain) else {
-       return Err(RpcError::ChainNotSupported(format!("{chain:?}")));
-    };
+    let provider = chain
+        .provider()
+        .map_err(|err| RpcError::Other(err.to_string()))?;
 
     let params = format!(
         "[
@@ -55,7 +57,7 @@ pub async fn get_erc20_balance(
     token_address: Address,
     user_address: Address,
 ) -> Result<U256, RpcError> {
-    let addr = format!("{user_address:x}");
+    let addr = format!("{user_address:?}")[2..].to_string();
     let data = format!("0x70a08231000000000000000000000000{addr}");
     let balance = call_contract(client, chain, token_address, data).await?;
 
@@ -69,7 +71,7 @@ pub async fn get_erc721_balance(
     token_id: Option<U256>,
     user_address: Address,
 ) -> Result<U256, RpcError> {
-    let addr = format!("{user_address:x}");
+    let addr = format!("{user_address:?}")[2..].to_string();
     match token_id {
         Some(id) => {
             let data = format!("0x6352211e{id:064x}");
@@ -93,7 +95,7 @@ pub async fn get_erc1155_balance(
     token_id: U256,
     user_address: Address,
 ) -> Result<U256, RpcError> {
-    let addr = format!("{user_address:x}");
+    let addr = format!("{user_address:?}")[2..].to_string();
     let data = format!("0x00fdd58e000000000000000000000000{addr}{token_id:064x}");
     let balance = call_contract(client, chain, token_address, data).await?;
 

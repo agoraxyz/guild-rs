@@ -45,5 +45,33 @@ jobs:
       - name: clippy
         run: cargo clippy --color=always --all-targets --examples --tests
 
+      - name: config
+        run: |
+          cat > ./providers.json << EOF
+          {
+            "ETHEREUM_RPC": {
+              "rpc_url": "${ETHEREUM_RPC}"
+            },
+            "POLYGON_RPC": {
+              "rpc_url": "${POLYGON_RPC}"
+            },
+            "BSC_RPC": {
+              "rpc_url": "${BSC_RPC}"
+            },
+            "GNOSIS_RPC": {
+              "rpc_url": "${GNOSIS_RPC}"
+            },
+            "ARBITRUM_RPC": {
+              "rpc_url": "${ARBITRUM_RPC}"
+            },
+            "GOERLI_RPC": {
+              "rpc_url": "${GOERLI_RPC}"
+            }
+          }
+          EOF
+
       - name: test
-        run: cargo t --features nomock
+        run: |
+          pwd
+          cargo t
+          cargo t --features nomock

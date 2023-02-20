@@ -16,8 +16,7 @@ edition = "2021"
 nomock = []
 
 [dev-dependencies]
-shiba = { version = "0.1.1", default-features = false }
-tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
+tokio = { workspace = true }
 
 [dependencies]
 serde = { workspace = true }
