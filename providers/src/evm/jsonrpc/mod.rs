@@ -12,6 +12,11 @@ use thiserror::Error;
 
 mod contract;
 
+#[cfg(not(any(test, feature = "nomock")))]
+const CONFIG_PATH: &str = "providers.json";
+#[cfg(any(test, feature = "nomock"))]
+const CONFIG_PATH: &str = "../providers.json";
+
 #[derive(Clone, Deserialize)]
 struct Provider {
     pub rpc_url: String,
@@ -35,13 +40,8 @@ impl GetProvider for EvmChain {
     fn provider(&self) -> Result<Provider, RpcConfigError> {
         use RpcConfigError::*;
 
-        #[cfg(not(any(test, feature = "nomock")))]
-        let path = "providers.json";
-        #[cfg(any(test, feature = "nomock"))]
-        let path = "../providers.json";
-
         let settings = Config::builder()
-            .add_source(File::from(Path::new(path)))
+            .add_source(File::from(Path::new(CONFIG_PATH)))
             .build()?;
 
         let map = settings.try_deserialize::<HashMap<String, Provider>>()?;
