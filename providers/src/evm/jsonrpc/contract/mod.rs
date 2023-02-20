@@ -12,6 +12,12 @@ use std::str::FromStr;
 mod multicall;
 
 const ZEROES: &str = "000000000000000000000000";
+const FUNC_DECIMALS: &str = "313ce567";
+const FUNC_ETH_BALANCE: &str = "4d2301cc";
+const FUNC_BALANCE_OF: &str = "70a08231";
+const FUNC_BALANCE_OF_ID: &str = "6352211e";
+const FUNC_ERC1155: &str = "00fdd58e";
+const FUNC_ERC1155_BATCH: &str = "4e1273f4";
 
 #[derive(Clone, Debug)]
 pub struct Call {
@@ -62,7 +68,7 @@ pub async fn get_eth_balance_batch(
         .iter()
         .map(|addr| Call {
             target,
-            call_data: format!("4d2301cc{ZEROES}{addr:x}"),
+            call_data: format!("{FUNC_ETH_BALANCE}{ZEROES}{addr:x}"),
         })
         .collect::<Vec<Call>>();
 
@@ -84,7 +90,7 @@ pub async fn get_erc20_decimals(
 ) -> Result<U256, RpcError> {
     let call = Call {
         target: token_address,
-        call_data: "313ce567".to_string(),
+        call_data: FUNC_DECIMALS.to_string(),
     };
     let decimals = call_contract(client, chain, call).await?;
 
@@ -94,7 +100,7 @@ pub async fn get_erc20_decimals(
 fn erc20_call(token_address: Address, user_address: Address) -> Call {
     Call {
         target: token_address,
-        call_data: format!("70a08231{ZEROES}{user_address:x}"),
+        call_data: format!("{FUNC_BALANCE_OF}{ZEROES}{user_address:x}"),
     }
 }
 
@@ -133,16 +139,13 @@ pub async fn get_erc20_balance_batch(
 }
 
 pub fn erc721_call(token_address: Address, user_address: Address) -> Call {
-    Call {
-        target: token_address,
-        call_data: format!("70a08231{ZEROES}{user_address:x}"),
-    }
+    erc20_call(token_address, user_address)
 }
 
 fn erc721_id_call(token_address: Address, id: U256) -> Call {
     Call {
         target: token_address,
-        call_data: format!("6352211e{id:064x}"),
+        call_data: format!("{FUNC_BALANCE_OF_ID}{id:064x}"),
     }
 }
 
@@ -194,7 +197,7 @@ pub async fn get_erc721_balance_batch(
 fn erc1155_call(token_address: Address, id: U256, user_address: Address) -> Call {
     Call {
         target: token_address,
-        call_data: format!("00fdd58e{ZEROES}{user_address:x}{id:064x}"),
+        call_data: format!("{FUNC_ERC1155}{ZEROES}{user_address:x}{id:064x}"),
     }
 }
 
@@ -223,13 +226,14 @@ pub async fn get_erc1155_balance_batch(
         .map(|user_address| format!("{ZEROES}{user_address:x}"))
         .collect::<String>();
 
-    let func = "4e1273f4";
     let len = 64;
     let count = user_addresses.len();
     let offset = (count + 3) * 32;
     let ids = vec![format!("{token_id:064x}"); count].join("");
-    let call_data =
-        format!("{func}{len:064x}{offset:064x}{count:064x}{addresses}{count:064x}{ids}",);
+
+    let call_data = format!(
+        "{FUNC_ERC1155_BATCH}{len:064x}{offset:064x}{count:064x}{addresses}{count:064x}{ids}",
+    );
 
     let call = Call {
         target: token_address,
