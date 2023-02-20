@@ -69,3 +69,8 @@ macro_rules! address {
         ethereum_types::H160::from_str($addr).expect(&format!("Invalid address {}", $addr))
     }};
 }
+
+#[cfg(test)]
+mod test {
+    use shiba as _;
+}
