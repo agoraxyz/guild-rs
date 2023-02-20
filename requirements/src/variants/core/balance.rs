@@ -1,5 +1,6 @@
 use crate::{Requirement, RequirementError};
 use async_trait::async_trait;
+use core::ops::{Range, RangeInclusive};
 use ethereum_types::{Address, U256};
 use rusty_gate_common::{TokenType, VerificationData};
 use rusty_gate_providers::evm::Provider;
@@ -13,7 +14,8 @@ pub enum Relation<T> {
     GreaterOrEqualTo(T),
     LessThan(T),
     LessOrEqualTo(T),
-    Between(core::ops::Range<T>),
+    Between(Range<T>),
+    BetweenInclusive(RangeInclusive<T>),
 }
 
 impl<T: PartialEq + PartialOrd> Relation<T> {
@@ -25,6 +27,7 @@ impl<T: PartialEq + PartialOrd> Relation<T> {
             Relation::LessThan(a) => x < a,
             Relation::LessOrEqualTo(a) => x <= a,
             Relation::Between(range) => range.contains(x),
+            Relation::BetweenInclusive(range) => range.contains(x),
         }
     }
 }
@@ -117,6 +120,12 @@ mod test {
         assert!(!Relation::<u32>::Between(50..100).assert(&100));
         assert!(Relation::<u32>::Between(50..100).assert(&77));
         assert!(Relation::<u32>::Between(50..100).assert(&50));
+
+        assert!(!Relation::<u32>::BetweenInclusive(0..=100).assert(&230));
+        assert!(!Relation::<u32>::BetweenInclusive(50..=100).assert(&15));
+        assert!(Relation::<u32>::BetweenInclusive(50..=100).assert(&100));
+        assert!(Relation::<u32>::BetweenInclusive(50..=100).assert(&77));
+        assert!(Relation::<u32>::BetweenInclusive(50..=100).assert(&50));
     }
 
     #[tokio::test]
