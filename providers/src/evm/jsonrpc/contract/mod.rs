@@ -243,12 +243,15 @@ pub async fn get_erc1155_balance_batch(
     let res = call_contract(client, chain, call).await?;
 
     let balances = res
+        .trim_start_matches("0x")
         .chars()
-        .skip(2 /* "0x" prefix */ + 2 * 64 /* first two lines */)
         .collect::<Vec<char>>()
         .chunks(64)
-        .map(|c| c.iter().collect::<String>())
-        .map(|balance| U256::from_str(&balance).unwrap_or_default())
+        .skip(2)
+        .map(|c| {
+            let balance = c.iter().collect::<String>();
+            U256::from_str(&balance).unwrap_or_default()
+        })
         .collect::<Vec<U256>>();
 
     Ok(balances)

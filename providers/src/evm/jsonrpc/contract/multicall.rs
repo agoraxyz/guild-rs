@@ -33,8 +33,8 @@ pub fn aggregate(calls: &[Call]) -> String {
 
 pub fn parse_multicall_result(multicall_result: &str) -> Vec<U256> {
     let lines = multicall_result
+        .trim_start_matches("0x")
         .chars()
-        .skip(2)
         .collect::<Vec<char>>()
         .chunks(64)
         .map(|c| c.iter().collect::<String>())
