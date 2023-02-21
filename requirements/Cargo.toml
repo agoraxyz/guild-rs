@@ -1,5 +1,5 @@
 [package]
-name = "rusty-gate-requirements"
+name = "guild-requirements"
 description = "Requirement types for the Guild-Network"
 version = "0.1.0"
 repository = "https://github.com/agoraxyz/requirement-engine-v2"
@@ -22,6 +22,6 @@ tokio = { workspace = true }
 async-trait = { workspace = true }
 primitive-types = { workspace = true }
 reqwest = { workspace = true }
-rusty-gate-common = { path = "../common" }
-rusty-gate-providers = { path = "../providers" }
+guild-common = { path = "../common" }
+guild-providers = { path = "../providers" }
 serde = { workspace = true }

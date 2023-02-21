@@ -1,5 +1,5 @@
 [package]
-name = "rusty-gate-providers"
+name = "guild-providers"
 description = "Web3 balance providers"
 version = "0.1.0"
 repository = "https://github.com/agoraxyz/requirement-engine-v2"
@@ -22,7 +22,7 @@ config = { version = "0.13.3", default-features = false, features = ["json"] }
 primitive-types = { workspace = true }
 futures = { version = "0.3.17" }
 reqwest = { workspace = true }
-rusty-gate-common = { path = "../common" }
+guild-common = { path = "../common" }
 serde = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, optional = true }

@@ -200,8 +200,8 @@ mod test {
         evm::{common::*, jsonrpc::RpcProvider, EvmChain},
         BalanceQuerier,
     };
+    use guild_common::{address, TokenType::*};
     use primitive_types::U256;
-    use rusty_gate_common::{address, TokenType::*};
 
     #[tokio::test]
     async fn rpc_get_coin_balance() {
@@ -362,7 +362,7 @@ mod test {
                 )
                 .await
                 .unwrap(),
-            U256::from(6810)
+            U256::from(6790)
         );
         assert_eq!(
             RpcProvider

@@ -4,7 +4,7 @@
 #![deny(unused_crate_dependencies)]
 
 use async_trait::async_trait;
-use rusty_gate_common::TokenType;
+use guild_common::TokenType;
 #[cfg(feature = "nomock")]
 use tokio as _;
 

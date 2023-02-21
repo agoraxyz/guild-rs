@@ -3,6 +3,6 @@
 #![deny(clippy::cargo)]
 #![deny(unused_crate_dependencies)]
 
-use rusty_gate_common::{Requirement, RequirementError};
+use guild_common::{Requirement, RequirementError};
 
 mod variants;

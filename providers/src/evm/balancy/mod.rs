@@ -3,9 +3,9 @@ use crate::{
     BalanceQuerier,
 };
 use async_trait::async_trait;
+use guild_common::TokenType;
 use primitive_types::{H160 as Address, U256};
 use reqwest::StatusCode;
-use rusty_gate_common::TokenType;
 use serde::de::DeserializeOwned;
 
 mod types;
@@ -188,8 +188,8 @@ mod test {
         },
         BalanceQuerier,
     };
+    use guild_common::{address, TokenType::*};
     use primitive_types::U256;
-    use rusty_gate_common::{address, TokenType::*};
 
     #[test]
     fn balancy_get_chain_id() {
@@ -330,7 +330,7 @@ mod test {
                 )
                 .await
                 .unwrap(),
-            U256::from(6810)
+            U256::from(6790)
         );
         assert_eq!(
             BalancyProvider

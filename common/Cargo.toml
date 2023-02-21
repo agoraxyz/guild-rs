@@ -1,5 +1,5 @@
 [package]
-name = "rusty-gate-common"
+name = "guild-common"
 description = "Common types and traits for Guild-Network"
 version = "0.1.0"
 repository = "https://github.com/agoraxyz/requirement-engine-v2"
