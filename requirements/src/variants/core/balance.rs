@@ -2,7 +2,7 @@ use crate::{Requirement, RequirementError};
 use async_trait::async_trait;
 use core::ops::{Range, RangeInclusive};
 use primitive_types::{H160 as Address, U256};
-use rusty_gate_common::{TokenType, VerificationData};
+use rusty_gate_common::{Retrievable, TokenType};
 use rusty_gate_providers::evm::Provider;
 use rusty_gate_providers::{evm::EvmChain, BalanceQuerier};
 use serde::{Deserialize, Serialize};
@@ -43,7 +43,6 @@ impl<T, U, V> Requirement for Balance<T, U, V>
 where
     V: PartialEq + PartialOrd,
 {
-    type Error = RequirementError;
     type VerificationData = V;
 
     fn verify(&self, vd: &Self::VerificationData) -> bool {
@@ -56,7 +55,7 @@ where
 }
 
 #[async_trait]
-impl VerificationData for Balance<Address, U256, U256> {
+impl Retrievable for Balance<Address, U256, U256> {
     type Error = RequirementError;
     type Identity = Address;
     type Client = reqwest::Client;
@@ -88,7 +87,7 @@ impl VerificationData for Balance<Address, U256, U256> {
 #[cfg(test)]
 mod test {
     #[cfg(feature = "nomock")]
-    use super::VerificationData;
+    use super::Retrievable;
     use super::{Balance, Relation, Requirement, TokenType, U256};
     use rusty_gate_common::address;
     use rusty_gate_providers::evm::EvmChain;

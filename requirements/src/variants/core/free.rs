@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 pub struct Free;
 
 impl Requirement for Free {
-    type Error = ();
     type VerificationData = ();
 
     fn verify(&self, _v: &Self::VerificationData) -> bool {

@@ -14,7 +14,6 @@ impl<T> Requirement for AllowList<T>
 where
     T: Sync + Send + PartialEq,
 {
-    type Error = ();
     type VerificationData = T;
 
     fn verify(&self, vd: &Self::VerificationData) -> bool {

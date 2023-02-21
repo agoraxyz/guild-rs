@@ -36,7 +36,6 @@ pub enum RequirementError {
 }
 
 pub trait Requirement {
-    type Error;
     type VerificationData;
 
     fn verify(&self, vd: &Self::VerificationData) -> bool;
@@ -44,7 +43,7 @@ pub trait Requirement {
 }
 
 #[async_trait]
-pub trait VerificationData {
+pub trait Retrievable {
     type Error;
     type Identity;
     type Client;
