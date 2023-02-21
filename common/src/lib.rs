@@ -21,6 +21,12 @@ pub struct User {
     pub identities: Vec<Identity>,
 }
 
+struct Role {
+    name: String,
+    logic: String,
+    requirements: Vec<Box<dyn Requirement<VerificationData = dyn Send + Sync>>>,
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone, Copy)]
 pub enum TokenType<T, U> {
     Native,
