@@ -3,7 +3,7 @@ use crate::{
     BalanceQuerier,
 };
 use async_trait::async_trait;
-use ethereum_types::{Address, U256};
+use primitive_types::{H160 as Address, U256};
 use reqwest::StatusCode;
 use rusty_gate_common::TokenType;
 use serde::de::DeserializeOwned;
@@ -171,7 +171,7 @@ impl BalanceQuerier for BalancyProvider {
             futures::future::join_all(addresses.iter().map(|address| async {
                 self.get_balance(client, chain, token_type, *address)
                     .await
-                    .unwrap_or(U256::from(0))
+                    .unwrap_or_default()
             }))
             .await,
         )
@@ -188,7 +188,7 @@ mod test {
         },
         BalanceQuerier,
     };
-    use ethereum_types::U256;
+    use primitive_types::U256;
     use rusty_gate_common::{address, TokenType::*};
 
     #[test]
@@ -316,7 +316,7 @@ mod test {
         };
         let token_type_with_id = Special {
             address: address!(ERC1155_ADDR),
-            id: Some(U256::from_dec_str(ERC1155_ID).unwrap()),
+            id: Some(U256::from(ERC1155_ID)),
         };
         let user_address = address!(USER_3_ADDR);
 

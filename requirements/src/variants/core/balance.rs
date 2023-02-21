@@ -1,7 +1,7 @@
 use crate::{Requirement, RequirementError};
 use async_trait::async_trait;
 use core::ops::{Range, RangeInclusive};
-use ethereum_types::{Address, U256};
+use primitive_types::{H160 as Address, U256};
 use rusty_gate_common::{TokenType, VerificationData};
 use rusty_gate_providers::evm::Provider;
 use rusty_gate_providers::{evm::EvmChain, BalanceQuerier};

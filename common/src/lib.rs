@@ -4,7 +4,7 @@
 #![deny(unused_crate_dependencies)]
 
 use async_trait::async_trait;
-use ethereum_types::Address;
+use primitive_types::H160 as Address;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -66,7 +66,7 @@ pub trait VerificationData {
 macro_rules! address {
     ($addr:expr) => {{
         use std::str::FromStr;
-        ethereum_types::H160::from_str($addr).expect(&format!("Invalid address {}", $addr))
+        primitive_types::H160::from_str($addr).expect(&format!("Invalid address {}", $addr))
     }};
 }
 

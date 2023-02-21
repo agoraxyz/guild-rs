@@ -17,12 +17,12 @@ balancy = []
 nomock = ["dep:tokio"]
 
 [dependencies]
-serde = { workspace = true }
-reqwest = { workspace = true }
 async-trait = { workspace = true }
-ethereum-types = { workspace = true }
-thiserror = { workspace = true }
-rusty-gate-common = { path = "../common" }
-futures = { version = "0.3.17" }
 config = { version = "0.13.3", default-features = false, features = ["json"] }
+primitive-types = { workspace = true }
+futures = { version = "0.3.17" }
+reqwest = { workspace = true }
+rusty-gate-common = { path = "../common" }
+serde = { workspace = true }
+thiserror = { workspace = true }
 tokio = { workspace = true, optional = true }
