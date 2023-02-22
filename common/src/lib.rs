@@ -22,7 +22,7 @@ pub struct User {
     pub identities: Vec<Identity>,
 }
 
-struct Role {
+pub struct Role {
     name: String,
     logic: String,
     requirements: Vec<Box<dyn Requirement<VerificationData = dyn Send + Sync>>>,
