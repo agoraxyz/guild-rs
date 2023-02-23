@@ -23,9 +23,9 @@ pub struct User {
 }
 
 pub struct Role {
-    name: String,
-    logic: String,
-    requirements: Vec<Box<dyn Requirement<VerificationData = dyn Send + Sync>>>,
+    pub name: String,
+    pub logic: String,
+    pub requirements: Vec<Box<dyn std::any::Any>>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Copy)]
