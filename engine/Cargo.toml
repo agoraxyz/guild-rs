@@ -12,6 +12,11 @@ categories = [
 ]
 edition = "2021"
 
+[dev-dependencies]
+guild-providers = { path = "../providers" }
+primitive-types = { workspace = true }
+
 [dependencies]
 guild-common = { path = "../common" }
 guild-requirements = { path = "../requirements" }
+requiem = { git = "https://github.com/agoraxyz/requiem.git" }
