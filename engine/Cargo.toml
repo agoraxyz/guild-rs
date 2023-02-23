@@ -11,3 +11,7 @@ categories = [
     "cryptography", "cryptography::cryptocurrencies", "data-structures"
 ]
 edition = "2021"
+
+[dependencies]
+guild-common = { path = "../common" }
+guild-requirements = { path = "../requirements" }
