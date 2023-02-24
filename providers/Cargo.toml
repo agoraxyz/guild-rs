@@ -20,7 +20,7 @@ nomock = ["dep:tokio"]
 async-trait = { workspace = true }
 config = { version = "0.13.3", default-features = false, features = ["json"] }
 primitive-types = { workspace = true }
-futures = { version = "0.3.17" }
+futures = { workspace = true }
 reqwest = { workspace = true }
 guild-common = { path = "../common" }
 serde = { workspace = true }
