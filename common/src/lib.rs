@@ -17,15 +17,16 @@ pub enum Identity {
     Discord(u64),
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct User {
+    pub id: u64,
     pub identities: Vec<Identity>,
 }
 
 pub struct Role {
     pub name: String,
     pub logic: String,
-    pub requirements: Vec<Box<dyn std::any::Any>>,
+    pub requirements: Vec<Box<dyn Send + Sync + std::any::Any>>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Copy)]
