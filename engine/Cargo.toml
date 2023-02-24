@@ -14,9 +14,12 @@ edition = "2021"
 
 [dev-dependencies]
 guild-providers = { path = "../providers" }
-primitive-types = { workspace = true }
+tokio = { workspace = true }
 
 [dependencies]
+async-trait = { workspace = true }
+futures = { workspace = true }
 guild-common = { path = "../common" }
 guild-requirements = { path = "../requirements" }
+primitive-types = { workspace = true }
 requiem = { git = "https://github.com/agoraxyz/requiem.git" }
