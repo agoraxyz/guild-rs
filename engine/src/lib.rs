@@ -78,7 +78,7 @@ impl Checkable for Role {
         .await;
 
         let rotated: Vec<Vec<_>> = (0..users_count)
-            .map(|i| accesses_per_req.iter().map(|row| row[i]).rev().collect())
+            .map(|i| accesses_per_req.iter().map(|row| row[i]).collect())
             .collect();
 
         match requiem::LogicTree::from_str(&self.logic) {
