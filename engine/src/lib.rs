@@ -77,19 +77,9 @@ impl Checkable for Role {
         }))
         .await;
 
-        let mut rotated = Vec::new();
-
-        for col in 0..accesses_per_req[0].len() {
-            let mut row = Vec::new();
-
-            for _row in &accesses_per_req {
-                if let Some(&c) = _row.get(col) {
-                    row.push(c);
-                }
-            }
-
-            rotated.push(row);
-        }
+        let rotated: Vec<Vec<_>> = (0..users_count)
+            .map(|i| accesses_per_req.iter().map(|row| row[i]).rev().collect())
+            .collect();
 
         match requiem::LogicTree::from_str(&self.logic) {
             Ok(tree) => {
