@@ -8,7 +8,6 @@ use futures::future::join_all;
 use guild_common::{Identity, Requirement, Retrievable, Role, User};
 use guild_requirements::{AllowList, Balance, Free};
 use primitive_types::{H160 as Address, U256};
-use requiem as _;
 use std::{collections::HashMap, str::FromStr};
 
 #[async_trait]
@@ -97,11 +96,11 @@ impl Checkable for Role {
                 let res = rotated
                     .iter()
                     .map(|accesses| {
-                        let mut terminals = HashMap::new();
-
-                        for (idx, access) in accesses.iter().enumerate() {
-                            terminals.insert(idx as u32, *access);
-                        }
+                        let terminals: HashMap<_, _> = accesses
+                            .iter()
+                            .enumerate()
+                            .map(|(i, &a)| (i as u32, a))
+                            .collect();
 
                         tree.evaluate(&terminals).unwrap_or(false)
                     })
