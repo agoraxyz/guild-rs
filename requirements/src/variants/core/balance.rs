@@ -20,7 +20,7 @@ pub enum BalanceError {
 pub struct Balance<T, U> {
     pub chain: EvmChain,
     pub token_type: TokenType<T, U>,
-    pub relation: Relation<Scalar>,
+    pub relation: Relation,
 }
 
 impl<T, U> Requirement for Balance<T, U> {

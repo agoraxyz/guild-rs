@@ -64,18 +64,18 @@ pub trait Retrievable {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub enum Relation<T> {
-    EqualTo(T),
-    GreaterThan(T),
-    GreaterOrEqualTo(T),
-    LessThan(T),
-    LessOrEqualTo(T),
-    Between(Range<T>),
-    BetweenInclusive(RangeInclusive<T>),
+pub enum Relation {
+    EqualTo(Scalar),
+    GreaterThan(Scalar),
+    GreaterOrEqualTo(Scalar),
+    LessThan(Scalar),
+    LessOrEqualTo(Scalar),
+    Between(Range<Scalar>),
+    BetweenInclusive(RangeInclusive<Scalar>),
 }
 
-impl<T: PartialEq + PartialOrd> Relation<T> {
-    pub fn assert(&self, x: &T) -> bool {
+impl Relation {
+    pub fn assert(&self, x: &Scalar) -> bool {
         match self {
             Relation::EqualTo(a) => x == a,
             Relation::GreaterThan(a) => x > a,
@@ -103,36 +103,36 @@ mod test {
 
     #[test]
     fn relations() {
-        assert!(Relation::<u32>::EqualTo(0).assert(&0));
-        assert!(!Relation::<u32>::EqualTo(10).assert(&2));
-        assert!(!Relation::<u32>::EqualTo(420).assert(&421));
+        assert!(Relation::EqualTo(0.0).assert(&0.0));
+        assert!(!Relation::EqualTo(10.0).assert(&2.0));
+        assert!(!Relation::EqualTo(420.0).assert(&421.0));
 
-        assert!(!Relation::<u32>::GreaterThan(10).assert(&3));
-        assert!(!Relation::<u32>::GreaterThan(10).assert(&10));
-        assert!(Relation::<u32>::GreaterThan(10).assert(&20));
+        assert!(!Relation::GreaterThan(10.0).assert(&3.0));
+        assert!(!Relation::GreaterThan(10.0).assert(&10.0));
+        assert!(Relation::GreaterThan(10.0).assert(&20.0));
 
-        assert!(Relation::<u32>::GreaterOrEqualTo(23).assert(&42));
-        assert!(Relation::<u32>::GreaterOrEqualTo(23).assert(&23));
-        assert!(!Relation::<u32>::GreaterOrEqualTo(23).assert(&14));
+        assert!(Relation::GreaterOrEqualTo(23.0).assert(&42.0));
+        assert!(Relation::GreaterOrEqualTo(23.0).assert(&23.0));
+        assert!(!Relation::GreaterOrEqualTo(23.0).assert(&14.0));
 
-        assert!(Relation::<u32>::LessThan(23).assert(&1));
-        assert!(!Relation::<u32>::LessThan(23).assert(&23));
-        assert!(!Relation::<u32>::LessThan(23).assert(&42));
+        assert!(Relation::LessThan(23.0).assert(&1.0));
+        assert!(!Relation::LessThan(23.0).assert(&23.0));
+        assert!(!Relation::LessThan(23.0).assert(&42.0));
 
-        assert!(Relation::<u32>::LessOrEqualTo(23).assert(&1));
-        assert!(Relation::<u32>::LessOrEqualTo(23).assert(&23));
-        assert!(!Relation::<u32>::LessOrEqualTo(23).assert(&42));
+        assert!(Relation::LessOrEqualTo(23.0).assert(&1.0));
+        assert!(Relation::LessOrEqualTo(23.0).assert(&23.0));
+        assert!(!Relation::LessOrEqualTo(23.0).assert(&42.0));
 
-        assert!(!Relation::<u32>::Between(0..100).assert(&230));
-        assert!(!Relation::<u32>::Between(50..100).assert(&15));
-        assert!(!Relation::<u32>::Between(50..100).assert(&100));
-        assert!(Relation::<u32>::Between(50..100).assert(&77));
-        assert!(Relation::<u32>::Between(50..100).assert(&50));
+        assert!(!Relation::Between(0.0..100.0).assert(&230.0));
+        assert!(!Relation::Between(50.0..100.0).assert(&15.0));
+        assert!(!Relation::Between(50.0..100.0).assert(&100.0));
+        assert!(Relation::Between(50.0..100.0).assert(&77.0));
+        assert!(Relation::Between(50.0..100.0).assert(&50.0));
 
-        assert!(!Relation::<u32>::BetweenInclusive(0..=100).assert(&230));
-        assert!(!Relation::<u32>::BetweenInclusive(50..=100).assert(&15));
-        assert!(Relation::<u32>::BetweenInclusive(50..=100).assert(&100));
-        assert!(Relation::<u32>::BetweenInclusive(50..=100).assert(&77));
-        assert!(Relation::<u32>::BetweenInclusive(50..=100).assert(&50));
+        assert!(!Relation::BetweenInclusive(0.0..=100.0).assert(&230.0));
+        assert!(!Relation::BetweenInclusive(50.0..=100.0).assert(&15.0));
+        assert!(Relation::BetweenInclusive(50.0..=100.0).assert(&100.0));
+        assert!(Relation::BetweenInclusive(50.0..=100.0).assert(&77.0));
+        assert!(Relation::BetweenInclusive(50.0..=100.0).assert(&50.0));
     }
 }
