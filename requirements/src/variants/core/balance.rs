@@ -1,12 +1,20 @@
-use crate::{Requirement, RequirementError};
 use async_trait::async_trait;
-use guild_common::{Relation, Retrievable, Scalar, TokenType};
+use guild_common::{Relation, Requirement, Retrievable, Scalar, TokenType};
 use guild_providers::{
     evm::{EvmChain, Provider},
     BalanceQuerier,
 };
 use primitive_types::{H160 as Address, U256};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum BalanceError {
+    #[error(transparent)]
+    ProviderError(#[from] guild_providers::RpcError),
+    #[error(transparent)]
+    BalancyError(#[from] guild_providers::BalancyError),
+}
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Balance<T, U> {
@@ -29,7 +37,7 @@ impl<T, U> Requirement for Balance<T, U> {
 
 #[async_trait]
 impl Retrievable for Balance<Address, U256> {
-    type Error = RequirementError;
+    type Error = BalanceError;
     type Identity = Address;
     type Client = reqwest::Client;
 
@@ -38,10 +46,11 @@ impl Retrievable for Balance<Address, U256> {
         client: &Self::Client,
         identity: &Self::Identity,
     ) -> Result<Scalar, Self::Error> {
-        Provider
+        let res = Provider
             .get_balance(client, self.chain, self.token_type, *identity)
-            .await
-            .map_err(|err| RequirementError::Other(err.to_string()))
+            .await?;
+
+        Ok(res)
     }
 
     async fn retrieve_batch(
@@ -49,10 +58,11 @@ impl Retrievable for Balance<Address, U256> {
         client: &Self::Client,
         identities: &[Self::Identity],
     ) -> Result<Vec<Scalar>, Self::Error> {
-        Provider
+        let res = Provider
             .get_balance_batch(client, self.chain, self.token_type, identities)
-            .await
-            .map_err(|err| RequirementError::Other(err.to_string()))
+            .await?;
+
+        Ok(res)
     }
 }
 

@@ -9,22 +9,29 @@ use guild_common::{Identity, Requirement, Retrievable, Role, User};
 use guild_requirements::{AllowList, Balance, Free};
 use primitive_types::{H160 as Address, U256};
 use std::{collections::HashMap, str::FromStr};
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum RoleError {
+    #[error(transparent)]
+    Requiem(#[from] requiem::ParseError),
+}
 
 #[async_trait]
 trait Checkable {
-    async fn check(&self, user: &User) -> Result<bool, ()>;
-    async fn check_batch(&self, users: &[User]) -> Result<Vec<bool>, ()>;
+    async fn check(&self, user: &User) -> Result<bool, RoleError>;
+    async fn check_batch(&self, users: &[User]) -> Result<Vec<bool>, RoleError>;
 }
 
 #[async_trait]
 impl Checkable for Role {
-    async fn check(&self, user: &User) -> Result<bool, ()> {
+    async fn check(&self, user: &User) -> Result<bool, RoleError> {
         self.check_batch(&[user.clone()])
             .await
             .map(|accesses| accesses[0])
     }
 
-    async fn check_batch(&self, users: &[User]) -> Result<Vec<bool>, ()> {
+    async fn check_batch(&self, users: &[User]) -> Result<Vec<bool>, RoleError> {
         let users_count = users.len();
         let ids: Vec<u64> = users.iter().map(|user| user.id).collect();
         let id_addresses: Vec<(u64, Address)> = users
@@ -81,24 +88,22 @@ impl Checkable for Role {
             .map(|i| accesses_per_req.iter().map(|row| row[i]).collect())
             .collect();
 
-        match requiem::LogicTree::from_str(&self.logic) {
-            Ok(tree) => {
-                let res = rotated
-                    .iter()
-                    .map(|accesses| {
-                        let terminals: HashMap<_, _> = accesses
-                            .iter()
-                            .enumerate()
-                            .map(|(i, &a)| (i as u32, a))
-                            .collect();
+        let tree = requiem::LogicTree::from_str(&self.logic)?;
 
-                        tree.evaluate(&terminals).unwrap_or(false)
-                    })
+        let res = rotated
+            .iter()
+            .map(|accesses| {
+                let terminals: HashMap<_, _> = accesses
+                    .iter()
+                    .enumerate()
+                    .map(|(i, &a)| (i as u32, a))
                     .collect();
-                Ok(res)
-            }
-            Err(e) => Ok(vec![false; users_count]),
-        }
+
+                tree.evaluate(&terminals).unwrap_or(false)
+            })
+            .collect();
+
+        Ok(res)
     }
 }
 

@@ -7,7 +7,6 @@ use async_trait::async_trait;
 use core::ops::{Range, RangeInclusive};
 use primitive_types::H160 as Address;
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 pub type Scalar = f64;
 
@@ -37,12 +36,6 @@ pub enum TokenType<T, U> {
     Fungible { address: T },
     NonFungible { address: T, id: Option<U> },
     Special { address: T, id: Option<U> },
-}
-
-#[derive(Error, Debug)]
-pub enum RequirementError {
-    #[error("{0}")]
-    Other(String),
 }
 
 pub trait Requirement {

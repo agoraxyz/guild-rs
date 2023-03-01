@@ -1,4 +1,4 @@
-use crate::Requirement;
+use guild_common::Requirement;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

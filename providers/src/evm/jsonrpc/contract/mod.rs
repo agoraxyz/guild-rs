@@ -1,9 +1,12 @@
-use crate::evm::{
-    jsonrpc::{
-        contract::multicall::{aggregate, parse_multicall_result},
-        create_payload, GetProvider, RpcError, RpcResponse, ETH_BALANCE_DIVIDER,
+use crate::{
+    evm::{
+        jsonrpc::{
+            contract::multicall::{aggregate, parse_multicall_result},
+            create_payload, GetProvider, RpcError, RpcResponse, ETH_BALANCE_DIVIDER,
+        },
+        EvmChain,
     },
-    EvmChain,
+    rpc_error,
 };
 use guild_common::Scalar;
 use primitive_types::{H160 as Address, U256};
@@ -30,9 +33,7 @@ async fn call_contract(
     chain: EvmChain,
     call: Call,
 ) -> Result<String, RpcError> {
-    let provider = chain
-        .provider()
-        .map_err(|err| RpcError::Other(err.to_string()))?;
+    let provider = chain.provider()?;
 
     let params = format!(
         "[
@@ -78,7 +79,7 @@ pub async fn get_eth_balance_batch(
     };
 
     let res = call_contract(client, chain, call).await?;
-    let balances = parse_multicall_result(&res)
+    let balances = parse_multicall_result(&res)?
         .iter()
         .map(|balance| balance / ETH_BALANCE_DIVIDER)
         .collect();
@@ -97,7 +98,7 @@ pub async fn get_erc20_decimals(
     };
     let decimals = call_contract(client, chain, call).await?;
 
-    U256::from_str(&decimals).map_err(|err| RpcError::Other(err.to_string()))
+    rpc_error!(U256::from_str(&decimals))
 }
 
 fn erc20_call(token_address: Address, user_address: Address) -> Call {
@@ -118,7 +119,7 @@ pub async fn get_erc20_balance(
     let decimals = get_erc20_decimals(client, chain, token_address).await?;
     let divider = 10_u128.pow(decimals.as_u32()) as Scalar;
 
-    let balance = U256::from_str(&balance).map_err(|err| RpcError::Other(err.to_string()))?;
+    let balance = rpc_error!(U256::from_str(&balance))?;
 
     Ok((balance.as_u128() as Scalar) / divider)
 }
@@ -141,7 +142,7 @@ pub async fn get_erc20_balance_batch(
 
     let res = call_contract(client, chain, call).await?;
 
-    let balances = parse_multicall_result(&res)
+    let balances = parse_multicall_result(&res)?
         .iter()
         .map(|balance| balance / ETH_BALANCE_DIVIDER)
         .collect();
@@ -178,9 +179,7 @@ pub async fn get_erc721_balance(
             let call = erc721_call(token_address, user_address);
             let balance = call_contract(client, chain, call).await?;
 
-            U256::from_str(&balance)
-                .map_err(|err| RpcError::Other(err.to_string()))?
-                .as_u128() as Scalar
+            rpc_error!(U256::from_str(&balance))?.as_u128() as Scalar
         }
     };
 
@@ -204,9 +203,8 @@ pub async fn get_erc721_balance_batch(
     };
 
     let res = call_contract(client, chain, call).await?;
-    let balances = parse_multicall_result(&res);
 
-    Ok(balances)
+    parse_multicall_result(&res)
 }
 
 fn erc1155_call(token_address: Address, id: U256, user_address: Address) -> Call {
@@ -226,9 +224,7 @@ pub async fn get_erc1155_balance(
     let call = erc1155_call(token_address, token_id, user_address);
     let res = call_contract(client, chain, call).await?;
 
-    let balance = U256::from_str(&res)
-        .map_err(|err| RpcError::Other(err.to_string()))?
-        .as_u128() as Scalar;
+    let balance = rpc_error!(U256::from_str(&res))?.as_u128() as Scalar;
 
     Ok(balance)
 }
@@ -269,11 +265,12 @@ pub async fn get_erc1155_balance_batch(
         .skip(2)
         .map(|c| {
             let balance = c.iter().collect::<String>();
-            U256::from_str(&balance).unwrap_or_default().as_u128() as Scalar
-        })
-        .collect::<Vec<Scalar>>();
 
-    Ok(balances)
+            rpc_error!(U256::from_str(&balance).map(|value| value.as_u128() as Scalar))
+        })
+        .collect::<Vec<Result<Scalar, RpcError>>>();
+
+    balances.into_iter().collect()
 }
 
 #[cfg(all(test, feature = "nomock"))]

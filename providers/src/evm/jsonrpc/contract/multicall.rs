@@ -1,4 +1,10 @@
-use super::{Call, ZEROES};
+use crate::{
+    evm::{
+        jsonrpc::contract::{Call, ZEROES},
+        RpcError,
+    },
+    rpc_error,
+};
 use guild_common::Scalar;
 use primitive_types::U256;
 use std::str::FromStr;
@@ -32,7 +38,7 @@ pub fn aggregate(calls: &[Call]) -> String {
     format!("{FUNC_SIG}{param_count_len}{param_count}{offset}{aggregated}")
 }
 
-pub fn parse_multicall_result(multicall_result: &str) -> Vec<Scalar> {
+pub fn parse_multicall_result(multicall_result: &str) -> Result<Vec<Scalar>, RpcError> {
     let lines = multicall_result
         .trim_start_matches("0x")
         .chars()
@@ -41,14 +47,16 @@ pub fn parse_multicall_result(multicall_result: &str) -> Vec<Scalar> {
         .map(|c| c.iter().collect::<String>())
         .collect::<Vec<String>>();
 
-    let count = U256::from_str(&lines[2]).unwrap_or_default().as_usize();
+    let count = rpc_error!(U256::from_str(&lines[2]))?.as_usize();
 
-    lines
-        .iter()
+    let balances = lines
+        .into_iter()
         .skip(count + 4)
         .step_by(2)
-        .map(|balance| U256::from_str(balance).unwrap_or_default().as_u128() as Scalar)
-        .collect::<Vec<Scalar>>()
+        .map(|balance| rpc_error!(U256::from_str(&balance).map(|value| value.as_u128() as Scalar)))
+        .collect::<Vec<Result<Scalar, RpcError>>>();
+
+    balances.into_iter().collect()
 }
 
 #[cfg(test)]

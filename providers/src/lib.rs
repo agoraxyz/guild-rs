@@ -4,6 +4,7 @@
 #![deny(unused_crate_dependencies)]
 
 use async_trait::async_trait;
+pub use evm::{BalancyError, RpcError};
 use guild_common::{Scalar, TokenType};
 #[cfg(feature = "nomock")]
 use tokio as _;

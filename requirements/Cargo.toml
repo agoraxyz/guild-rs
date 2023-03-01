@@ -25,3 +25,4 @@ reqwest = { workspace = true }
 guild-common = { path = "../common" }
 guild-providers = { path = "../providers" }
 serde = { workspace = true }
+thiserror = { workspace = true }

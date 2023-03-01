@@ -24,3 +24,4 @@ guild-requirements = { path = "../requirements" }
 primitive-types = { workspace = true }
 requiem = { git = "https://github.com/agoraxyz/requiem.git" }
 reqwest = { workspace = true }
+thiserror = { workspace = true }

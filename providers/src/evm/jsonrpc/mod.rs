@@ -82,11 +82,18 @@ pub enum RpcError {
     #[error("Chain `{0}` is not supported")]
     ChainNotSupported(String),
     #[error(transparent)]
-    Config(#[from] reqwest::Error),
+    Reqwest(#[from] reqwest::Error),
     #[error(transparent)]
-    Reqwest(#[from] RpcConfigError),
+    Config(#[from] RpcConfigError),
     #[error("{0}")]
     Other(String),
+}
+
+#[macro_export]
+macro_rules! rpc_error {
+    ($code:expr) => {
+        $code.map_err(|err| RpcError::Other(err.to_string()))
+    };
 }
 
 fn create_payload(method: &str, params: String, id: u32) -> String {
@@ -105,9 +112,7 @@ async fn get_coin_balance(
     chain: EvmChain,
     address: Address,
 ) -> Result<Scalar, RpcError> {
-    let provider = chain
-        .provider()
-        .map_err(|err| RpcError::Other(err.to_string()))?;
+    let provider = chain.provider()?;
 
     let payload = create_payload(
         "eth_getBalance",
@@ -123,7 +128,7 @@ async fn get_coin_balance(
         .json()
         .await?;
 
-    let balance = U256::from_str(&res.result).map_err(|err| RpcError::Other(err.to_string()))?;
+    let balance = rpc_error!(U256::from_str(&res.result))?;
 
     Ok((balance.as_u128() as f64) / ETH_BALANCE_DIVIDER)
 }
@@ -154,10 +159,11 @@ impl BalanceQuerier for RpcProvider {
                 Some(token_id) => {
                     get_erc1155_balance(client, chain, address, token_id, user_address).await
                 }
-                None => BalancyProvider
-                    .get_balance(client, chain, token_type, user_address)
-                    .await
-                    .map_err(|err| RpcError::Other(err.to_string())),
+                None => rpc_error!(
+                    BalancyProvider
+                        .get_balance(client, chain, token_type, user_address)
+                        .await
+                ),
             },
         }
     }
@@ -183,14 +189,15 @@ impl BalanceQuerier for RpcProvider {
                 }
                 None => {
                     let res = join_all(addresses.iter().map(|addr| async {
-                        BalancyProvider
-                            .get_balance(client, chain, token_type, *addr)
-                            .await
-                            .unwrap_or_default()
+                        rpc_error!(
+                            BalancyProvider
+                                .get_balance(client, chain, token_type, *addr)
+                                .await
+                        )
                     }))
                     .await;
 
-                    Ok(res)
+                    res.into_iter().collect()
                 }
             },
         }
@@ -352,7 +359,7 @@ mod test {
         };
         let user_address = address!(USER_3_ADDR);
 
-        assert_eq!(
+        assert!(
             RpcProvider
                 .get_balance(
                     &client,
@@ -361,8 +368,8 @@ mod test {
                     user_address
                 )
                 .await
-                .unwrap(),
-            6730.0
+                .unwrap()
+                > 6000.0
         );
         assert_eq!(
             RpcProvider

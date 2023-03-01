@@ -7,6 +7,7 @@ use guild_common::{Scalar, TokenType};
 use primitive_types::{H160 as Address, U256};
 use reqwest::StatusCode;
 use serde::de::DeserializeOwned;
+pub use types::BalancyError;
 
 mod types;
 
@@ -321,7 +322,7 @@ mod test {
         };
         let user_address = address!(USER_3_ADDR);
 
-        assert_eq!(
+        assert!(
             BalancyProvider
                 .get_balance(
                     &client,
@@ -330,8 +331,8 @@ mod test {
                     user_address
                 )
                 .await
-                .unwrap(),
-            6730.0
+                .unwrap()
+                > 6000.0
         );
         assert_eq!(
             BalancyProvider

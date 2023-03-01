@@ -19,4 +19,3 @@ shiba = { version = "0.1.1", default-features = false }
 async-trait = { workspace = true }
 primitive-types = { workspace = true }
 serde = { workspace = true }
-thiserror = { workspace = true }

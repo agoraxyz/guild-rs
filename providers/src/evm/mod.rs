@@ -1,11 +1,12 @@
 mod balancy;
 mod jsonrpc;
 
+pub use balancy::BalancyError;
 #[cfg(feature = "balancy")]
 pub use balancy::BalancyProvider as Provider;
-pub use jsonrpc::get_erc20_decimals;
 #[cfg(not(feature = "balancy"))]
 pub use jsonrpc::RpcProvider as Provider;
+pub use jsonrpc::{get_erc20_decimals, RpcError};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Copy, std::hash::Hash)]
