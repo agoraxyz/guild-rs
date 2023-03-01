@@ -4,7 +4,7 @@
 #![deny(unused_crate_dependencies)]
 
 use async_trait::async_trait;
-use guild_common::TokenType;
+use guild_common::{Scalar, TokenType};
 #[cfg(feature = "nomock")]
 use tokio as _;
 
@@ -16,7 +16,6 @@ pub trait BalanceQuerier {
     type Chain;
     type Address;
     type Id;
-    type Balance;
 
     async fn get_balance(
         &self,
@@ -24,12 +23,12 @@ pub trait BalanceQuerier {
         chain: Self::Chain,
         token_type: TokenType<Self::Address, Self::Id>,
         address: Self::Address,
-    ) -> Result<Self::Balance, Self::Error>;
+    ) -> Result<Scalar, Self::Error>;
     async fn get_balance_batch(
         &self,
         client: &reqwest::Client,
         chain: Self::Chain,
         token_type: TokenType<Self::Address, Self::Id>,
         addresses: &[Self::Address],
-    ) -> Result<Vec<Self::Balance>, Self::Error>;
+    ) -> Result<Vec<Scalar>, Self::Error>;
 }

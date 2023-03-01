@@ -1,3 +1,4 @@
+use crate::evm::jsonrpc::RpcError;
 use primitive_types::{H160 as Address, U256};
 use serde::{de::Error, Deserialize, Deserializer};
 use thiserror::Error;
@@ -12,6 +13,8 @@ pub enum BalancyError {
     InvalidBalancyRequest,
     #[error("Too many requests to Balancy")]
     TooManyRequests,
+    #[error(transparent)]
+    Rpc(#[from] RpcError),
     #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
     #[error("Got response with status code `{0}`")]

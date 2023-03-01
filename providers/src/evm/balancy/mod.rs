@@ -1,9 +1,9 @@
 use crate::{
-    evm::{balancy::types::*, EvmChain},
+    evm::{balancy::types::*, jsonrpc::get_erc20_decimals, EvmChain},
     BalanceQuerier,
 };
 use async_trait::async_trait;
-use guild_common::TokenType;
+use guild_common::{Scalar, TokenType};
 use primitive_types::{H160 as Address, U256};
 use reqwest::StatusCode;
 use serde::de::DeserializeOwned;
@@ -64,14 +64,16 @@ async fn get_erc20_balance(
     chain: EvmChain,
     token_address: Address,
     user_address: Address,
-) -> Result<U256, BalancyError> {
+) -> Result<Scalar, BalancyError> {
     let tokens = make_balancy_request::<Erc20>(client, chain, "erc20", user_address).await?;
+    let decimals = get_erc20_decimals(client, chain, token_address).await?;
+    let divider = 10_u128.pow(decimals.as_u32()) as Scalar;
 
     let amount = tokens
         .result
         .iter()
         .find(|token| token.token_address == token_address)
-        .map(|token| token.amount)
+        .map(|token| (token.amount.as_u128() as Scalar) / divider)
         .unwrap_or_default();
 
     Ok(amount)
@@ -83,7 +85,7 @@ async fn get_erc721_balance(
     token_address: Address,
     token_id: Option<U256>,
     user_address: Address,
-) -> Result<U256, BalancyError> {
+) -> Result<Scalar, BalancyError> {
     let tokens = make_balancy_request::<Erc721>(client, chain, "erc721", user_address).await?;
 
     let amount = tokens
@@ -99,7 +101,7 @@ async fn get_erc721_balance(
         })
         .count();
 
-    Ok(U256::from(amount))
+    Ok(amount as Scalar)
 }
 
 async fn get_erc1155_balance(
@@ -108,7 +110,7 @@ async fn get_erc1155_balance(
     token_address: Address,
     token_id: Option<U256>,
     user_address: Address,
-) -> Result<U256, BalancyError> {
+) -> Result<Scalar, BalancyError> {
     let tokens = make_balancy_request::<Erc1155>(client, chain, "erc1155", user_address).await?;
 
     let amount = tokens
@@ -122,11 +124,11 @@ async fn get_erc1155_balance(
                 }
             }
         })
-        .map(|token| token.amount)
+        .map(|token| token.amount.as_u128())
         .reduce(|a, b| a + b)
         .unwrap_or_default();
 
-    Ok(amount)
+    Ok(amount as Scalar)
 }
 
 #[async_trait]
@@ -135,7 +137,6 @@ impl BalanceQuerier for BalancyProvider {
     type Chain = EvmChain;
     type Address = Address;
     type Id = U256;
-    type Balance = U256;
 
     async fn get_balance(
         &self,
@@ -143,7 +144,7 @@ impl BalanceQuerier for BalancyProvider {
         chain: Self::Chain,
         token_type: TokenType<Self::Address, Self::Id>,
         user_address: Self::Address,
-    ) -> Result<Self::Balance, Self::Error> {
+    ) -> Result<Scalar, Self::Error> {
         match token_type {
             TokenType::Fungible { address } => {
                 get_erc20_balance(client, chain, address, user_address).await
@@ -166,7 +167,7 @@ impl BalanceQuerier for BalancyProvider {
         chain: Self::Chain,
         token_type: TokenType<Self::Address, Self::Id>,
         addresses: &[Self::Address],
-    ) -> Result<Vec<Self::Balance>, Self::Error> {
+    ) -> Result<Vec<Scalar>, Self::Error> {
         Ok(
             futures::future::join_all(addresses.iter().map(|address| async {
                 self.get_balance(client, chain, token_type, *address)
@@ -264,7 +265,7 @@ mod test {
                 )
                 .await
                 .unwrap(),
-            U256::from(100000000000000000000_u128)
+            100.0
         );
     }
 
@@ -291,7 +292,7 @@ mod test {
                 )
                 .await
                 .unwrap(),
-            U256::from(1)
+            1.0
         );
         assert_eq!(
             BalancyProvider
@@ -303,7 +304,7 @@ mod test {
                 )
                 .await
                 .unwrap(),
-            U256::from(1)
+            1.0
         );
     }
 
@@ -330,7 +331,7 @@ mod test {
                 )
                 .await
                 .unwrap(),
-            U256::from(6790)
+            6730.0
         );
         assert_eq!(
             BalancyProvider
@@ -342,7 +343,7 @@ mod test {
                 )
                 .await
                 .unwrap(),
-            U256::from(16)
+            16.0
         );
     }
 }

@@ -9,6 +9,8 @@ use primitive_types::H160 as Address;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+pub type Scalar = f64;
+
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub enum Identity {
     EvmAddress(Address),
@@ -55,18 +57,17 @@ pub trait Retrievable {
     type Error;
     type Identity;
     type Client;
-    type Res;
 
     async fn retrieve(
         &self,
         client: &Self::Client,
         identity: &Self::Identity,
-    ) -> Result<Self::Res, Self::Error>;
+    ) -> Result<Scalar, Self::Error>;
     async fn retrieve_batch(
         &self,
         client: &Self::Client,
         identities: &[Self::Identity],
-    ) -> Result<Vec<Self::Res>, Self::Error>;
+    ) -> Result<Vec<Scalar>, Self::Error>;
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

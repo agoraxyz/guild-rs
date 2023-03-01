@@ -1,6 +1,6 @@
 use crate::{Requirement, RequirementError};
 use async_trait::async_trait;
-use guild_common::{Relation, Retrievable, TokenType};
+use guild_common::{Relation, Retrievable, Scalar, TokenType};
 use guild_providers::{
     evm::{EvmChain, Provider},
     BalanceQuerier,
@@ -9,17 +9,14 @@ use primitive_types::{H160 as Address, U256};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct Balance<T, U, V> {
+pub struct Balance<T, U> {
     pub chain: EvmChain,
     pub token_type: TokenType<T, U>,
-    pub relation: Relation<V>,
+    pub relation: Relation<Scalar>,
 }
 
-impl<T, U, V> Requirement for Balance<T, U, V>
-where
-    V: PartialEq + PartialOrd,
-{
-    type VerificationData = V;
+impl<T, U> Requirement for Balance<T, U> {
+    type VerificationData = Scalar;
 
     fn verify(&self, vd: &Self::VerificationData) -> bool {
         self.relation.assert(vd)
@@ -31,17 +28,16 @@ where
 }
 
 #[async_trait]
-impl Retrievable for Balance<Address, U256, U256> {
+impl Retrievable for Balance<Address, U256> {
     type Error = RequirementError;
     type Identity = Address;
     type Client = reqwest::Client;
-    type Res = U256;
 
     async fn retrieve(
         &self,
         client: &Self::Client,
         identity: &Self::Identity,
-    ) -> Result<Self::Res, Self::Error> {
+    ) -> Result<Scalar, Self::Error> {
         Provider
             .get_balance(client, self.chain, self.token_type, *identity)
             .await
@@ -52,7 +48,7 @@ impl Retrievable for Balance<Address, U256, U256> {
         &self,
         client: &Self::Client,
         identities: &[Self::Identity],
-    ) -> Result<Vec<Self::Res>, Self::Error> {
+    ) -> Result<Vec<Scalar>, Self::Error> {
         Provider
             .get_balance_batch(client, self.chain, self.token_type, identities)
             .await
@@ -76,7 +72,7 @@ mod test {
                 address: address!("0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"),
                 id: None::<U256>,
             },
-            relation: Relation::GreaterThan(U256::from(0)),
+            relation: Relation::GreaterThan(0.0),
         };
 
         #[cfg(feature = "nomock")]
@@ -104,8 +100,8 @@ mod test {
 
         #[cfg(not(feature = "nomock"))]
         {
-            let balance_1 = U256::from(69);
-            let balance_2 = U256::from(420);
+            let balance_1 = 69.0;
+            let balance_2 = 420.0;
 
             assert!(req.verify(&balance_1));
             assert!(req.verify(&balance_2));

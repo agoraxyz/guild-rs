@@ -6,6 +6,7 @@ use async_trait::async_trait;
 use config::{Config, File};
 pub use contract::get_erc20_decimals;
 use futures::future::join_all;
+use guild_common::Scalar;
 use primitive_types::{H160 as Address, U256};
 use serde::Deserialize;
 use std::{collections::HashMap, path::Path, str::FromStr};
@@ -17,6 +18,7 @@ mod contract;
 const CONFIG_PATH: &str = "providers.json";
 #[cfg(any(test, feature = "nomock"))]
 const CONFIG_PATH: &str = "../providers.json";
+const ETH_BALANCE_DIVIDER: Scalar = 10_u128.pow(18) as Scalar;
 
 #[derive(Clone, Deserialize)]
 struct Provider {
@@ -102,7 +104,7 @@ async fn get_coin_balance(
     client: &reqwest::Client,
     chain: EvmChain,
     address: Address,
-) -> Result<U256, RpcError> {
+) -> Result<Scalar, RpcError> {
     let provider = chain
         .provider()
         .map_err(|err| RpcError::Other(err.to_string()))?;
@@ -121,7 +123,9 @@ async fn get_coin_balance(
         .json()
         .await?;
 
-    U256::from_str(&res.result).map_err(|err| RpcError::Other(err.to_string()))
+    let balance = U256::from_str(&res.result).map_err(|err| RpcError::Other(err.to_string()))?;
+
+    Ok((balance.as_u128() as f64) / ETH_BALANCE_DIVIDER)
 }
 
 #[async_trait]
@@ -130,7 +134,6 @@ impl BalanceQuerier for RpcProvider {
     type Chain = EvmChain;
     type Address = Address;
     type Id = U256;
-    type Balance = U256;
 
     async fn get_balance(
         &self,
@@ -138,7 +141,7 @@ impl BalanceQuerier for RpcProvider {
         chain: Self::Chain,
         token_type: TokenType<Self::Address, Self::Id>,
         user_address: Self::Address,
-    ) -> Result<Self::Balance, Self::Error> {
+    ) -> Result<Scalar, Self::Error> {
         match token_type {
             TokenType::Native => get_coin_balance(client, chain, user_address).await,
             TokenType::Fungible { address } => {
@@ -165,7 +168,7 @@ impl BalanceQuerier for RpcProvider {
         chain: Self::Chain,
         token_type: TokenType<Self::Address, Self::Id>,
         addresses: &[Self::Address],
-    ) -> Result<Vec<Self::Balance>, Self::Error> {
+    ) -> Result<Vec<Scalar>, Self::Error> {
         match token_type {
             TokenType::Native => get_eth_balance_batch(client, chain, addresses).await,
             TokenType::Fungible { address } => {
@@ -215,7 +218,7 @@ mod test {
                 )
                 .await
                 .unwrap(),
-            U256::from(464468855704627_u128)
+            0.000464468855704627
         );
     }
 
@@ -231,10 +234,7 @@ mod test {
                 )
                 .await
                 .unwrap(),
-            vec![
-                U256::from(464468855704627_u128),
-                U256::from(391945502449693859_u128)
-            ]
+            vec![0.000464468855704627, 0.3919455024496939]
         );
     }
 
@@ -254,7 +254,7 @@ mod test {
                 )
                 .await
                 .unwrap(),
-            U256::from(100000000000000000000_u128)
+            100.0
         );
     }
 
@@ -274,7 +274,7 @@ mod test {
                 )
                 .await
                 .unwrap(),
-            vec![U256::from(0), U256::from(100000000000000000000_u128)]
+            vec![0.0, 100.0]
         );
     }
 
@@ -301,7 +301,7 @@ mod test {
                 )
                 .await
                 .unwrap(),
-            U256::from(1)
+            1.0
         );
         assert_eq!(
             RpcProvider
@@ -313,7 +313,7 @@ mod test {
                 )
                 .await
                 .unwrap(),
-            U256::from(1)
+            1.0
         );
     }
 
@@ -335,7 +335,7 @@ mod test {
                 )
                 .await
                 .unwrap(),
-            vec![U256::from(1), U256::from(1)]
+            vec![1.0, 1.0]
         );
     }
 
@@ -362,7 +362,7 @@ mod test {
                 )
                 .await
                 .unwrap(),
-            U256::from(6790)
+            6730.0
         );
         assert_eq!(
             RpcProvider
@@ -374,7 +374,7 @@ mod test {
                 )
                 .await
                 .unwrap(),
-            U256::from(16)
+            16.0
         );
     }
 
@@ -396,7 +396,7 @@ mod test {
                 )
                 .await
                 .unwrap(),
-            vec![U256::from(0), U256::from(16)]
+            vec![0.0, 16.0]
         );
     }
 }

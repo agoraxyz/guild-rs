@@ -1,4 +1,5 @@
 use super::{Call, ZEROES};
+use guild_common::Scalar;
 use primitive_types::U256;
 use std::str::FromStr;
 
@@ -31,7 +32,7 @@ pub fn aggregate(calls: &[Call]) -> String {
     format!("{FUNC_SIG}{param_count_len}{param_count}{offset}{aggregated}")
 }
 
-pub fn parse_multicall_result(multicall_result: &str) -> Vec<U256> {
+pub fn parse_multicall_result(multicall_result: &str) -> Vec<Scalar> {
     let lines = multicall_result
         .trim_start_matches("0x")
         .chars()
@@ -46,8 +47,8 @@ pub fn parse_multicall_result(multicall_result: &str) -> Vec<U256> {
         .iter()
         .skip(count + 4)
         .step_by(2)
-        .map(|balance| U256::from_str(balance).unwrap_or_default())
-        .collect::<Vec<U256>>()
+        .map(|balance| U256::from_str(balance).unwrap_or_default().as_u128() as Scalar)
+        .collect::<Vec<Scalar>>()
 }
 
 #[cfg(test)]

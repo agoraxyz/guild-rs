@@ -64,7 +64,7 @@ impl Checkable for Role {
                 free.verify_batch(&vec![(); users_count])
             } else if let Some(allowlist) = req.downcast_ref::<AllowList<Address>>() {
                 reduce_accesses(&allowlist.verify_batch(&addresses))
-            } else if let Some(balance_check) = req.downcast_ref::<Balance<Address, U256, U256>>() {
+            } else if let Some(balance_check) = req.downcast_ref::<Balance<Address, U256>>() {
                 let balances = balance_check
                     .retrieve_batch(&reqwest::Client::new(), &addresses)
                     .await
@@ -135,7 +135,7 @@ mod test {
                 address: address!("0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"),
                 id: None::<U256>,
             },
-            relation: Relation::GreaterThan(U256::from(0)),
+            relation: Relation::GreaterThan(0.0),
         };
 
         let requirements: Vec<Box<dyn Send + Sync + Any>> = vec![
