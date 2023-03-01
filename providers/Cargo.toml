@@ -24,5 +24,6 @@ futures = { workspace = true }
 reqwest = { workspace = true }
 guild-common = { path = "../common" }
 serde = { workspace = true }
+serde_json = { version = "1.0.93", default-features = false }
 thiserror = { workspace = true }
 tokio = { workspace = true, optional = true }

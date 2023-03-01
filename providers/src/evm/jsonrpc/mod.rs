@@ -9,6 +9,7 @@ use futures::future::join_all;
 use guild_common::Scalar;
 use primitive_types::{H160 as Address, U256};
 use serde::Deserialize;
+use serde_json::{json, Value};
 use std::{collections::HashMap, path::Path, str::FromStr};
 use thiserror::Error;
 
@@ -96,14 +97,14 @@ macro_rules! rpc_error {
     };
 }
 
-fn create_payload(method: &str, params: String, id: u32) -> String {
-    format!(
-        "{{
-            \"method\"  : \"{method}\",
-            \"params\"  : {params},
-            \"id\"      : {id},
-            \"jsonrpc\" : \"2.0\"
-        }}"
+fn create_payload(method: &str, params: Value, id: u32) -> Value {
+    json!(
+        {
+            "method"  : method,
+            "params"  : params,
+            "id"      : id,
+            "jsonrpc" : "2.0"
+        }
     )
 }
 
@@ -114,15 +115,11 @@ async fn get_coin_balance(
 ) -> Result<Scalar, RpcError> {
     let provider = chain.provider()?;
 
-    let payload = create_payload(
-        "eth_getBalance",
-        format!("[\"{address:?}\", \"latest\"]"),
-        1,
-    );
+    let payload = create_payload("eth_getBalance", json!([address, "latest"]), 1);
 
     let res: RpcResponse = client
         .post(&provider.rpc_url)
-        .body(payload)
+        .json(&payload)
         .send()
         .await?
         .json()

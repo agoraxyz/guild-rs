@@ -10,6 +10,7 @@ use crate::{
 };
 use guild_common::Scalar;
 use primitive_types::{H160 as Address, U256};
+use serde_json::json;
 use std::str::FromStr;
 
 mod multicall;
@@ -35,21 +36,21 @@ async fn call_contract(
 ) -> Result<String, RpcError> {
     let provider = chain.provider()?;
 
-    let params = format!(
-        "[
-            {{
-                \"to\"   : \"{:?}\",
-                \"data\" : \"0x{}\"
-            }},
-            \"latest\"
-        ]",
-        call.target, call.call_data
+    let params = json!(
+        [
+            {
+                "to"   : call.target,
+                "data" : format!("0x{}", call.call_data)
+            },
+            "latest"
+        ]
     );
+
     let payload = create_payload("eth_call", params, 1);
 
     let res: RpcResponse = client
         .post(&provider.rpc_url)
-        .body(payload)
+        .json(&payload)
         .send()
         .await?
         .json()
