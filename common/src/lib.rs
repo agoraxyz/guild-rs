@@ -10,6 +10,35 @@ use serde::{Deserialize, Serialize};
 
 pub type Scalar = f64;
 
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Copy, std::hash::Hash)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum Chain {
+    Ethereum,
+    Polygon,
+    Gnosis,
+    Bsc,
+    Fantom,
+    Avalanche,
+    Heco,
+    Harmony,
+    Goerli,
+    Arbitrum,
+    Celo,
+    Optimism,
+    Moonriver,
+    Rinkeby,
+    Metis,
+    Cronos,
+    Boba,
+    Palm,
+}
+
+impl ToString for Chain {
+    fn to_string(&self) -> String {
+        format!("{self:?}").to_lowercase()
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub enum Identity {
     EvmAddress(Address),

@@ -7,30 +7,6 @@ pub use balancy::BalancyProvider as Provider;
 #[cfg(not(feature = "balancy"))]
 pub use jsonrpc::RpcProvider as Provider;
 pub use jsonrpc::{get_erc20_decimals, RpcError};
-use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Copy, std::hash::Hash)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum EvmChain {
-    Ethereum,
-    Polygon,
-    Gnosis,
-    Bsc,
-    Fantom,
-    Avalanche,
-    Heco,
-    Harmony,
-    Goerli,
-    Arbitrum,
-    Celo,
-    Optimism,
-    Moonriver,
-    Rinkeby,
-    Metis,
-    Cronos,
-    Boba,
-    Palm,
-}
 
 #[cfg(all(test, feature = "nomock"))]
 mod common {
