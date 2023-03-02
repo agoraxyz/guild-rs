@@ -13,7 +13,6 @@ categories = [
 edition = "2021"
 
 [dev-dependencies]
-guild-providers = { path = "../providers" }
 tokio = { workspace = true }
 
 [dependencies]
