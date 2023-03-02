@@ -1,5 +1,5 @@
 use crate::{
-    evm::{balancy::BalancyProvider, jsonrpc::contract::*, EvmChain},
+    evm::{balancy::BalancyProvider, jsonrpc::contract::*},
     BalanceQuerier, TokenType,
 };
 use async_trait::async_trait;
@@ -37,38 +37,18 @@ pub enum RpcConfigError {
     FieldNotSet(String),
 }
 
-trait GetProvider {
-    fn provider(&self) -> Result<Provider, RpcConfigError>;
-}
+fn get_provider(chain: &str) -> Result<Provider, RpcConfigError> {
+    use RpcConfigError::*;
 
-impl GetProvider for EvmChain {
-    fn provider(&self) -> Result<Provider, RpcConfigError> {
-        use RpcConfigError::*;
+    let settings = Config::builder()
+        .add_source(File::from(Path::new(CONFIG_PATH)))
+        .build()?;
 
-        let settings = Config::builder()
-            .add_source(File::from(Path::new(CONFIG_PATH)))
-            .build()?;
+    let map = settings.try_deserialize::<HashMap<String, Provider>>()?;
 
-        let map = settings.try_deserialize::<HashMap<String, Provider>>()?;
-
-        let get_value = |name: &str| {
-            let Some(value) = map.get(name) else {
-                return Err(FieldNotSet(name.to_string()));
-            };
-
-            Ok(value.clone())
-        };
-
-        match self {
-            EvmChain::Ethereum => get_value("ethereum"),
-            EvmChain::Polygon => get_value("polygon"),
-            EvmChain::Bsc => get_value("bsc"),
-            EvmChain::Gnosis => get_value("gnosis"),
-            EvmChain::Arbitrum => get_value("arbitrum"),
-            EvmChain::Goerli => get_value("goerli"),
-            _ => Err(ChainNotSupported(format!("{self:?}"))),
-        }
-    }
+    map.get(chain)
+        .ok_or(FieldNotSet(chain.to_string()))
+        .cloned()
 }
 
 #[derive(Deserialize)]
@@ -98,22 +78,20 @@ macro_rules! rpc_error {
 }
 
 fn create_payload(method: &str, params: Value, id: u32) -> Value {
-    json!(
-        {
-            "method"  : method,
-            "params"  : params,
-            "id"      : id,
-            "jsonrpc" : "2.0"
-        }
-    )
+    json!({
+        "method"  : method,
+        "params"  : params,
+        "id"      : id,
+        "jsonrpc" : "2.0"
+    })
 }
 
 async fn get_coin_balance(
     client: &reqwest::Client,
-    chain: EvmChain,
+    chain: &str,
     address: Address,
 ) -> Result<Scalar, RpcError> {
-    let provider = chain.provider()?;
+    let provider = get_provider(chain)?;
 
     let payload = create_payload("eth_getBalance", json!([address, "latest"]), 1);
 
@@ -133,14 +111,13 @@ async fn get_coin_balance(
 #[async_trait]
 impl BalanceQuerier for RpcProvider {
     type Error = RpcError;
-    type Chain = EvmChain;
     type Address = Address;
     type Id = U256;
 
     async fn get_balance(
         &self,
         client: &reqwest::Client,
-        chain: Self::Chain,
+        chain: &str,
         token_type: TokenType<Self::Address, Self::Id>,
         user_address: Self::Address,
     ) -> Result<Scalar, Self::Error> {
@@ -168,7 +145,7 @@ impl BalanceQuerier for RpcProvider {
     async fn get_balance_batch(
         &self,
         client: &reqwest::Client,
-        chain: Self::Chain,
+        chain: &str,
         token_type: TokenType<Self::Address, Self::Id>,
         addresses: &[Self::Address],
     ) -> Result<Vec<Scalar>, Self::Error> {
@@ -204,10 +181,10 @@ impl BalanceQuerier for RpcProvider {
 #[cfg(all(test, feature = "nomock"))]
 mod test {
     use crate::{
-        evm::{common::*, jsonrpc::RpcProvider, EvmChain},
+        evm::{common::*, jsonrpc::RpcProvider},
         BalanceQuerier,
     };
-    use guild_common::{address, TokenType::*};
+    use guild_common::{address, Chain, TokenType::*};
     use primitive_types::U256;
 
     #[tokio::test]
@@ -216,7 +193,7 @@ mod test {
             RpcProvider
                 .get_balance(
                     &reqwest::Client::new(),
-                    EvmChain::Ethereum,
+                    &Chain::Ethereum.to_string(),
                     Native,
                     address!(USER_1_ADDR)
                 )
@@ -232,7 +209,7 @@ mod test {
             RpcProvider
                 .get_balance_batch(
                     &reqwest::Client::new(),
-                    EvmChain::Ethereum,
+                    &Chain::Ethereum.to_string(),
                     Native,
                     &vec![address!(USER_1_ADDR), address!(USER_2_ADDR)]
                 )
@@ -252,7 +229,7 @@ mod test {
             RpcProvider
                 .get_balance(
                     &reqwest::Client::new(),
-                    EvmChain::Ethereum,
+                    &Chain::Ethereum.to_string(),
                     token_type,
                     address!(USER_2_ADDR)
                 )
@@ -272,7 +249,7 @@ mod test {
             RpcProvider
                 .get_balance_batch(
                     &reqwest::Client::new(),
-                    EvmChain::Ethereum,
+                    &Chain::Ethereum.to_string(),
                     token_type,
                     &vec![address!(USER_1_ADDR), address!(USER_2_ADDR)]
                 )
@@ -299,7 +276,7 @@ mod test {
             RpcProvider
                 .get_balance(
                     &client,
-                    EvmChain::Ethereum,
+                    &Chain::Ethereum.to_string(),
                     token_type_without_id,
                     user_address
                 )
@@ -311,7 +288,7 @@ mod test {
             RpcProvider
                 .get_balance(
                     &client,
-                    EvmChain::Ethereum,
+                    &Chain::Ethereum.to_string(),
                     token_type_with_id,
                     user_address
                 )
@@ -333,7 +310,7 @@ mod test {
             RpcProvider
                 .get_balance_batch(
                     &client,
-                    EvmChain::Ethereum,
+                    &Chain::Ethereum.to_string(),
                     token_type_without_id,
                     &vec![address!(USER_1_ADDR), address!(USER_2_ADDR)]
                 )
@@ -360,7 +337,7 @@ mod test {
             RpcProvider
                 .get_balance(
                     &client,
-                    EvmChain::Ethereum,
+                    &Chain::Ethereum.to_string(),
                     token_type_without_id,
                     user_address
                 )
@@ -372,7 +349,7 @@ mod test {
             RpcProvider
                 .get_balance(
                     &client,
-                    EvmChain::Ethereum,
+                    &Chain::Ethereum.to_string(),
                     token_type_with_id,
                     user_address
                 )
@@ -394,7 +371,7 @@ mod test {
             RpcProvider
                 .get_balance_batch(
                     &client,
-                    EvmChain::Ethereum,
+                    &Chain::Ethereum.to_string(),
                     token_type_with_id,
                     &vec![address!(USER_1_ADDR), address!(USER_3_ADDR)]
                 )

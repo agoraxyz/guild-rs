@@ -1,10 +1,7 @@
 use crate::{
-    evm::{
-        jsonrpc::{
-            contract::multicall::{aggregate, parse_multicall_result},
-            create_payload, GetProvider, RpcError, RpcResponse, ETH_BALANCE_DIVIDER,
-        },
-        EvmChain,
+    evm::jsonrpc::{
+        contract::multicall::{aggregate, parse_multicall_result},
+        create_payload, get_provider, RpcError, RpcResponse, ETH_BALANCE_DIVIDER,
     },
     rpc_error,
 };
@@ -31,20 +28,18 @@ pub struct Call {
 
 async fn call_contract(
     client: &reqwest::Client,
-    chain: EvmChain,
+    chain: &str,
     call: Call,
 ) -> Result<String, RpcError> {
-    let provider = chain.provider()?;
+    let provider = get_provider(chain)?;
 
-    let params = json!(
-        [
-            {
-                "to"   : call.target,
-                "data" : format!("0x{}", call.call_data)
-            },
-            "latest"
-        ]
-    );
+    let params = json!([
+        {
+            "to"   : call.target,
+            "data" : format!("0x{}", call.call_data)
+        },
+        "latest"
+    ]);
 
     let payload = create_payload("eth_call", params, 1);
 
@@ -61,10 +56,10 @@ async fn call_contract(
 
 pub async fn get_eth_balance_batch(
     client: &reqwest::Client,
-    chain: EvmChain,
+    chain: &str,
     user_addresses: &[Address],
 ) -> Result<Vec<Scalar>, RpcError> {
-    let target = chain.provider()?.contract;
+    let target = get_provider(chain)?.contract;
 
     let calls = user_addresses
         .iter()
@@ -90,7 +85,7 @@ pub async fn get_eth_balance_batch(
 
 pub async fn get_erc20_decimals(
     client: &reqwest::Client,
-    chain: EvmChain,
+    chain: &str,
     token_address: Address,
 ) -> Result<U256, RpcError> {
     let call = Call {
@@ -111,7 +106,7 @@ fn erc20_call(token_address: Address, user_address: Address) -> Call {
 
 pub async fn get_erc20_balance(
     client: &reqwest::Client,
-    chain: EvmChain,
+    chain: &str,
     token_address: Address,
     user_address: Address,
 ) -> Result<Scalar, RpcError> {
@@ -127,7 +122,7 @@ pub async fn get_erc20_balance(
 
 pub async fn get_erc20_balance_batch(
     client: &reqwest::Client,
-    chain: EvmChain,
+    chain: &str,
     token_address: Address,
     user_addresses: &[Address],
 ) -> Result<Vec<Scalar>, RpcError> {
@@ -137,7 +132,7 @@ pub async fn get_erc20_balance_batch(
         .collect::<Vec<Call>>();
 
     let call = Call {
-        target: chain.provider()?.contract,
+        target: get_provider(chain)?.contract,
         call_data: aggregate(&calls),
     };
 
@@ -164,7 +159,7 @@ fn erc721_id_call(token_address: Address, id: U256) -> Call {
 
 pub async fn get_erc721_balance(
     client: &reqwest::Client,
-    chain: EvmChain,
+    chain: &str,
     token_address: Address,
     token_id: Option<U256>,
     user_address: Address,
@@ -189,7 +184,7 @@ pub async fn get_erc721_balance(
 
 pub async fn get_erc721_balance_batch(
     client: &reqwest::Client,
-    chain: EvmChain,
+    chain: &str,
     token_address: Address,
     user_addresses: &[Address],
 ) -> Result<Vec<Scalar>, RpcError> {
@@ -199,7 +194,7 @@ pub async fn get_erc721_balance_batch(
         .collect::<Vec<Call>>();
 
     let call = Call {
-        target: chain.provider()?.contract,
+        target: get_provider(chain)?.contract,
         call_data: aggregate(&calls),
     };
 
@@ -217,7 +212,7 @@ fn erc1155_call(token_address: Address, id: U256, user_address: Address) -> Call
 
 pub async fn get_erc1155_balance(
     client: &reqwest::Client,
-    chain: EvmChain,
+    chain: &str,
     token_address: Address,
     token_id: U256,
     user_address: Address,
@@ -232,7 +227,7 @@ pub async fn get_erc1155_balance(
 
 pub async fn get_erc1155_balance_batch(
     client: &reqwest::Client,
-    chain: EvmChain,
+    chain: &str,
     token_address: Address,
     token_id: U256,
     user_addresses: &[Address],
@@ -276,14 +271,14 @@ pub async fn get_erc1155_balance_batch(
 
 #[cfg(all(test, feature = "nomock"))]
 mod test {
-    use crate::evm::{common::*, jsonrpc::get_erc20_decimals, EvmChain};
-    use guild_common::address;
+    use crate::evm::{common::*, jsonrpc::get_erc20_decimals};
+    use guild_common::{address, Chain};
     use primitive_types::U256;
 
     #[tokio::test]
     async fn rpc_get_erc20_decimals() {
         let client = reqwest::Client::new();
-        let chain = EvmChain::Ethereum;
+        let chain = &Chain::Ethereum.to_string();
         let token_1 = ERC20_ADDR;
         let token_2 = "0x343e59d9d835e35b07fe80f5bb544f8ed1cd3b11";
         let token_3 = "0xaba8cac6866b83ae4eec97dd07ed254282f6ad8a";

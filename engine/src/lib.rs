@@ -108,8 +108,7 @@ impl Checkable for Role {
 #[cfg(test)]
 mod test {
     use crate::Checkable;
-    use guild_common::{address, Identity, Relation, Role, TokenType, User};
-    use guild_providers::evm::Chain;
+    use guild_common::{address, Chain, Identity, Relation, Role, TokenType, User};
     use guild_requirements::{AllowList, Balance};
     use primitive_types::U256;
     use std::any::Any;

@@ -1,9 +1,6 @@
 use async_trait::async_trait;
 use guild_common::{Relation, Requirement, Retrievable, Scalar, TokenType};
-use guild_providers::{
-    evm::{EvmChain, Provider},
-    BalanceQuerier,
-};
+use guild_providers::{evm::Provider, BalanceQuerier};
 use primitive_types::{H160 as Address, U256};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -18,7 +15,7 @@ pub enum BalanceError {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Balance<T, U> {
-    pub chain: EvmChain,
+    pub chain: String,
     pub token_type: TokenType<T, U>,
     pub relation: Relation,
 }
@@ -47,7 +44,7 @@ impl Retrievable for Balance<Address, U256> {
         identity: &Self::Identity,
     ) -> Result<Scalar, Self::Error> {
         let res = Provider
-            .get_balance(client, self.chain, self.token_type, *identity)
+            .get_balance(client, &self.chain, self.token_type, *identity)
             .await?;
 
         Ok(res)
@@ -59,7 +56,7 @@ impl Retrievable for Balance<Address, U256> {
         identities: &[Self::Identity],
     ) -> Result<Vec<Scalar>, Self::Error> {
         let res = Provider
-            .get_balance_batch(client, self.chain, self.token_type, identities)
+            .get_balance_batch(client, &self.chain, self.token_type, identities)
             .await?;
 
         Ok(res)
@@ -71,13 +68,12 @@ mod test {
     #[cfg(feature = "nomock")]
     use super::Retrievable;
     use super::{Balance, Relation, Requirement, TokenType, U256};
-    use guild_common::address;
-    use guild_providers::evm::EvmChain;
+    use guild_common::{address, Chain};
 
     #[tokio::test]
     async fn balance_requirement_check() {
         let req = Balance {
-            chain: EvmChain::Ethereum,
+            chain: Chain::Ethereum.to_string(),
             token_type: TokenType::NonFungible {
                 address: address!("0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"),
                 id: None::<U256>,

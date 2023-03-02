@@ -1,5 +1,5 @@
 use crate::{
-    evm::{balancy::types::*, jsonrpc::get_erc20_decimals, EvmChain},
+    evm::{balancy::types::*, jsonrpc::get_erc20_decimals},
     BalanceQuerier,
 };
 use async_trait::async_trait;
@@ -17,29 +17,23 @@ const BALANCY_CHAIN: &str = "&chain=";
 
 pub struct BalancyProvider;
 
-trait BalancyId {
-    fn balancy_id(&self) -> Option<u8>;
-}
-
-impl BalancyId for EvmChain {
-    fn balancy_id(&self) -> Option<u8> {
-        match self {
-            EvmChain::Ethereum => Some(1),
-            EvmChain::Bsc => Some(56),
-            EvmChain::Gnosis => Some(100),
-            EvmChain::Polygon => Some(137),
-            _ => None,
-        }
+fn get_balancy_id(chain: &str) -> Option<u8> {
+    match chain {
+        "ethereum" => Some(1),
+        "bsc" => Some(56),
+        "gnosis" => Some(100),
+        "polygon" => Some(137),
+        _ => None,
     }
 }
 
 async fn make_balancy_request<T: DeserializeOwned + 'static>(
     client: &reqwest::Client,
-    chain: EvmChain,
+    chain: &str,
     token: &str,
     address: Address,
 ) -> Result<BalancyResponse<T>, BalancyError> {
-    let Some(id) = chain.balancy_id() else {
+    let Some(id) = get_balancy_id(chain) else {
         return Err(BalancyError::ChainNotSupported(format!("{chain:?}")));
     };
 
@@ -62,7 +56,7 @@ async fn make_balancy_request<T: DeserializeOwned + 'static>(
 
 async fn get_erc20_balance(
     client: &reqwest::Client,
-    chain: EvmChain,
+    chain: &str,
     token_address: Address,
     user_address: Address,
 ) -> Result<Scalar, BalancyError> {
@@ -82,7 +76,7 @@ async fn get_erc20_balance(
 
 async fn get_erc721_balance(
     client: &reqwest::Client,
-    chain: EvmChain,
+    chain: &str,
     token_address: Address,
     token_id: Option<U256>,
     user_address: Address,
@@ -107,7 +101,7 @@ async fn get_erc721_balance(
 
 async fn get_erc1155_balance(
     client: &reqwest::Client,
-    chain: EvmChain,
+    chain: &str,
     token_address: Address,
     token_id: Option<U256>,
     user_address: Address,
@@ -135,14 +129,13 @@ async fn get_erc1155_balance(
 #[async_trait]
 impl BalanceQuerier for BalancyProvider {
     type Error = BalancyError;
-    type Chain = EvmChain;
     type Address = Address;
     type Id = U256;
 
     async fn get_balance(
         &self,
         client: &reqwest::Client,
-        chain: Self::Chain,
+        chain: &str,
         token_type: TokenType<Self::Address, Self::Id>,
         user_address: Self::Address,
     ) -> Result<Scalar, Self::Error> {
@@ -165,7 +158,7 @@ impl BalanceQuerier for BalancyProvider {
     async fn get_balance_batch(
         &self,
         client: &reqwest::Client,
-        chain: Self::Chain,
+        chain: &str,
         token_type: TokenType<Self::Address, Self::Id>,
         addresses: &[Self::Address],
     ) -> Result<Vec<Scalar>, Self::Error> {
@@ -184,29 +177,28 @@ impl BalanceQuerier for BalancyProvider {
 mod test {
     use crate::{
         evm::{
-            balancy::{make_balancy_request, types::Erc20, BalancyId, BalancyProvider},
+            balancy::{get_balancy_id, make_balancy_request, types::Erc20, BalancyProvider},
             common::*,
-            EvmChain,
         },
         BalanceQuerier,
     };
-    use guild_common::{address, TokenType::*};
+    use guild_common::{address, Chain, TokenType::*};
     use primitive_types::U256;
 
     #[test]
     fn balancy_get_chain_id() {
-        assert_eq!(EvmChain::Ethereum.balancy_id(), Some(1));
-        assert_eq!(EvmChain::Bsc.balancy_id(), Some(56));
-        assert_eq!(EvmChain::Gnosis.balancy_id(), Some(100));
-        assert_eq!(EvmChain::Polygon.balancy_id(), Some(137));
-        assert_eq!(EvmChain::Goerli.balancy_id(), None);
+        assert_eq!(get_balancy_id(&Chain::Ethereum.to_string()), Some(1));
+        assert_eq!(get_balancy_id("bsc"), Some(56));
+        assert_eq!(get_balancy_id("gnosis"), Some(100));
+        assert_eq!(get_balancy_id("polygon"), Some(137));
+        assert_eq!(get_balancy_id("goerli"), None);
     }
 
     #[tokio::test]
     async fn balancy_ethereum() {
         assert!(make_balancy_request::<Erc20>(
             &reqwest::Client::new(),
-            EvmChain::Ethereum,
+            &Chain::Ethereum.to_string(),
             "erc20",
             address!(USER_1_ADDR)
         )
@@ -218,7 +210,7 @@ mod test {
     async fn balancy_bsc() {
         assert!(make_balancy_request::<Erc20>(
             &reqwest::Client::new(),
-            EvmChain::Bsc,
+            &Chain::Bsc.to_string(),
             "erc20",
             address!(USER_1_ADDR)
         )
@@ -230,7 +222,7 @@ mod test {
     async fn balancy_gnosis() {
         assert!(make_balancy_request::<Erc20>(
             &reqwest::Client::new(),
-            EvmChain::Gnosis,
+            &Chain::Gnosis.to_string(),
             "erc20",
             address!(USER_1_ADDR)
         )
@@ -242,7 +234,7 @@ mod test {
     async fn balancy_polygon() {
         assert!(make_balancy_request::<Erc20>(
             &reqwest::Client::new(),
-            EvmChain::Polygon,
+            &Chain::Polygon.to_string(),
             "erc20",
             address!(USER_1_ADDR)
         )
@@ -260,7 +252,7 @@ mod test {
             BalancyProvider
                 .get_balance(
                     &reqwest::Client::new(),
-                    EvmChain::Ethereum,
+                    &Chain::Ethereum.to_string(),
                     token_type,
                     address!(USER_2_ADDR)
                 )
@@ -287,7 +279,7 @@ mod test {
             BalancyProvider
                 .get_balance(
                     &client,
-                    EvmChain::Ethereum,
+                    &Chain::Ethereum.to_string(),
                     token_type_without_id,
                     user_address
                 )
@@ -299,7 +291,7 @@ mod test {
             BalancyProvider
                 .get_balance(
                     &client,
-                    EvmChain::Ethereum,
+                    &Chain::Ethereum.to_string(),
                     token_type_with_id,
                     user_address
                 )
@@ -326,7 +318,7 @@ mod test {
             BalancyProvider
                 .get_balance(
                     &client,
-                    EvmChain::Ethereum,
+                    &Chain::Ethereum.to_string(),
                     token_type_without_id,
                     user_address
                 )
@@ -338,7 +330,7 @@ mod test {
             BalancyProvider
                 .get_balance(
                     &client,
-                    EvmChain::Ethereum,
+                    &Chain::Ethereum.to_string(),
                     token_type_with_id,
                     user_address
                 )
