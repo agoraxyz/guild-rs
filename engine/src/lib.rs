@@ -6,7 +6,7 @@
 use async_trait::async_trait;
 use futures::future::join_all;
 use guild_common::{Identity, Requirement, Retrievable, Role, User};
-use guild_requirements::{AllowList, Balance, Free};
+use guild_requirements::{AllowList, Balance};
 use primitive_types::{H160 as Address, U256};
 use std::{collections::HashMap, str::FromStr};
 use thiserror::Error;
@@ -67,9 +67,7 @@ impl Checkable for Role {
         };
 
         let accesses_per_req = join_all(self.requirements.iter().map(|req| async {
-            if let Some(free) = req.downcast_ref::<Free>() {
-                free.verify_batch(&vec![(); users_count])
-            } else if let Some(allowlist) = req.downcast_ref::<AllowList<Address>>() {
+            if let Some(allowlist) = req.downcast_ref::<AllowList<Address>>() {
                 reduce_accesses(&allowlist.verify_batch(&addresses))
             } else if let Some(balance_check) = req.downcast_ref::<Balance<Address, U256>>() {
                 let balances = balance_check
@@ -111,8 +109,8 @@ impl Checkable for Role {
 mod test {
     use crate::Checkable;
     use guild_common::{address, Identity, Relation, Role, TokenType, User};
-    use guild_providers::evm::EvmChain;
-    use guild_requirements::{AllowList, Balance, Free};
+    use guild_providers::evm::Chain;
+    use guild_requirements::{AllowList, Balance};
     use primitive_types::U256;
     use std::any::Any;
 
@@ -135,7 +133,7 @@ mod test {
         };
 
         let balance_check = Balance {
-            chain: EvmChain::Ethereum,
+            chain: Chain::Ethereum.to_string(),
             token_type: TokenType::NonFungible {
                 address: address!("0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"),
                 id: None::<U256>,
@@ -144,7 +142,6 @@ mod test {
         };
 
         let requirements: Vec<Box<dyn Send + Sync + Any>> = vec![
-            Box::new(Free),
             Box::new(allowlist),
             Box::new(denylist),
             Box::new(balance_check),
@@ -152,7 +149,7 @@ mod test {
 
         let role = Role {
             name: "Test Role".to_string(),
-            logic: "0 AND 1 AND 2 AND 3".to_string(),
+            logic: "0 AND 1 AND 2".to_string(),
             requirements,
         };
 
