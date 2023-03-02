@@ -182,23 +182,27 @@ mod test {
         },
         BalanceQuerier,
     };
-    use guild_common::{address, Chain, TokenType::*};
+    use guild_common::{
+        address,
+        Chain::{Bsc, Ethereum, Gnosis, Goerli, Polygon},
+        TokenType::*,
+    };
     use primitive_types::U256;
 
     #[test]
     fn balancy_get_chain_id() {
-        assert_eq!(get_balancy_id(&Chain::Ethereum.to_string()), Some(1));
-        assert_eq!(get_balancy_id("bsc"), Some(56));
-        assert_eq!(get_balancy_id("gnosis"), Some(100));
-        assert_eq!(get_balancy_id("polygon"), Some(137));
-        assert_eq!(get_balancy_id("goerli"), None);
+        assert_eq!(get_balancy_id(&Ethereum.to_string()), Some(1));
+        assert_eq!(get_balancy_id(&Bsc.to_string()), Some(56));
+        assert_eq!(get_balancy_id(&Gnosis.to_string()), Some(100));
+        assert_eq!(get_balancy_id(&Polygon.to_string()), Some(137));
+        assert_eq!(get_balancy_id(&Goerli.to_string()), None);
     }
 
     #[tokio::test]
     async fn balancy_ethereum() {
         assert!(make_balancy_request::<Erc20>(
             &reqwest::Client::new(),
-            &Chain::Ethereum.to_string(),
+            &Ethereum.to_string(),
             "erc20",
             address!(USER_1_ADDR)
         )
@@ -210,7 +214,7 @@ mod test {
     async fn balancy_bsc() {
         assert!(make_balancy_request::<Erc20>(
             &reqwest::Client::new(),
-            &Chain::Bsc.to_string(),
+            &Bsc.to_string(),
             "erc20",
             address!(USER_1_ADDR)
         )
@@ -222,7 +226,7 @@ mod test {
     async fn balancy_gnosis() {
         assert!(make_balancy_request::<Erc20>(
             &reqwest::Client::new(),
-            &Chain::Gnosis.to_string(),
+            &Gnosis.to_string(),
             "erc20",
             address!(USER_1_ADDR)
         )
@@ -234,7 +238,7 @@ mod test {
     async fn balancy_polygon() {
         assert!(make_balancy_request::<Erc20>(
             &reqwest::Client::new(),
-            &Chain::Polygon.to_string(),
+            &Polygon.to_string(),
             "erc20",
             address!(USER_1_ADDR)
         )
@@ -252,7 +256,7 @@ mod test {
             BalancyProvider
                 .get_balance(
                     &reqwest::Client::new(),
-                    &Chain::Ethereum.to_string(),
+                    &Ethereum.to_string(),
                     token_type,
                     address!(USER_2_ADDR)
                 )
@@ -265,6 +269,7 @@ mod test {
     #[tokio::test]
     async fn balancy_get_erc721_balance() {
         let client = reqwest::Client::new();
+        let chain = Ethereum.to_string();
         let token_type_without_id = NonFungible {
             address: address!(ERC721_ADDR),
             id: None,
@@ -277,24 +282,14 @@ mod test {
 
         assert_eq!(
             BalancyProvider
-                .get_balance(
-                    &client,
-                    &Chain::Ethereum.to_string(),
-                    token_type_without_id,
-                    user_address
-                )
+                .get_balance(&client, &chain, token_type_without_id, user_address)
                 .await
                 .unwrap(),
             1.0
         );
         assert_eq!(
             BalancyProvider
-                .get_balance(
-                    &client,
-                    &Chain::Ethereum.to_string(),
-                    token_type_with_id,
-                    user_address
-                )
+                .get_balance(&client, &chain, token_type_with_id, user_address)
                 .await
                 .unwrap(),
             1.0
@@ -304,6 +299,7 @@ mod test {
     #[tokio::test]
     async fn balancy_get_erc1155_balance() {
         let client = reqwest::Client::new();
+        let chain = Ethereum.to_string();
         let token_type_without_id = Special {
             address: address!(ERC1155_ADDR),
             id: None,
@@ -316,24 +312,14 @@ mod test {
 
         assert!(
             BalancyProvider
-                .get_balance(
-                    &client,
-                    &Chain::Ethereum.to_string(),
-                    token_type_without_id,
-                    user_address
-                )
+                .get_balance(&client, &chain, token_type_without_id, user_address)
                 .await
                 .unwrap()
                 > 6000.0
         );
         assert_eq!(
             BalancyProvider
-                .get_balance(
-                    &client,
-                    &Chain::Ethereum.to_string(),
-                    token_type_with_id,
-                    user_address
-                )
+                .get_balance(&client, &chain, token_type_with_id, user_address)
                 .await
                 .unwrap(),
             16.0

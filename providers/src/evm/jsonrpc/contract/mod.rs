@@ -272,28 +272,28 @@ pub async fn get_erc1155_balance_batch(
 #[cfg(all(test, feature = "nomock"))]
 mod test {
     use crate::evm::{common::*, jsonrpc::get_erc20_decimals};
-    use guild_common::{address, Chain};
+    use guild_common::{address, Chain::Ethereum};
     use primitive_types::U256;
 
     #[tokio::test]
     async fn rpc_get_erc20_decimals() {
         let client = reqwest::Client::new();
-        let chain = &Chain::Ethereum.to_string();
+        let chain = Ethereum.to_string();
         let token_1 = ERC20_ADDR;
         let token_2 = "0x343e59d9d835e35b07fe80f5bb544f8ed1cd3b11";
         let token_3 = "0xaba8cac6866b83ae4eec97dd07ed254282f6ad8a";
         let token_4 = "0x0a9f693fce6f00a51a8e0db4351b5a8078b4242e";
 
-        let decimals_1 = get_erc20_decimals(&client, chain, address!(token_1))
+        let decimals_1 = get_erc20_decimals(&client, &chain, address!(token_1))
             .await
             .unwrap();
-        let decimals_2 = get_erc20_decimals(&client, chain, address!(token_2))
+        let decimals_2 = get_erc20_decimals(&client, &chain, address!(token_2))
             .await
             .unwrap();
-        let decimals_3 = get_erc20_decimals(&client, chain, address!(token_3))
+        let decimals_3 = get_erc20_decimals(&client, &chain, address!(token_3))
             .await
             .unwrap();
-        let decimals_4 = get_erc20_decimals(&client, chain, address!(token_4))
+        let decimals_4 = get_erc20_decimals(&client, &chain, address!(token_4))
             .await
             .unwrap();
 

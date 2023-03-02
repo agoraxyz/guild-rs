@@ -184,7 +184,7 @@ mod test {
         evm::{common::*, jsonrpc::RpcProvider},
         BalanceQuerier,
     };
-    use guild_common::{address, Chain, TokenType::*};
+    use guild_common::{address, Chain::Ethereum, TokenType::*};
     use primitive_types::U256;
 
     #[tokio::test]
@@ -193,7 +193,7 @@ mod test {
             RpcProvider
                 .get_balance(
                     &reqwest::Client::new(),
-                    &Chain::Ethereum.to_string(),
+                    &Ethereum.to_string(),
                     Native,
                     address!(USER_1_ADDR)
                 )
@@ -209,7 +209,7 @@ mod test {
             RpcProvider
                 .get_balance_batch(
                     &reqwest::Client::new(),
-                    &Chain::Ethereum.to_string(),
+                    &Ethereum.to_string(),
                     Native,
                     &vec![address!(USER_1_ADDR), address!(USER_2_ADDR)]
                 )
@@ -229,7 +229,7 @@ mod test {
             RpcProvider
                 .get_balance(
                     &reqwest::Client::new(),
-                    &Chain::Ethereum.to_string(),
+                    &Ethereum.to_string(),
                     token_type,
                     address!(USER_2_ADDR)
                 )
@@ -249,7 +249,7 @@ mod test {
             RpcProvider
                 .get_balance_batch(
                     &reqwest::Client::new(),
-                    &Chain::Ethereum.to_string(),
+                    &Ethereum.to_string(),
                     token_type,
                     &vec![address!(USER_1_ADDR), address!(USER_2_ADDR)]
                 )
@@ -262,6 +262,7 @@ mod test {
     #[tokio::test]
     async fn rpc_get_erc721_balance() {
         let client = reqwest::Client::new();
+        let chain = Ethereum.to_string();
         let token_type_without_id = NonFungible {
             address: address!(ERC721_ADDR),
             id: None,
@@ -274,24 +275,14 @@ mod test {
 
         assert_eq!(
             RpcProvider
-                .get_balance(
-                    &client,
-                    &Chain::Ethereum.to_string(),
-                    token_type_without_id,
-                    user_address
-                )
+                .get_balance(&client, &chain, token_type_without_id, user_address)
                 .await
                 .unwrap(),
             1.0
         );
         assert_eq!(
             RpcProvider
-                .get_balance(
-                    &client,
-                    &Chain::Ethereum.to_string(),
-                    token_type_with_id,
-                    user_address
-                )
+                .get_balance(&client, &chain, token_type_with_id, user_address)
                 .await
                 .unwrap(),
             1.0
@@ -310,7 +301,7 @@ mod test {
             RpcProvider
                 .get_balance_batch(
                     &client,
-                    &Chain::Ethereum.to_string(),
+                    &Ethereum.to_string(),
                     token_type_without_id,
                     &vec![address!(USER_1_ADDR), address!(USER_2_ADDR)]
                 )
@@ -323,6 +314,7 @@ mod test {
     #[tokio::test]
     async fn rpc_get_erc1155_balance() {
         let client = reqwest::Client::new();
+        let chain = Ethereum.to_string();
         let token_type_without_id = Special {
             address: address!(ERC1155_ADDR),
             id: None,
@@ -335,24 +327,14 @@ mod test {
 
         assert!(
             RpcProvider
-                .get_balance(
-                    &client,
-                    &Chain::Ethereum.to_string(),
-                    token_type_without_id,
-                    user_address
-                )
+                .get_balance(&client, &chain, token_type_without_id, user_address)
                 .await
                 .unwrap()
                 > 6000.0
         );
         assert_eq!(
             RpcProvider
-                .get_balance(
-                    &client,
-                    &Chain::Ethereum.to_string(),
-                    token_type_with_id,
-                    user_address
-                )
+                .get_balance(&client, &chain, token_type_with_id, user_address)
                 .await
                 .unwrap(),
             16.0
@@ -371,7 +353,7 @@ mod test {
             RpcProvider
                 .get_balance_batch(
                     &client,
-                    &Chain::Ethereum.to_string(),
+                    &Ethereum.to_string(),
                     token_type_with_id,
                     &vec![address!(USER_1_ADDR), address!(USER_3_ADDR)]
                 )

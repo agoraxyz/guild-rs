@@ -68,12 +68,12 @@ mod test {
     #[cfg(feature = "nomock")]
     use super::Retrievable;
     use super::{Balance, Relation, Requirement, TokenType, U256};
-    use guild_common::{address, Chain};
+    use guild_common::{address, Chain::Ethereum};
 
     #[tokio::test]
     async fn balance_requirement_check() {
         let req = Balance {
-            chain: Chain::Ethereum.to_string(),
+            chain: Ethereum.to_string(),
             token_type: TokenType::NonFungible {
                 address: address!("0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"),
                 id: None::<U256>,
@@ -84,21 +84,10 @@ mod test {
         #[cfg(feature = "nomock")]
         {
             let client = reqwest::Client::new();
+            let addr = address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE");
 
-            let balance_1 = req
-                .retrieve(
-                    &client,
-                    &address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
-                )
-                .await
-                .unwrap();
-            let balance_2 = req
-                .retrieve(
-                    &client,
-                    &address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
-                )
-                .await
-                .unwrap();
+            let balance_1 = req.retrieve(&client, &addr).await.unwrap();
+            let balance_2 = req.retrieve(&client, &addr).await.unwrap();
 
             assert!(req.verify(&balance_1));
             assert!(req.verify(&balance_2));
