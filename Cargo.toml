@@ -9,6 +9,9 @@ members = [
 [profile.dev]
 opt-level = 3
 
+[profile.release]
+strip = true
+
 [workspace.dependencies]
 async-trait = { version = "0.1.57", default-features = false }
 futures = { version = "0.3.17" }
