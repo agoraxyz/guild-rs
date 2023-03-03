@@ -1,7 +1,10 @@
 use crate::{
-    evm::jsonrpc::{
-        contract::multicall::{aggregate, parse_multicall_result},
-        create_payload, get_provider, RpcError, RpcResponse, ETH_BALANCE_DIVIDER,
+    evm::{
+        get_provider,
+        jsonrpc::{
+            contract::multicall::{aggregate, parse_multicall_result},
+            create_payload, RpcError, RpcResponse, ETH_BALANCE_DIVIDER,
+        },
     },
     rpc_error,
 };

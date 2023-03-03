@@ -1,55 +1,20 @@
 use crate::{
-    evm::{balancy::BalancyProvider, jsonrpc::contract::*},
+    evm::{balancy::BalancyProvider, get_provider, jsonrpc::contract::*, ProviderConfigError},
     BalanceQuerier, TokenType,
 };
 use async_trait::async_trait;
-use config::{Config, File};
 pub use contract::get_erc20_decimals;
 use futures::future::join_all;
 use guild_common::Scalar;
 use primitive_types::{H160 as Address, U256};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::{collections::HashMap, path::Path, str::FromStr};
+use std::str::FromStr;
 use thiserror::Error;
 
 mod contract;
 
-#[cfg(not(any(test, feature = "nomock")))]
-const CONFIG_PATH: &str = "providers.json";
-#[cfg(any(test, feature = "nomock"))]
-const CONFIG_PATH: &str = "../providers.json";
 const ETH_BALANCE_DIVIDER: Scalar = 10_u128.pow(18) as Scalar;
-
-#[derive(Clone, Deserialize)]
-struct Provider {
-    pub rpc_url: String,
-    pub contract: Address,
-}
-
-#[derive(Error, Debug)]
-pub enum RpcConfigError {
-    #[error(transparent)]
-    ConfigError(#[from] config::ConfigError),
-    #[error("Chain `{0}` is not supported")]
-    ChainNotSupported(String),
-    #[error("Field `{0}` has not been set")]
-    FieldNotSet(String),
-}
-
-fn get_provider(chain: &str) -> Result<Provider, RpcConfigError> {
-    use RpcConfigError::*;
-
-    let settings = Config::builder()
-        .add_source(File::from(Path::new(CONFIG_PATH)))
-        .build()?;
-
-    let map = settings.try_deserialize::<HashMap<String, Provider>>()?;
-
-    map.get(chain)
-        .ok_or(FieldNotSet(chain.to_string()))
-        .cloned()
-}
 
 #[derive(Deserialize)]
 pub struct RpcResponse {
@@ -65,7 +30,7 @@ pub enum RpcError {
     #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
     #[error(transparent)]
-    Config(#[from] RpcConfigError),
+    Config(#[from] ProviderConfigError),
     #[error("{0}")]
     Other(String),
 }

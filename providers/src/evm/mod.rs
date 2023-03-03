@@ -4,9 +4,48 @@ mod jsonrpc;
 pub use balancy::BalancyError;
 #[cfg(feature = "balancy")]
 pub use balancy::BalancyProvider as Provider;
+use config::{Config, File};
 #[cfg(not(feature = "balancy"))]
 pub use jsonrpc::RpcProvider as Provider;
 pub use jsonrpc::{get_erc20_decimals, RpcError};
+use primitive_types::H160 as Address;
+use serde::Deserialize;
+use std::{collections::HashMap, path::Path};
+use thiserror::Error;
+
+#[cfg(not(any(test, feature = "nomock")))]
+const CONFIG_PATH: &str = "providers.json";
+#[cfg(any(test, feature = "nomock"))]
+const CONFIG_PATH: &str = "../providers.json";
+
+#[derive(Clone, Deserialize)]
+struct EvmProvider {
+    pub rpc_url: String,
+    pub contract: Address,
+    pub balancy_id: Option<u8>,
+}
+
+#[derive(Error, Debug)]
+pub enum ProviderConfigError {
+    #[error(transparent)]
+    ConfigError(#[from] config::ConfigError),
+    #[error("Chain `{0}` is not supported")]
+    ChainNotSupported(String),
+    #[error("Field `{0}` has not been set")]
+    FieldNotSet(String),
+}
+
+fn get_provider(chain: &str) -> Result<EvmProvider, ProviderConfigError> {
+    let settings = Config::builder()
+        .add_source(File::from(Path::new(CONFIG_PATH)))
+        .build()?;
+
+    let map = settings.try_deserialize::<HashMap<String, EvmProvider>>()?;
+
+    map.get(chain)
+        .ok_or(ProviderConfigError::FieldNotSet(chain.to_string()))
+        .cloned()
+}
 
 #[cfg(all(test, feature = "nomock"))]
 mod common {

@@ -1,5 +1,5 @@
 use crate::{
-    evm::{balancy::types::*, jsonrpc::get_erc20_decimals},
+    evm::{balancy::types::*, get_provider, jsonrpc::get_erc20_decimals},
     BalanceQuerier,
 };
 use async_trait::async_trait;
@@ -18,12 +18,9 @@ const BALANCY_CHAIN: &str = "&chain=";
 pub struct BalancyProvider;
 
 fn get_balancy_id(chain: &str) -> Option<u8> {
-    match chain {
-        "ethereum" => Some(1),
-        "bsc" => Some(56),
-        "gnosis" => Some(100),
-        "polygon" => Some(137),
-        _ => None,
+    match get_provider(chain) {
+        Ok(provider) => provider.balancy_id,
+        Err(_) => None,
     }
 }
 
