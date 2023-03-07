@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use guild_common::{Relation, Requirement, Retrievable, Scalar, TokenType};
+use guild_common::{OldRequirement, Relation, Retrievable, Scalar, TokenType};
 use guild_providers::{evm::Provider, BalanceQuerier};
 use primitive_types::{H160 as Address, U256};
 use serde::{Deserialize, Serialize};
@@ -20,7 +20,7 @@ pub struct Balance<T, U> {
     pub relation: Relation,
 }
 
-impl<T, U> Requirement for Balance<T, U> {
+impl<T, U> OldRequirement for Balance<T, U> {
     type VerificationData = Scalar;
 
     fn verify(&self, vd: &Self::VerificationData) -> bool {
@@ -67,7 +67,7 @@ impl Retrievable for Balance<Address, U256> {
 mod test {
     #[cfg(feature = "nomock")]
     use super::Retrievable;
-    use super::{Balance, Relation, Requirement, TokenType, U256};
+    use super::{Balance, OldRequirement, Relation, TokenType, U256};
     use guild_common::{address, Chain::Ethereum};
 
     #[tokio::test]

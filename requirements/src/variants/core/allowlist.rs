@@ -1,4 +1,4 @@
-use guild_common::Requirement;
+use guild_common::OldRequirement;
 use serde::{Deserialize, Serialize};
 use std::{
     cmp::PartialEq,
@@ -11,7 +11,7 @@ pub struct AllowList<T> {
     pub verification_data: Vec<T>,
 }
 
-impl<T> Requirement for AllowList<T>
+impl<T> OldRequirement for AllowList<T>
 where
     T: Sync + Send + PartialEq,
 {
@@ -28,7 +28,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::{AllowList, Requirement};
+    use super::{AllowList, OldRequirement};
 
     #[test]
     fn allowlist_requirement_check() {
