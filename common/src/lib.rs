@@ -56,7 +56,7 @@ pub struct User {
 pub struct Role {
     pub name: String,
     pub logic: String,
-    pub requirements: Vec<Box<dyn Send + Sync + std::any::Any>>,
+    pub requirements: Option<Vec<Box<dyn Send + Sync + std::any::Any>>>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Copy)]
@@ -67,7 +67,39 @@ pub enum TokenType<T, U> {
     Special { address: T, id: Option<U> },
 }
 
-pub trait Requirement {
+pub enum Method {
+    Get,
+    Put,
+    Post,
+    Delete,
+    Patch,
+}
+
+pub enum Auth {
+    ApiKey(String),
+    Bearer(String),
+}
+
+pub enum Data {
+    UrlEncoded(String),
+    JsonBody(String),
+}
+
+pub struct Request {
+    pub base_url: String,
+    pub method: Method,
+    pub data: Data,
+    pub auth: Auth,
+    pub path: String,
+}
+
+pub struct Requirement {
+    pub request: Request,
+    pub identity_id: String,
+    pub relation: Relation,
+}
+
+pub trait OldRequirement {
     type VerificationData;
 
     fn verify(&self, vd: &Self::VerificationData) -> bool;
