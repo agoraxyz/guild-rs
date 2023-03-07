@@ -5,7 +5,7 @@
 
 use async_trait::async_trait;
 use futures::future::join_all;
-use guild_common::{Identity, Requirement, Retrievable, Role, User};
+use guild_common::{Identity, OldRequirement, Retrievable, Role, User};
 use guild_requirements::{AllowList, Balance};
 use primitive_types::{H160 as Address, U256};
 use std::{collections::HashMap, str::FromStr};
@@ -13,8 +13,29 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RoleError {
+    #[error("Missing requirements")]
+    InvalidRole,
     #[error(transparent)]
     Requiem(#[from] requiem::ParseError),
+}
+
+pub struct EngineRole {
+    pub logic: String,
+    pub requirements: Vec<Box<dyn Send + Sync + std::any::Any>>,
+}
+
+impl TryFrom<Role> for EngineRole {
+    type Error = RoleError;
+
+    fn try_from(role: Role) -> Result<EngineRole, Self::Error> {
+        match role.requirements {
+            Some(requirements) => Ok(EngineRole {
+                logic: role.logic,
+                requirements,
+            }),
+            _ => Err(RoleError::InvalidRole),
+        }
+    }
 }
 
 #[async_trait]
@@ -24,7 +45,7 @@ trait Checkable {
 }
 
 #[async_trait]
-impl Checkable for Role {
+impl Checkable for EngineRole {
     async fn check(&self, user: &User) -> Result<bool, RoleError> {
         self.check_batch(&[user.clone()])
             .await
@@ -107,7 +128,7 @@ impl Checkable for Role {
 
 #[cfg(test)]
 mod test {
-    use crate::Checkable;
+    use crate::{Checkable, EngineRole};
     use guild_common::{address, Chain, Identity, Relation, Role, TokenType, User};
     use guild_requirements::{AllowList, Balance};
     use primitive_types::U256;
@@ -140,7 +161,7 @@ mod test {
             relation: Relation::GreaterThan(0.0),
         };
 
-        let requirements: Vec<Box<dyn Send + Sync + Any>> = vec![
+        let reqs: Vec<Box<dyn Send + Sync + Any>> = vec![
             Box::new(allowlist),
             Box::new(denylist),
             Box::new(balance_check),
@@ -149,7 +170,7 @@ mod test {
         let role = Role {
             name: "Test Role".to_string(),
             logic: "0 AND 1 AND 2".to_string(),
-            requirements,
+            requirements: Some(reqs),
         };
 
         let user1 = User {
@@ -167,7 +188,11 @@ mod test {
         };
 
         assert_eq!(
-            role.check_batch(&[user1, user2]).await.unwrap(),
+            EngineRole::try_from(role)
+                .unwrap()
+                .check_batch(&[user1, user2])
+                .await
+                .unwrap(),
             &[true, false]
         );
     }
