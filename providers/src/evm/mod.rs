@@ -9,7 +9,8 @@ use config::{Config, File};
 pub use jsonrpc::RpcProvider as Provider;
 pub use jsonrpc::{get_erc20_decimals, RpcError};
 use primitive_types::H160 as Address;
-use serde::Deserialize;
+use redis::{Commands, Connection, RedisError};
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::Path};
 use thiserror::Error;
 
@@ -18,7 +19,7 @@ const CONFIG_PATH: &str = "providers.json";
 #[cfg(any(test, feature = "nomock"))]
 const CONFIG_PATH: &str = "../providers.json";
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 struct EvmProvider {
     pub rpc_url: String,
     pub contract: Address,
@@ -33,18 +34,42 @@ pub enum ProviderConfigError {
     ChainNotSupported(String),
     #[error("Field `{0}` has not been set")]
     FieldNotSet(String),
+    #[error(transparent)]
+    SerdeJsonError(#[from] serde_json::Error),
+}
+
+fn get_redis_connection() -> Result<Connection, RedisError> {
+    redis::Client::open("redis://127.0.0.1/")?.get_connection()
 }
 
 fn get_provider(chain: &str) -> Result<EvmProvider, ProviderConfigError> {
+    let mut con = get_redis_connection().ok();
+
+    if let Some(con) = con.as_mut() {
+        if let Ok(entry) = con.get::<&str, String>(chain) {
+            if let Ok(provider) = serde_json::from_str(&entry) {
+                return Ok(provider);
+            } else {
+                let _: Result<(), _> = con.del(chain);
+            }
+        }
+    };
+
     let settings = Config::builder()
         .add_source(File::from(Path::new(CONFIG_PATH)))
         .build()?;
 
     let map = settings.try_deserialize::<HashMap<String, EvmProvider>>()?;
 
-    map.get(chain)
-        .ok_or(ProviderConfigError::FieldNotSet(chain.to_string()))
-        .cloned()
+    if let Some(provider) = map.get(chain).cloned() {
+        if let Some(con) = con.as_mut() {
+            let _: Result<(), _> = con.set(chain, serde_json::to_string(&provider).unwrap());
+        }
+
+        Ok(provider)
+    } else {
+        Err(ProviderConfigError::FieldNotSet(chain.to_string()))
+    }
 }
 
 #[cfg(all(test, feature = "nomock"))]
