@@ -3,34 +3,21 @@
 #![deny(clippy::cargo)]
 #![deny(unused_crate_dependencies)]
 
-use async_trait::async_trait;
 use core::ops::{Range, RangeInclusive};
 use primitive_types::H160 as Address;
 use serde::{Deserialize, Serialize};
 
 pub type Scalar = f64;
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Copy, std::hash::Hash)]
+#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Chain {
     Ethereum,
     Polygon,
     Gnosis,
     Bsc,
-    Fantom,
-    Avalanche,
-    Heco,
-    Harmony,
     Goerli,
     Arbitrum,
-    Celo,
-    Optimism,
-    Moonriver,
-    Rinkeby,
-    Metis,
-    Cronos,
-    Boba,
-    Palm,
 }
 
 impl ToString for Chain {
@@ -42,86 +29,22 @@ impl ToString for Chain {
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub enum Identity {
     EvmAddress(Address),
-    SolAccount(String),
-    Telegram(u64),
-    Discord(u64),
+    SolPubkey(String),
+    Twitter(u64),
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct User {
     pub id: u64,
     pub identities: Vec<Identity>,
 }
 
-pub struct Role {
-    pub name: String,
-    pub logic: String,
-    pub requirements: Option<Vec<Box<dyn Send + Sync + std::any::Any>>>,
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
-pub enum TokenType<T, U> {
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub enum TokenType {
     Native,
-    Fungible { address: T },
-    NonFungible { address: T, id: Option<U> },
-    Special { address: T, id: Option<U> },
-}
-
-pub enum Method {
-    Get,
-    Put,
-    Post,
-    Delete,
-    Patch,
-}
-
-pub enum Auth {
-    ApiKey(String),
-    Bearer(String),
-}
-
-pub enum Data {
-    UrlEncoded(String),
-    JsonBody(String),
-}
-
-pub struct Request {
-    pub base_url: String,
-    pub method: Method,
-    pub data: Data,
-    pub auth: Auth,
-    pub path: String,
-}
-
-pub struct Requirement {
-    pub request: Request,
-    pub identity_id: String,
-    pub relation: Relation,
-}
-
-pub trait OldRequirement {
-    type VerificationData;
-
-    fn verify(&self, vd: &Self::VerificationData) -> bool;
-    fn verify_batch(&self, vd: &[Self::VerificationData]) -> Vec<bool>;
-}
-
-#[async_trait]
-pub trait Retrievable {
-    type Error;
-    type Identity;
-    type Client;
-
-    async fn retrieve(
-        &self,
-        client: &Self::Client,
-        identity: &Self::Identity,
-    ) -> Result<Scalar, Self::Error>;
-    async fn retrieve_batch(
-        &self,
-        client: &Self::Client,
-        identities: &[Self::Identity],
-    ) -> Result<Vec<Scalar>, Self::Error>;
+    Fungible { address: String },
+    NonFungible { address: String, id: Option<String> },
+    Special { address: String, id: Option<String> },
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -147,14 +70,6 @@ impl Relation {
             Relation::BetweenInclusive(range) => range.contains(x),
         }
     }
-}
-
-#[macro_export]
-macro_rules! address {
-    ($addr:expr) => {{
-        use std::str::FromStr;
-        primitive_types::H160::from_str($addr).expect(&format!("Invalid address {}", $addr))
-    }};
 }
 
 #[cfg(test)]
