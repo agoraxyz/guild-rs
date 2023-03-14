@@ -5,9 +5,8 @@
 
 use async_trait::async_trait;
 use futures::future::join_all;
-use guild_common::{Identity, OldRequirement, Retrievable, Role, User};
-use guild_requirements::{AllowList, Balance};
-use primitive_types::{H160 as Address, U256};
+use guild_common::User;
+use guild_requirements::Role;
 use std::{collections::HashMap, str::FromStr};
 use thiserror::Error;
 
@@ -19,92 +18,88 @@ pub enum RoleError {
     Requiem(#[from] requiem::ParseError),
 }
 
-pub struct EngineRole {
-    pub logic: String,
-    pub requirements: Vec<Box<dyn Send + Sync + std::any::Any>>,
-}
-
-impl TryFrom<Role> for EngineRole {
-    type Error = RoleError;
-
-    fn try_from(role: Role) -> Result<EngineRole, Self::Error> {
-        match role.requirements {
-            Some(requirements) => Ok(EngineRole {
-                logic: role.logic,
-                requirements,
-            }),
-            _ => Err(RoleError::InvalidRole),
-        }
-    }
-}
-
 #[async_trait]
 trait Checkable {
-    async fn check(&self, user: &User) -> Result<bool, RoleError>;
-    async fn check_batch(&self, users: &[User]) -> Result<Vec<bool>, RoleError>;
+    async fn check(&self, client: &reqwest::Client, user: &User) -> Result<bool, RoleError>;
+    async fn check_batch(
+        &self,
+        client: &reqwest::Client,
+        users: &[User],
+    ) -> Result<Vec<bool>, RoleError>;
 }
 
 #[async_trait]
-impl Checkable for EngineRole {
-    async fn check(&self, user: &User) -> Result<bool, RoleError> {
-        self.check_batch(&[user.clone()])
+impl Checkable for Role {
+    async fn check(&self, client: &reqwest::Client, user: &User) -> Result<bool, RoleError> {
+        self.check_batch(client, &[user.clone()])
             .await
             .map(|accesses| accesses[0])
     }
 
-    async fn check_batch(&self, users: &[User]) -> Result<Vec<bool>, RoleError> {
-        let users_count = users.len();
-        let ids: Vec<u64> = users.iter().map(|user| user.id).collect();
-        let id_addresses: Vec<(u64, Address)> = users
-            .iter()
-            .flat_map(|user| {
-                user.identities
-                    .iter()
-                    .filter_map(|identity| match identity {
-                        Identity::EvmAddress(address) => Some((user.id, *address)),
-                        _ => None,
-                    })
-            })
-            .collect();
-        let addresses: Vec<Address> = id_addresses.iter().map(|(_, address)| *address).collect();
-
-        let reduce_accesses = |accesses: &[bool]| -> Vec<bool> {
-            let id_accesses = id_addresses
+    async fn check_batch(
+        &self,
+        client: &reqwest::Client,
+        users: &[User],
+    ) -> Result<Vec<bool>, RoleError> {
+        let accesses_per_req = join_all(
+            self.requirements
+                .as_ref()
+                .unwrap_or(&vec![])
                 .iter()
-                .zip(accesses.iter())
-                .map(|((user_id, _), access)| (*user_id, *access))
-                .collect::<Vec<(u64, bool)>>();
-
-            ids.iter()
-                .map(|id| {
-                    id_accesses
+                .cloned()
+                .map(|req| async move {
+                    let identities_with_ids: Vec<(u64, String)> = users
                         .iter()
-                        .filter_map(|(i, access)| if id == i { Some(access) } else { None })
+                        .flat_map(|user| {
+                            user.identities
+                                .get(&req.identity_id)
+                                .unwrap_or(&vec![])
+                                .iter()
+                                .cloned()
+                                .map(|identity| (user.id, identity))
+                                .collect::<Vec<_>>()
+                        })
+                        .collect();
+
+                    let identities: Vec<String> = identities_with_ids
+                        .iter()
                         .cloned()
-                        .reduce(|a, b| a || b)
-                        .unwrap_or_default()
-                })
-                .collect()
-        };
+                        .map(|(_, identity)| identity)
+                        .collect();
 
-        let accesses_per_req = join_all(self.requirements.iter().map(|req| async {
-            if let Some(allowlist) = req.downcast_ref::<AllowList<Address>>() {
-                reduce_accesses(&allowlist.verify_batch(&addresses))
-            } else if let Some(balance_check) = req.downcast_ref::<Balance<Address, U256>>() {
-                let balances = balance_check
-                    .retrieve_batch(&reqwest::Client::new(), &addresses)
-                    .await
-                    .unwrap();
+                    let accesses = req.check_batch(client, &identities).await.unwrap();
 
-                reduce_accesses(&balance_check.verify_batch(&balances))
-            } else {
-                vec![false; users_count]
-            }
-        }))
+                    let id_accesses = identities_with_ids
+                        .iter()
+                        .zip(accesses.iter())
+                        .map(|((user_id, _), access)| (*user_id, *access))
+                        .collect::<Vec<(u64, bool)>>();
+
+                    users
+                        .iter()
+                        .map(|user| {
+                            id_accesses
+                                .iter()
+                                .filter_map(
+                                    |(i, access)| if &user.id == i { Some(access) } else { None },
+                                )
+                                .cloned()
+                                .reduce(|a, b| a || b)
+                                .unwrap_or_default()
+                        })
+                        .collect()
+                }),
+        )
         .await;
 
-        let rotated: Vec<Vec<_>> = (0..users_count)
-            .map(|i| accesses_per_req.iter().map(|row| row[i]).collect())
+        let rotated: Vec<Vec<bool>> = (0..users.len())
+            .map(|i| {
+                accesses_per_req
+                    .iter()
+                    .cloned()
+                    .map(|row: Vec<bool>| row[i])
+                    .collect()
+            })
             .collect();
 
         let tree = requiem::LogicTree::from_str(&self.logic)?;
@@ -128,71 +123,73 @@ impl Checkable for EngineRole {
 
 #[cfg(test)]
 mod test {
-    use crate::{Checkable, EngineRole};
-    use guild_common::{address, Chain, Identity, Relation, Role, TokenType, User};
-    use guild_requirements::{AllowList, Balance};
-    use primitive_types::U256;
-    use std::any::Any;
+    use crate::Checkable;
+    use guild_common::{Chain, Identity::EvmAddress, Relation, TokenType, User};
+    use guild_requirements::{AllowList, Balance, Role};
+    use primitive_types::{H160 as Address, U256};
+    use std::str::FromStr;
+    use tokio as _;
 
     #[tokio::test]
+    #[cfg(feature = "test")]
     async fn role_check() {
         let allowlist = AllowList {
             deny_list: false,
-            verification_data: vec![
-                address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
-                address!("0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3"),
+            list: vec![
+                "0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE".to_string(),
+                "0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3".to_string(),
             ],
         };
 
         let denylist = AllowList {
             deny_list: true,
-            verification_data: vec![
-                address!("0x283d678711daa088640c86a1ad3f12c00ec1252e"),
-                address!("0x20CC54c7ebc5f43b74866D839b4BD5c01BB23503"),
+            list: vec![
+                "0x283d678711daa088640c86a1ad3f12c00ec1252e".to_string(),
+                "0x20CC54c7ebc5f43b74866D839b4BD5c01BB23503".to_string(),
             ],
         };
 
         let balance_check = Balance {
-            chain: Chain::Ethereum.to_string(),
+            chain: Chain::Ethereum,
             token_type: TokenType::NonFungible {
-                address: address!("0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"),
-                id: None::<U256>,
+                address: "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85".to_string(),
+                id: None,
             },
             relation: Relation::GreaterThan(0.0),
         };
 
-        let reqs: Vec<Box<dyn Send + Sync + Any>> = vec![
-            Box::new(allowlist),
-            Box::new(denylist),
-            Box::new(balance_check),
-        ];
-
-        let role = Role {
-            name: "Test Role".to_string(),
+        let role1 = Role {
+            id: "69".to_string(),
             logic: "0 AND 1 AND 2".to_string(),
-            requirements: Some(reqs),
+            filter: Some(allowlist),
+            requirements: None,
         };
 
-        let user1 = User {
-            id: 69,
-            identities: vec![Identity::EvmAddress(address!(
-                "0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"
-            ))],
+        let role2 = Role {
+            id: "69".to_string(),
+            logic: "0 AND 1 AND 2".to_string(),
+            filter: Some(denylist),
+            requirements: None,
         };
 
-        let user2 = User {
-            id: 420,
-            identities: vec![Identity::EvmAddress(address!(
-                "0x283d678711daa088640c86a1ad3f12c00ec1252e"
-            ))],
-        };
+        let user1 = User::new(69).add_identity(EvmAddress(
+            Address::from_str("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE").unwrap(),
+        ));
+
+        let user2 = User::new(420).add_identity(EvmAddress(
+            Address::from_str("0x283d678711daa088640c86a1ad3f12c00ec1252e").unwrap(),
+        ));
+
+        let users = vec![user1, user2];
+
+        let client = reqwest::Client::new();
 
         assert_eq!(
-            EngineRole::try_from(role)
-                .unwrap()
-                .check_batch(&[user1, user2])
-                .await
-                .unwrap(),
+            role1.check_batch(&client, &users).await.unwrap(),
+            &[true, false]
+        );
+        assert_eq!(
+            role2.check_batch(&client, &users).await.unwrap(),
             &[true, false]
         );
     }
