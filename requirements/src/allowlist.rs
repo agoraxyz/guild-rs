@@ -11,11 +11,11 @@ impl<T> AllowList<T>
 where
     T: PartialEq,
 {
-    fn contains(&self, entry: &T) -> bool {
+    pub fn contains(&self, entry: &T) -> bool {
         self.deny_list != self.list.contains(entry)
     }
 
-    fn contains_many(&self, entries: &[T]) -> Vec<bool> {
+    pub fn contains_many(&self, entries: &[T]) -> Vec<bool> {
         entries.iter().map(|entry| self.contains(entry)).collect()
     }
 }
