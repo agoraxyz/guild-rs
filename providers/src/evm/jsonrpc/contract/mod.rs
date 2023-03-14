@@ -9,13 +9,12 @@ use crate::{
     rpc_error,
 };
 use guild_common::Scalar;
-use primitive_types::{H160 as Address, U256};
+use primitive_types::U256;
 use serde_json::json;
 use std::str::FromStr;
 
 mod multicall;
 
-const ZEROES: &str = "000000000000000000000000";
 const FUNC_DECIMALS: &str = "313ce567";
 const FUNC_ETH_BALANCE: &str = "4d2301cc";
 const FUNC_BALANCE_OF: &str = "70a08231";
@@ -25,7 +24,7 @@ const FUNC_ERC1155_BATCH: &str = "4e1273f4";
 
 #[derive(Clone, Debug)]
 pub struct Call {
-    pub target: Address,
+    pub target: String,
     pub call_data: String,
 }
 
@@ -60,20 +59,23 @@ async fn call_contract(
 pub async fn get_eth_balance_batch(
     client: &reqwest::Client,
     chain: &str,
-    user_addresses: &[Address],
+    user_addresses: &[String],
 ) -> Result<Vec<Scalar>, RpcError> {
     let target = get_provider(chain)?.contract;
 
     let calls = user_addresses
         .iter()
-        .map(|addr| Call {
-            target,
-            call_data: format!("{FUNC_ETH_BALANCE}{ZEROES}{addr:x}"),
+        .map(|address| Call {
+            target: target.clone(),
+            call_data: format!(
+                "{FUNC_ETH_BALANCE}{:0>64}",
+                address.trim_start_matches("0x")
+            ),
         })
         .collect::<Vec<Call>>();
 
     let call = Call {
-        target,
+        target: target.clone(),
         call_data: aggregate(&calls),
     };
 
@@ -89,34 +91,37 @@ pub async fn get_eth_balance_batch(
 pub async fn get_erc20_decimals(
     client: &reqwest::Client,
     chain: &str,
-    token_address: Address,
-) -> Result<U256, RpcError> {
+    token_address: &str,
+) -> Result<u32, RpcError> {
     let call = Call {
-        target: token_address,
-        call_data: FUNC_DECIMALS.to_string(),
+        target: token_address.to_string(),
+        call_data: format!("{FUNC_DECIMALS}"),
     };
     let decimals = call_contract(client, chain, call).await?;
 
-    rpc_error!(U256::from_str(&decimals))
+    Ok(rpc_error!(U256::from_str(&decimals))?.as_u32())
 }
 
-fn erc20_call(token_address: Address, user_address: Address) -> Call {
+fn erc20_call(token_address: &str, user_address: &str) -> Call {
     Call {
-        target: token_address,
-        call_data: format!("{FUNC_BALANCE_OF}{ZEROES}{user_address:x}"),
+        target: token_address.to_string(),
+        call_data: format!(
+            "{FUNC_BALANCE_OF}{:0>64}",
+            user_address.trim_start_matches("0x")
+        ),
     }
 }
 
 pub async fn get_erc20_balance(
     client: &reqwest::Client,
     chain: &str,
-    token_address: Address,
-    user_address: Address,
+    token_address: &str,
+    user_address: &str,
 ) -> Result<Scalar, RpcError> {
-    let call = erc20_call(token_address, user_address);
+    let call = erc20_call(&token_address, user_address);
     let balance = call_contract(client, chain, call).await?;
-    let decimals = get_erc20_decimals(client, chain, token_address).await?;
-    let divider = 10_u128.pow(decimals.as_u32()) as Scalar;
+    let decimals = get_erc20_decimals(client, chain, &token_address).await?;
+    let divider = 10_u128.pow(decimals) as Scalar;
 
     let balance = rpc_error!(U256::from_str(&balance))?;
 
@@ -126,12 +131,12 @@ pub async fn get_erc20_balance(
 pub async fn get_erc20_balance_batch(
     client: &reqwest::Client,
     chain: &str,
-    token_address: Address,
-    user_addresses: &[Address],
+    token_address: &str,
+    user_addresses: &[String],
 ) -> Result<Vec<Scalar>, RpcError> {
     let calls = user_addresses
         .iter()
-        .map(|user_address| erc20_call(token_address, *user_address))
+        .map(|user_address| erc20_call(token_address, user_address))
         .collect::<Vec<Call>>();
 
     let call = Call {
@@ -149,30 +154,31 @@ pub async fn get_erc20_balance_batch(
     Ok(balances)
 }
 
-pub fn erc721_call(token_address: Address, user_address: Address) -> Call {
+pub fn erc721_call(token_address: &str, user_address: &str) -> Call {
     erc20_call(token_address, user_address)
 }
 
-fn erc721_id_call(token_address: Address, id: U256) -> Call {
+fn erc721_id_call(token_address: &str, id: &str) -> Call {
     Call {
-        target: token_address,
-        call_data: format!("{FUNC_BALANCE_OF_ID}{id:064x}"),
+        target: token_address.to_string(),
+        call_data: format!("{FUNC_BALANCE_OF_ID}{id:0>64}"),
     }
 }
 
 pub async fn get_erc721_balance(
     client: &reqwest::Client,
     chain: &str,
-    token_address: Address,
-    token_id: Option<U256>,
-    user_address: Address,
+    token_address: &str,
+    token_id: Option<String>,
+    user_address: &str,
 ) -> Result<Scalar, RpcError> {
     let balance = match token_id {
         Some(id) => {
-            let call = erc721_id_call(token_address, id);
+            let id = format!("{:x}", rpc_error!(U256::from_dec_str(&id))?);
+            let call = erc721_id_call(token_address, &id);
             let addr = call_contract(client, chain, call).await?;
 
-            (addr[26..] == format!("{user_address:x}")) as u8 as Scalar
+            (&addr[26..] == user_address.trim_start_matches("0x")) as u8 as Scalar
         }
         None => {
             let call = erc721_call(token_address, user_address);
@@ -188,12 +194,12 @@ pub async fn get_erc721_balance(
 pub async fn get_erc721_balance_batch(
     client: &reqwest::Client,
     chain: &str,
-    token_address: Address,
-    user_addresses: &[Address],
+    token_address: &str,
+    user_addresses: &[String],
 ) -> Result<Vec<Scalar>, RpcError> {
     let calls = user_addresses
         .iter()
-        .map(|user_address| erc721_call(token_address, *user_address))
+        .map(|user_address| erc721_call(token_address, user_address))
         .collect::<Vec<Call>>();
 
     let call = Call {
@@ -206,21 +212,25 @@ pub async fn get_erc721_balance_batch(
     parse_multicall_result(&res)
 }
 
-fn erc1155_call(token_address: Address, id: U256, user_address: Address) -> Call {
+fn erc1155_call(token_address: &str, id: &str, user_address: &str) -> Call {
     Call {
-        target: token_address,
-        call_data: format!("{FUNC_ERC1155}{ZEROES}{user_address:x}{id:064x}"),
+        target: token_address.to_string(),
+        call_data: format!(
+            "{FUNC_ERC1155}{:0>64}{id:0>64}",
+            user_address.trim_start_matches("0x")
+        ),
     }
 }
 
 pub async fn get_erc1155_balance(
     client: &reqwest::Client,
     chain: &str,
-    token_address: Address,
-    token_id: U256,
-    user_address: Address,
+    token_address: &str,
+    token_id: &str,
+    user_address: &str,
 ) -> Result<Scalar, RpcError> {
-    let call = erc1155_call(token_address, token_id, user_address);
+    let id = format!("{:x}", rpc_error!(U256::from_dec_str(&token_id))?);
+    let call = erc1155_call(token_address, &id, user_address);
     let res = call_contract(client, chain, call).await?;
 
     let balance = rpc_error!(U256::from_str(&res))?.as_u128() as Scalar;
@@ -231,19 +241,20 @@ pub async fn get_erc1155_balance(
 pub async fn get_erc1155_balance_batch(
     client: &reqwest::Client,
     chain: &str,
-    token_address: Address,
-    token_id: U256,
-    user_addresses: &[Address],
+    token_address: String,
+    token_id: &str,
+    user_addresses: &[String],
 ) -> Result<Vec<Scalar>, RpcError> {
+    let id = format!("{:x}", rpc_error!(U256::from_dec_str(&token_id))?);
     let addresses = user_addresses
         .iter()
-        .map(|user_address| format!("{ZEROES}{user_address:x}"))
+        .map(|user_address| format!("{:0>64}", user_address.trim_start_matches("0x")))
         .collect::<String>();
 
     let len = 64;
     let count = user_addresses.len();
     let offset = (count + 3) * 32;
-    let ids = vec![format!("{token_id:064x}"); count].join("");
+    let ids = vec![format!("{id:0>64}"); count].join("");
 
     let call_data = format!(
         "{FUNC_ERC1155_BATCH}{len:064x}{offset:064x}{count:064x}{addresses}{count:064x}{ids}",
@@ -275,8 +286,7 @@ pub async fn get_erc1155_balance_batch(
 #[cfg(all(test, feature = "nomock"))]
 mod test {
     use crate::evm::{common::*, jsonrpc::get_erc20_decimals};
-    use guild_common::{address, Chain::Ethereum};
-    use primitive_types::U256;
+    use guild_common::Chain::Ethereum;
 
     #[tokio::test]
     async fn rpc_get_erc20_decimals() {
@@ -287,22 +297,14 @@ mod test {
         let token_3 = "0xaba8cac6866b83ae4eec97dd07ed254282f6ad8a";
         let token_4 = "0x0a9f693fce6f00a51a8e0db4351b5a8078b4242e";
 
-        let decimals_1 = get_erc20_decimals(&client, &chain, address!(token_1))
-            .await
-            .unwrap();
-        let decimals_2 = get_erc20_decimals(&client, &chain, address!(token_2))
-            .await
-            .unwrap();
-        let decimals_3 = get_erc20_decimals(&client, &chain, address!(token_3))
-            .await
-            .unwrap();
-        let decimals_4 = get_erc20_decimals(&client, &chain, address!(token_4))
-            .await
-            .unwrap();
+        let decimals_1 = get_erc20_decimals(&client, &chain, token_1).await.unwrap();
+        let decimals_2 = get_erc20_decimals(&client, &chain, token_2).await.unwrap();
+        let decimals_3 = get_erc20_decimals(&client, &chain, token_3).await.unwrap();
+        let decimals_4 = get_erc20_decimals(&client, &chain, token_4).await.unwrap();
 
-        assert_eq!(decimals_1, U256::from(18));
-        assert_eq!(decimals_2, U256::from(9));
-        assert_eq!(decimals_3, U256::from(24));
-        assert_eq!(decimals_4, U256::from(5));
+        assert_eq!(decimals_1, 18);
+        assert_eq!(decimals_2, 9);
+        assert_eq!(decimals_3, 24);
+        assert_eq!(decimals_4, 5);
     }
 }

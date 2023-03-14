@@ -6,7 +6,7 @@ use async_trait::async_trait;
 pub use contract::get_erc20_decimals;
 use futures::future::join_all;
 use guild_common::Scalar;
-use primitive_types::{H160 as Address, U256};
+use primitive_types::U256;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::str::FromStr;
@@ -54,7 +54,7 @@ fn create_payload(method: &str, params: Value, id: u32) -> Value {
 async fn get_coin_balance(
     client: &reqwest::Client,
     chain: &str,
-    address: Address,
+    address: &str,
 ) -> Result<Scalar, RpcError> {
     let provider = get_provider(chain)?;
 
@@ -76,27 +76,25 @@ async fn get_coin_balance(
 #[async_trait]
 impl BalanceQuerier for RpcProvider {
     type Error = RpcError;
-    type Address = Address;
-    type Id = U256;
 
     async fn get_balance(
         &self,
         client: &reqwest::Client,
         chain: &str,
-        token_type: TokenType<Self::Address, Self::Id>,
-        user_address: Self::Address,
+        token_type: &TokenType,
+        user_address: &str,
     ) -> Result<Scalar, Self::Error> {
         match token_type {
             TokenType::Native => get_coin_balance(client, chain, user_address).await,
             TokenType::Fungible { address } => {
-                get_erc20_balance(client, chain, address, user_address).await
+                get_erc20_balance(client, chain, &address, user_address).await
             }
             TokenType::NonFungible { address, id } => {
-                get_erc721_balance(client, chain, address, id, user_address).await
+                get_erc721_balance(client, chain, &address, id.clone(), user_address).await
             }
             TokenType::Special { address, id } => match id {
                 Some(token_id) => {
-                    get_erc1155_balance(client, chain, address, token_id, user_address).await
+                    get_erc1155_balance(client, chain, &address, &token_id, user_address).await
                 }
                 None => rpc_error!(
                     BalancyProvider
@@ -111,26 +109,27 @@ impl BalanceQuerier for RpcProvider {
         &self,
         client: &reqwest::Client,
         chain: &str,
-        token_type: TokenType<Self::Address, Self::Id>,
-        addresses: &[Self::Address],
+        token_type: &TokenType,
+        addresses: &[String],
     ) -> Result<Vec<Scalar>, Self::Error> {
         match token_type {
             TokenType::Native => get_eth_balance_batch(client, chain, addresses).await,
             TokenType::Fungible { address } => {
-                get_erc20_balance_batch(client, chain, address, addresses).await
+                get_erc20_balance_batch(client, chain, &address, addresses).await
             }
             TokenType::NonFungible { address, id: _ } => {
-                get_erc721_balance_batch(client, chain, address, addresses).await
+                get_erc721_balance_batch(client, chain, &address, addresses).await
             }
             TokenType::Special { address, id } => match id {
                 Some(token_id) => {
-                    get_erc1155_balance_batch(client, chain, address, token_id, addresses).await
+                    get_erc1155_balance_batch(client, chain, address.clone(), &token_id, addresses)
+                        .await
                 }
                 None => {
                     let res = join_all(addresses.iter().map(|addr| async {
                         rpc_error!(
                             BalancyProvider
-                                .get_balance(client, chain, token_type, *addr)
+                                .get_balance(client, chain, token_type, addr)
                                 .await
                         )
                     }))
@@ -149,7 +148,7 @@ mod test {
         evm::{common::*, jsonrpc::RpcProvider},
         BalanceQuerier,
     };
-    use guild_common::{address, Chain::Ethereum, TokenType::*};
+    use guild_common::{Chain::Ethereum, TokenType::*};
     use primitive_types::U256;
 
     #[tokio::test]
@@ -159,8 +158,8 @@ mod test {
                 .get_balance(
                     &reqwest::Client::new(),
                     &Ethereum.to_string(),
-                    Native,
-                    address!(USER_1_ADDR)
+                    &Native,
+                    USER_1_ADDR
                 )
                 .await
                 .unwrap(),
@@ -175,8 +174,8 @@ mod test {
                 .get_balance_batch(
                     &reqwest::Client::new(),
                     &Ethereum.to_string(),
-                    Native,
-                    &vec![address!(USER_1_ADDR), address!(USER_2_ADDR)]
+                    &Native,
+                    &vec![USER_1_ADDR.to_string(), USER_2_ADDR.to_string()]
                 )
                 .await
                 .unwrap(),
@@ -187,7 +186,7 @@ mod test {
     #[tokio::test]
     async fn rpc_get_erc20_balance() {
         let token_type = Fungible {
-            address: address!(ERC20_ADDR),
+            address: ERC20_ADDR.to_string(),
         };
 
         assert_eq!(
@@ -195,8 +194,8 @@ mod test {
                 .get_balance(
                     &reqwest::Client::new(),
                     &Ethereum.to_string(),
-                    token_type,
-                    address!(USER_2_ADDR)
+                    &token_type,
+                    USER_2_ADDR
                 )
                 .await
                 .unwrap(),
@@ -207,7 +206,7 @@ mod test {
     #[tokio::test]
     async fn rpc_get_erc20_balance_batch() {
         let token_type = Fungible {
-            address: address!(ERC20_ADDR),
+            address: ERC20_ADDR.to_string(),
         };
 
         assert_eq!(
@@ -215,8 +214,8 @@ mod test {
                 .get_balance_batch(
                     &reqwest::Client::new(),
                     &Ethereum.to_string(),
-                    token_type,
-                    &vec![address!(USER_1_ADDR), address!(USER_2_ADDR)]
+                    &token_type,
+                    &vec![USER_1_ADDR.to_string(), USER_2_ADDR.to_string()]
                 )
                 .await
                 .unwrap(),
@@ -229,25 +228,24 @@ mod test {
         let client = reqwest::Client::new();
         let chain = Ethereum.to_string();
         let token_type_without_id = NonFungible {
-            address: address!(ERC721_ADDR),
+            address: ERC721_ADDR.to_string(),
             id: None,
         };
         let token_type_with_id = NonFungible {
-            address: address!(ERC721_ADDR),
-            id: Some(U256::from_dec_str(ERC721_ID).unwrap()),
+            address: ERC721_ADDR.to_string(),
+            id: Some(ERC721_ID.to_string()),
         };
-        let user_address = address!(USER_1_ADDR);
 
         assert_eq!(
             RpcProvider
-                .get_balance(&client, &chain, token_type_without_id, user_address)
+                .get_balance(&client, &chain, &token_type_without_id, USER_1_ADDR)
                 .await
                 .unwrap(),
             1.0
         );
         assert_eq!(
             RpcProvider
-                .get_balance(&client, &chain, token_type_with_id, user_address)
+                .get_balance(&client, &chain, &token_type_with_id, USER_1_ADDR)
                 .await
                 .unwrap(),
             1.0
@@ -258,7 +256,7 @@ mod test {
     async fn rpc_get_erc721_balance_batch() {
         let client = reqwest::Client::new();
         let token_type_without_id = NonFungible {
-            address: address!(ERC721_ADDR),
+            address: ERC721_ADDR.to_string(),
             id: None,
         };
 
@@ -267,8 +265,8 @@ mod test {
                 .get_balance_batch(
                     &client,
                     &Ethereum.to_string(),
-                    token_type_without_id,
-                    &vec![address!(USER_1_ADDR), address!(USER_2_ADDR)]
+                    &token_type_without_id,
+                    &vec![USER_1_ADDR.to_string(), USER_2_ADDR.to_string()]
                 )
                 .await
                 .unwrap(),
@@ -281,25 +279,25 @@ mod test {
         let client = reqwest::Client::new();
         let chain = Ethereum.to_string();
         let token_type_without_id = Special {
-            address: address!(ERC1155_ADDR),
+            address: ERC1155_ADDR.to_string(),
             id: None,
         };
         let token_type_with_id = Special {
-            address: address!(ERC1155_ADDR),
-            id: Some(U256::from(ERC1155_ID)),
+            address: ERC1155_ADDR.to_string(),
+            id: Some(U256::from(ERC1155_ID).to_string()),
         };
-        let user_address = address!(USER_3_ADDR);
+        let user_address = USER_3_ADDR.to_string();
 
         assert!(
             RpcProvider
-                .get_balance(&client, &chain, token_type_without_id, user_address)
+                .get_balance(&client, &chain, &token_type_without_id, &user_address)
                 .await
                 .unwrap()
                 > 6000.0
         );
         assert_eq!(
             RpcProvider
-                .get_balance(&client, &chain, token_type_with_id, user_address)
+                .get_balance(&client, &chain, &token_type_with_id, &user_address)
                 .await
                 .unwrap(),
             16.0
@@ -310,8 +308,8 @@ mod test {
     async fn rpc_get_erc1155_balance_batch() {
         let client = reqwest::Client::new();
         let token_type_with_id = Special {
-            address: address!(ERC1155_ADDR),
-            id: Some(U256::from(ERC1155_ID)),
+            address: ERC1155_ADDR.to_string(),
+            id: Some(U256::from(ERC1155_ID).to_string()),
         };
 
         assert_eq!(
@@ -319,8 +317,8 @@ mod test {
                 .get_balance_batch(
                     &client,
                     &Ethereum.to_string(),
-                    token_type_with_id,
-                    &vec![address!(USER_1_ADDR), address!(USER_3_ADDR)]
+                    &token_type_with_id,
+                    &vec![USER_1_ADDR.to_string(), USER_3_ADDR.to_string()]
                 )
                 .await
                 .unwrap(),

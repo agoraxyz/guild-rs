@@ -1,8 +1,5 @@
 use crate::{
-    evm::{
-        jsonrpc::contract::{Call, ZEROES},
-        RpcError,
-    },
+    evm::{jsonrpc::contract::Call, RpcError},
     rpc_error,
 };
 use guild_common::Scalar;
@@ -24,8 +21,9 @@ pub fn aggregate(calls: &[Call]) -> String {
             let padding = vec!["0"; (DATA_PART_LEN - data_len) * 2].join("");
 
             format!(
-                "{ZEROES}{:x}{DATA_PART_LEN:064x}{data_len:064x}{}{padding}",
-                call.target, call.call_data
+                "{:0>64}{DATA_PART_LEN:064x}{data_len:064x}{}{padding}",
+                call.target.trim_start_matches("0x"),
+                call.call_data.trim_start_matches("0x")
             )
         })
         .collect::<String>();
@@ -62,7 +60,6 @@ pub fn parse_multicall_result(multicall_result: &str) -> Result<Vec<Scalar>, Rpc
 #[cfg(test)]
 mod test {
     use crate::evm::jsonrpc::contract::{erc20_call, multicall::aggregate};
-    use guild_common::address;
 
     #[test]
     fn aggregate_test() {
@@ -102,15 +99,11 @@ mod test {
         .join("");
 
         let erc20_addr = "0x458691c1692cd82facfb2c5127e36d63213448a8";
+        let user1_addr = "0xe43878ce78934fe8007748ff481f03b8ee3b97de";
+        let user2_addr = "0x14ddfe8ea7ffc338015627d160ccaf99e8f16dd3";
 
-        let call_1 = erc20_call(
-            address!(erc20_addr),
-            address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
-        );
-        let call_2 = erc20_call(
-            address!(erc20_addr),
-            address!("0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3"),
-        );
+        let call_1 = erc20_call(erc20_addr, user1_addr);
+        let call_2 = erc20_call(erc20_addr, user2_addr);
 
         assert_eq!(aggregate(&[call_1, call_2]), data);
     }

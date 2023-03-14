@@ -4,9 +4,9 @@ use crate::{
 };
 use async_trait::async_trait;
 use guild_common::{Scalar, TokenType};
-use primitive_types::{H160 as Address, U256};
 use reqwest::StatusCode;
 use serde::de::DeserializeOwned;
+use std::any::TypeId;
 pub use types::BalancyError;
 
 mod types;
@@ -27,16 +27,25 @@ fn get_balancy_id(chain: &str) -> Option<u8> {
 async fn make_balancy_request<T: DeserializeOwned + 'static>(
     client: &reqwest::Client,
     chain: &str,
-    token: &str,
-    address: Address,
+    address: &str,
 ) -> Result<BalancyResponse<T>, BalancyError> {
     let Some(id) = get_balancy_id(chain) else {
-        return Err(BalancyError::ChainNotSupported(format!("{chain:?}")));
+        return Err(BalancyError::ChainNotSupported(chain.to_string()));
+    };
+
+    let token = if TypeId::of::<T>() == TypeId::of::<Erc20>() {
+        "erc20"
+    } else if TypeId::of::<T>() == TypeId::of::<Erc721>() {
+        "erc721"
+    } else if TypeId::of::<T>() == TypeId::of::<Erc1155>() {
+        "erc1155"
+    } else {
+        "coin"
     };
 
     let res = client
         .get(format!(
-            "{BASE_URL}/{token}/{ADDRESS_TOKENS}{address:#x}{BALANCY_CHAIN}{id}"
+            "{BASE_URL}/{token}/{ADDRESS_TOKENS}{address}{BALANCY_CHAIN}{id}"
         ))
         .send()
         .await?;
@@ -54,17 +63,17 @@ async fn make_balancy_request<T: DeserializeOwned + 'static>(
 async fn get_erc20_balance(
     client: &reqwest::Client,
     chain: &str,
-    token_address: Address,
-    user_address: Address,
+    token_address: &str,
+    user_address: &str,
 ) -> Result<Scalar, BalancyError> {
-    let tokens = make_balancy_request::<Erc20>(client, chain, "erc20", user_address).await?;
+    let tokens = make_balancy_request::<Erc20>(client, chain, user_address).await?;
     let decimals = get_erc20_decimals(client, chain, token_address).await?;
-    let divider = 10_u128.pow(decimals.as_u32()) as Scalar;
+    let divider = 10_u128.pow(decimals) as Scalar;
 
     let amount = tokens
         .result
         .iter()
-        .find(|token| token.token_address == token_address)
+        .find(|token| token.token_address.to_lowercase() == token_address.to_lowercase())
         .map(|token| (token.amount.as_u128() as Scalar) / divider)
         .unwrap_or_default();
 
@@ -74,19 +83,19 @@ async fn get_erc20_balance(
 async fn get_erc721_balance(
     client: &reqwest::Client,
     chain: &str,
-    token_address: Address,
-    token_id: Option<U256>,
-    user_address: Address,
+    token_address: &str,
+    token_id: Option<String>,
+    user_address: &str,
 ) -> Result<Scalar, BalancyError> {
-    let tokens = make_balancy_request::<Erc721>(client, chain, "erc721", user_address).await?;
+    let tokens = make_balancy_request::<Erc721>(client, chain, user_address).await?;
 
     let amount = tokens
         .result
         .iter()
         .filter(|token| {
-            token.token_address == token_address && {
-                match token_id {
-                    Some(id) => token.token_id == id,
+            token.token_address.to_lowercase() == token_address.to_lowercase() && {
+                match token_id.as_ref() {
+                    Some(id) => &token.token_id == id,
                     None => true,
                 }
             }
@@ -99,19 +108,19 @@ async fn get_erc721_balance(
 async fn get_erc1155_balance(
     client: &reqwest::Client,
     chain: &str,
-    token_address: Address,
-    token_id: Option<U256>,
-    user_address: Address,
+    token_address: &str,
+    token_id: Option<String>,
+    user_address: &str,
 ) -> Result<Scalar, BalancyError> {
-    let tokens = make_balancy_request::<Erc1155>(client, chain, "erc1155", user_address).await?;
+    let tokens = make_balancy_request::<Erc1155>(client, chain, user_address).await?;
 
     let amount = tokens
         .result
         .iter()
         .filter(|token| {
-            token.token_address == token_address && {
-                match token_id {
-                    Some(id) => token.token_id == id,
+            token.token_address.to_lowercase() == token_address.to_lowercase() && {
+                match token_id.as_ref() {
+                    Some(id) => &token.token_id == id,
                     None => true,
                 }
             }
@@ -126,29 +135,25 @@ async fn get_erc1155_balance(
 #[async_trait]
 impl BalanceQuerier for BalancyProvider {
     type Error = BalancyError;
-    type Address = Address;
-    type Id = U256;
 
     async fn get_balance(
         &self,
         client: &reqwest::Client,
         chain: &str,
-        token_type: TokenType<Self::Address, Self::Id>,
-        user_address: Self::Address,
+        token_type: &TokenType,
+        user_address: &str,
     ) -> Result<Scalar, Self::Error> {
         match token_type {
             TokenType::Fungible { address } => {
-                get_erc20_balance(client, chain, address, user_address).await
+                get_erc20_balance(client, chain, &address, user_address).await
             }
             TokenType::NonFungible { address, id } => {
-                get_erc721_balance(client, chain, address, id, user_address).await
+                get_erc721_balance(client, chain, &address, id.clone(), user_address).await
             }
             TokenType::Special { address, id } => {
-                get_erc1155_balance(client, chain, address, id, user_address).await
+                get_erc1155_balance(client, chain, &address, id.clone(), user_address).await
             }
-            TokenType::Native => Err(BalancyError::TokenTypeNotSupported(format!(
-                "{token_type:?}"
-            ))),
+            TokenType::Native => Err(BalancyError::NativeTokenNotSupported),
         }
     }
 
@@ -156,12 +161,12 @@ impl BalanceQuerier for BalancyProvider {
         &self,
         client: &reqwest::Client,
         chain: &str,
-        token_type: TokenType<Self::Address, Self::Id>,
-        addresses: &[Self::Address],
+        token_type: &TokenType,
+        addresses: &[String],
     ) -> Result<Vec<Scalar>, Self::Error> {
         Ok(
             futures::future::join_all(addresses.iter().map(|address| async {
-                self.get_balance(client, chain, token_type, *address)
+                self.get_balance(client, chain, token_type, address)
                     .await
                     .unwrap_or_default()
             }))
@@ -180,11 +185,9 @@ mod test {
         BalanceQuerier,
     };
     use guild_common::{
-        address,
         Chain::{Bsc, Ethereum, Gnosis, Goerli, Polygon},
         TokenType::*,
     };
-    use primitive_types::U256;
 
     #[test]
     fn balancy_get_chain_id() {
@@ -200,8 +203,7 @@ mod test {
         assert!(make_balancy_request::<Erc20>(
             &reqwest::Client::new(),
             &Ethereum.to_string(),
-            "erc20",
-            address!(USER_1_ADDR)
+            USER_1_ADDR
         )
         .await
         .is_ok());
@@ -212,8 +214,7 @@ mod test {
         assert!(make_balancy_request::<Erc20>(
             &reqwest::Client::new(),
             &Bsc.to_string(),
-            "erc20",
-            address!(USER_1_ADDR)
+            USER_1_ADDR
         )
         .await
         .is_ok());
@@ -224,8 +225,7 @@ mod test {
         assert!(make_balancy_request::<Erc20>(
             &reqwest::Client::new(),
             &Gnosis.to_string(),
-            "erc20",
-            address!(USER_1_ADDR)
+            USER_1_ADDR
         )
         .await
         .is_ok());
@@ -236,8 +236,7 @@ mod test {
         assert!(make_balancy_request::<Erc20>(
             &reqwest::Client::new(),
             &Polygon.to_string(),
-            "erc20",
-            address!(USER_1_ADDR)
+            USER_1_ADDR
         )
         .await
         .is_ok());
@@ -246,7 +245,7 @@ mod test {
     #[tokio::test]
     async fn balancy_get_erc20_balance() {
         let token_type = Fungible {
-            address: address!(ERC20_ADDR),
+            address: ERC20_ADDR.to_string(),
         };
 
         assert_eq!(
@@ -254,8 +253,8 @@ mod test {
                 .get_balance(
                     &reqwest::Client::new(),
                     &Ethereum.to_string(),
-                    token_type,
-                    address!(USER_2_ADDR)
+                    &token_type,
+                    USER_2_ADDR
                 )
                 .await
                 .unwrap(),
@@ -268,25 +267,24 @@ mod test {
         let client = reqwest::Client::new();
         let chain = Ethereum.to_string();
         let token_type_without_id = NonFungible {
-            address: address!(ERC721_ADDR),
+            address: ERC721_ADDR.to_string(),
             id: None,
         };
         let token_type_with_id = NonFungible {
-            address: address!(ERC721_ADDR),
-            id: Some(U256::from_dec_str(ERC721_ID).unwrap()),
+            address: ERC721_ADDR.to_string(),
+            id: Some(ERC721_ID.to_string()),
         };
-        let user_address = address!(USER_1_ADDR);
 
         assert_eq!(
             BalancyProvider
-                .get_balance(&client, &chain, token_type_without_id, user_address)
+                .get_balance(&client, &chain, &token_type_without_id, USER_1_ADDR)
                 .await
                 .unwrap(),
             1.0
         );
         assert_eq!(
             BalancyProvider
-                .get_balance(&client, &chain, token_type_with_id, user_address)
+                .get_balance(&client, &chain, &token_type_with_id, USER_1_ADDR)
                 .await
                 .unwrap(),
             1.0
@@ -298,25 +296,24 @@ mod test {
         let client = reqwest::Client::new();
         let chain = Ethereum.to_string();
         let token_type_without_id = Special {
-            address: address!(ERC1155_ADDR),
+            address: ERC1155_ADDR.to_string(),
             id: None,
         };
         let token_type_with_id = Special {
-            address: address!(ERC1155_ADDR),
-            id: Some(U256::from(ERC1155_ID)),
+            address: ERC1155_ADDR.to_string(),
+            id: Some(ERC1155_ID.to_string()),
         };
-        let user_address = address!(USER_3_ADDR);
 
         assert!(
             BalancyProvider
-                .get_balance(&client, &chain, token_type_without_id, user_address)
+                .get_balance(&client, &chain, &token_type_without_id, USER_3_ADDR)
                 .await
                 .unwrap()
                 > 6000.0
         );
         assert_eq!(
             BalancyProvider
-                .get_balance(&client, &chain, token_type_with_id, user_address)
+                .get_balance(&client, &chain, &token_type_with_id, USER_3_ADDR)
                 .await
                 .unwrap(),
             16.0

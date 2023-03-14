@@ -1,5 +1,5 @@
 use crate::evm::jsonrpc::RpcError;
-use primitive_types::{H160 as Address, U256};
+use primitive_types::U256;
 use serde::{de::Error, Deserialize, Deserializer};
 use thiserror::Error;
 
@@ -7,8 +7,8 @@ use thiserror::Error;
 pub enum BalancyError {
     #[error("Chain `{0}` is not supported by Balancy")]
     ChainNotSupported(String),
-    #[error("Unsupported token type")]
-    TokenTypeNotSupported(String),
+    #[error("Balancy doesn't support native coins")]
+    NativeTokenNotSupported,
     #[error("Invalid Balancy request")]
     InvalidBalancyRequest,
     #[error("Too many requests to Balancy")]
@@ -33,7 +33,7 @@ where
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Erc20 {
-    pub token_address: Address,
+    pub token_address: String,
     #[serde(deserialize_with = "u256_from_str")]
     pub amount: U256,
 }
@@ -41,17 +41,15 @@ pub struct Erc20 {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Erc721 {
-    pub token_address: Address,
-    #[serde(deserialize_with = "u256_from_str")]
-    pub token_id: U256,
+    pub token_address: String,
+    pub token_id: String,
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Erc1155 {
-    pub token_address: Address,
-    #[serde(deserialize_with = "u256_from_str")]
-    pub token_id: U256,
+    pub token_address: String,
+    pub token_id: String,
     #[serde(deserialize_with = "u256_from_str")]
     pub amount: U256,
 }

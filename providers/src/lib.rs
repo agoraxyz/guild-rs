@@ -14,21 +14,19 @@ pub mod evm;
 #[async_trait]
 pub trait BalanceQuerier {
     type Error;
-    type Address;
-    type Id;
 
     async fn get_balance(
         &self,
         client: &reqwest::Client,
         chain: &str,
-        token_type: TokenType<Self::Address, Self::Id>,
-        address: Self::Address,
+        token_type: &TokenType,
+        address: &str,
     ) -> Result<Scalar, Self::Error>;
     async fn get_balance_batch(
         &self,
         client: &reqwest::Client,
         chain: &str,
-        token_type: TokenType<Self::Address, Self::Id>,
-        addresses: &[Self::Address],
+        token_type: &TokenType,
+        addresses: &[String],
     ) -> Result<Vec<Scalar>, Self::Error>;
 }
