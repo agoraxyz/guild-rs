@@ -95,7 +95,7 @@ pub async fn get_erc20_decimals(
 ) -> Result<u32, RpcError> {
     let call = Call {
         target: token_address.to_string(),
-        call_data: format!("{FUNC_DECIMALS}"),
+        call_data: FUNC_DECIMALS.to_string(),
     };
     let decimals = call_contract(client, chain, call).await?;
 
@@ -118,9 +118,9 @@ pub async fn get_erc20_balance(
     token_address: &str,
     user_address: &str,
 ) -> Result<Scalar, RpcError> {
-    let call = erc20_call(&token_address, user_address);
+    let call = erc20_call(token_address, user_address);
     let balance = call_contract(client, chain, call).await?;
-    let decimals = get_erc20_decimals(client, chain, &token_address).await?;
+    let decimals = get_erc20_decimals(client, chain, token_address).await?;
     let divider = 10_u128.pow(decimals) as Scalar;
 
     let balance = rpc_error!(U256::from_str(&balance))?;
@@ -229,7 +229,7 @@ pub async fn get_erc1155_balance(
     token_id: &str,
     user_address: &str,
 ) -> Result<Scalar, RpcError> {
-    let id = format!("{:x}", rpc_error!(U256::from_dec_str(&token_id))?);
+    let id = format!("{:x}", rpc_error!(U256::from_dec_str(token_id))?);
     let call = erc1155_call(token_address, &id, user_address);
     let res = call_contract(client, chain, call).await?;
 
@@ -245,7 +245,7 @@ pub async fn get_erc1155_balance_batch(
     token_id: &str,
     user_addresses: &[String],
 ) -> Result<Vec<Scalar>, RpcError> {
-    let id = format!("{:x}", rpc_error!(U256::from_dec_str(&token_id))?);
+    let id = format!("{:x}", rpc_error!(U256::from_dec_str(token_id))?);
     let addresses = user_addresses
         .iter()
         .map(|user_address| format!("{:0>64}", user_address.trim_start_matches("0x")))

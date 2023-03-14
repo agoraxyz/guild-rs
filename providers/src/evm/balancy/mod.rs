@@ -145,13 +145,13 @@ impl BalanceQuerier for BalancyProvider {
     ) -> Result<Scalar, Self::Error> {
         match token_type {
             TokenType::Fungible { address } => {
-                get_erc20_balance(client, chain, &address, user_address).await
+                get_erc20_balance(client, chain, address, user_address).await
             }
             TokenType::NonFungible { address, id } => {
-                get_erc721_balance(client, chain, &address, id.clone(), user_address).await
+                get_erc721_balance(client, chain, address, id.clone(), user_address).await
             }
             TokenType::Special { address, id } => {
-                get_erc1155_balance(client, chain, &address, id.clone(), user_address).await
+                get_erc1155_balance(client, chain, address, id.clone(), user_address).await
             }
             TokenType::Native => Err(BalancyError::NativeTokenNotSupported),
         }

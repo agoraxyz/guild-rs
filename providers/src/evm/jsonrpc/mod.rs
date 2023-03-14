@@ -87,14 +87,14 @@ impl BalanceQuerier for RpcProvider {
         match token_type {
             TokenType::Native => get_coin_balance(client, chain, user_address).await,
             TokenType::Fungible { address } => {
-                get_erc20_balance(client, chain, &address, user_address).await
+                get_erc20_balance(client, chain, address, user_address).await
             }
             TokenType::NonFungible { address, id } => {
-                get_erc721_balance(client, chain, &address, id.clone(), user_address).await
+                get_erc721_balance(client, chain, address, id.clone(), user_address).await
             }
             TokenType::Special { address, id } => match id {
                 Some(token_id) => {
-                    get_erc1155_balance(client, chain, &address, &token_id, user_address).await
+                    get_erc1155_balance(client, chain, address, token_id, user_address).await
                 }
                 None => rpc_error!(
                     BalancyProvider
@@ -115,14 +115,14 @@ impl BalanceQuerier for RpcProvider {
         match token_type {
             TokenType::Native => get_eth_balance_batch(client, chain, addresses).await,
             TokenType::Fungible { address } => {
-                get_erc20_balance_batch(client, chain, &address, addresses).await
+                get_erc20_balance_batch(client, chain, address, addresses).await
             }
             TokenType::NonFungible { address, id: _ } => {
-                get_erc721_balance_batch(client, chain, &address, addresses).await
+                get_erc721_balance_batch(client, chain, address, addresses).await
             }
             TokenType::Special { address, id } => match id {
                 Some(token_id) => {
-                    get_erc1155_balance_batch(client, chain, address.clone(), &token_id, addresses)
+                    get_erc1155_balance_batch(client, chain, address.clone(), token_id, addresses)
                         .await
                 }
                 None => {
