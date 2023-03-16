@@ -15,15 +15,16 @@ pub fn parse_result(result: Value, path: &[Value]) -> Value {
         .to_owned()
 }
 
+const MERSENNE_PRIME: u128 = 18446744073709551629;
+
 pub fn hash_string_to_scalar(s: &str) -> Scalar {
     let mut hasher = DefaultHasher::new();
 
     s.hash(&mut hasher);
 
     let hash = hasher.finish() as u128;
-    let prime = 18446744073709551629_u128; // Mersenne prime M61
 
-    (hash % prime) as Scalar / prime as Scalar
+    (hash % MERSENNE_PRIME) as Scalar / MERSENNE_PRIME as Scalar
 }
 
 #[cfg(test)]
