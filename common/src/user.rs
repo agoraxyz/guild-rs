@@ -8,24 +8,25 @@ use std::collections::HashMap;
 pub enum Identity {
     EvmAddress(Address),
     SolPubkey(String),
-    Twitter(u64),
+    TwitterId(u64),
 }
 
 #[cfg(any(feature = "frontend", feature = "test"))]
 impl Identity {
     pub fn id(&self) -> String {
-        format!("{self:?}")
-            .chars()
-            .take_while(|&ch| ch != '(')
-            .collect::<String>()
-            .to_lowercase()
+        match self {
+            Self::EvmAddress(_) => "evm_address",
+            Self::SolPubkey(_) => "sol_pubkey",
+            Self::TwitterId(_) => "twitter_id",
+        }
+        .to_string()
     }
 
     pub fn inner(&self) -> String {
         match self {
             Self::EvmAddress(address) => format!("{address:#x}"),
             Self::SolPubkey(pubkey) => pubkey.to_string(),
-            Self::Twitter(id) => format!("{id}"),
+            Self::TwitterId(id) => format!("{id}"),
         }
     }
 }
@@ -77,16 +78,16 @@ mod test {
 
     #[test]
     fn identity_test() {
-        let twitter = Identity::Twitter(69420);
+        let twitter = Identity::TwitterId(69420);
 
-        assert_eq!(twitter.id(), "twitter");
+        assert_eq!(twitter.id(), "twitter_id");
         assert_eq!(twitter.inner(), "69420");
 
         let evm_address = Identity::EvmAddress(
             Address::from_str("0xe43878ce78934fe8007748ff481f03b8ee3b97de").unwrap(),
         );
 
-        assert_eq!(evm_address.id(), "evmaddress");
+        assert_eq!(evm_address.id(), "evm_address");
         assert_eq!(
             evm_address.inner(),
             "0xe43878ce78934fe8007748ff481f03b8ee3b97de"
