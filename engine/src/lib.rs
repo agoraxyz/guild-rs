@@ -153,10 +153,10 @@ mod test {
     use tokio as _;
 
     #[tokio::test]
-    #[cfg(feature = "check")]
+    #[cfg(feature = "identity")]
     async fn role_check() {
         use crate::{Checkable, Role};
-        use guild_common::{Chain, Identity::EvmAddress, Relation, TokenType, User};
+        use guild_common::{identity::Identity::EvmAddress, Chain, Relation, TokenType, User};
         use guild_requirements::{AllowList, Balance, Requirement};
         use primitive_types::H160 as Address;
         use std::str::FromStr;

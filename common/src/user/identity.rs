@@ -1,9 +1,5 @@
-#[cfg(any(feature = "frontend", feature = "check"))]
 use primitive_types::H160 as Address;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
-#[cfg(any(feature = "frontend", feature = "check"))]
 #[derive(Debug)]
 pub enum Identity {
     EvmAddress(Address),
@@ -11,7 +7,6 @@ pub enum Identity {
     TwitterId(u64),
 }
 
-#[cfg(any(feature = "frontend", feature = "check"))]
 impl Identity {
     pub fn id(&self) -> String {
         match self {
@@ -31,46 +26,7 @@ impl Identity {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct User {
-    pub id: u64,
-    pub identities: HashMap<String, Vec<String>>,
-}
-
-impl User {
-    #[cfg(any(feature = "frontend", feature = "check"))]
-    pub fn new(id: u64) -> Self {
-        Self {
-            id,
-            identities: HashMap::new(),
-        }
-    }
-
-    #[cfg(any(feature = "frontend", feature = "check"))]
-    pub fn add_identity(self, identity: Identity) -> Self {
-        let id_type = identity.id();
-        let mut identities = self.identities;
-        let mut vec: Vec<String> = identities
-            .get(&id_type)
-            .map(|identities| identities.to_vec())
-            .unwrap_or_default();
-
-        vec.push(identity.inner());
-
-        identities.insert(id_type, vec);
-
-        Self {
-            id: self.id,
-            identities,
-        }
-    }
-
-    pub fn get_identities(&self, id_type: &str) -> Vec<String> {
-        self.identities.get(id_type).cloned().unwrap_or_default()
-    }
-}
-
-#[cfg(all(test, feature = "check"))]
+#[cfg(test)]
 mod test {
     use super::Identity;
     use primitive_types::H160 as Address;

@@ -13,8 +13,7 @@ categories = [
 edition = "2021"
 
 [features]
-frontend = ["primitive-types"]
-check = ["primitive-types"]
+identity = ["primitive-types"]
 
 [dev-dependencies]
 shiba = { version = "0.1.1", default-features = false }

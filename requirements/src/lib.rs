@@ -4,7 +4,7 @@
 #![deny(unused_crate_dependencies)]
 
 pub use allowlist::AllowList;
-#[cfg(any(feature = "frontend", feature = "check"))]
+#[cfg(any(feature = "identity"))]
 pub use balance::Balance;
 pub use requirement::Requirement;
 
