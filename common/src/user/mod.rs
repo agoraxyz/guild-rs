@@ -47,9 +47,10 @@ mod test {
     #[test]
     fn add_identity_test() {
         let mut user = User::new(69);
+
         user.add_identity(Identity::TwitterId(420))
             .add_identity(Identity::TwitterId(23));
 
-        dbg!(user);
+        assert_eq!(user.get_identities("twitter_id"), ["420", "23"]);
     }
 }
