@@ -43,7 +43,7 @@ impl Requirement {
             path,
         } = &self.request;
 
-        if &self.type_id == "evmbalance" {
+        if &self.type_id == "evm_balance" {
             if let Data::JsonBody(body) = data {
                 let token_type = match body["type"].as_str().unwrap_or("") {
                     "fungible" => TokenType::Fungible {
@@ -51,16 +51,16 @@ impl Requirement {
                     },
                     "non_fungible" => TokenType::NonFungible {
                         address: body["address"].as_str().unwrap_or("").to_string(),
-                        id: match body["id"].as_str().unwrap_or("") {
-                            "" => None,
-                            id => Some(id.to_string()),
+                        id: match &body["id"] {
+                            Value::String(id) => Some(id.clone()),
+                            _ => None,
                         },
                     },
                     "special" => TokenType::Special {
                         address: body["address"].as_str().unwrap_or("").to_string(),
-                        id: match body["id"].as_str().unwrap_or("") {
-                            "" => None,
-                            id => Some(id.to_string()),
+                        id: match &body["id"] {
+                            Value::String(id) => Some(id.clone()),
+                            _ => None,
                         },
                     },
                     _ => TokenType::Native,

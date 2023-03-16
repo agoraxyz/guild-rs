@@ -129,7 +129,7 @@ impl Checkable for Role {
                 let list = users
                     .iter()
                     .map(|user| {
-                        user.get_identities("evmaddress")
+                        user.get_identities("evm_address")
                             .iter()
                             .any(|address| filter.check(address))
                     })
