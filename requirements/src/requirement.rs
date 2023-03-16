@@ -101,20 +101,7 @@ impl Requirement {
         let result: Value = builder.send().await?.json().await?;
         let parsed = parse_result(result, path);
 
-        let access = match parsed {
-            Value::Array(array) => match self.relation {
-                Relation::EqualTo(value) => array
-                    .iter()
-                    .any(|item| hash_string_to_scalar(&item.to_string()) == value),
-                _ => true,
-            },
-            Value::Bool(bool) => self.relation.assert(&Scalar::from(bool)),
-            Value::Number(number) => self.relation.assert(&number.as_f64().unwrap_or_default()),
-            Value::String(string) => self.relation.assert(&hash_string_to_scalar(&string)),
-            _ => false,
-        };
-
-        Ok(access)
+        Ok(check_access(parsed, &self.relation))
     }
 
     pub async fn check_batch(
@@ -133,14 +120,43 @@ impl Requirement {
     }
 }
 
+fn check_access(value: Value, relation: &Relation) -> bool {
+    match value {
+        Value::Array(array) => array
+            .iter()
+            .any(|item| relation.assert(&hash_string_to_scalar(item.as_str().unwrap_or_default()))),
+        Value::Bool(bool) => relation.assert(&Scalar::from(bool)),
+        Value::Number(number) => relation.assert(&number.as_f64().unwrap_or_default()),
+        Value::String(string) => relation.assert(&hash_string_to_scalar(&string)),
+        _ => false,
+    }
+}
+
 #[cfg(test)]
 mod test {
+    use crate::requirement::{check_access, hash_string_to_scalar, Relation};
     #[cfg(feature = "test")]
-    use super::{Relation, Requirement};
-    #[cfg(feature = "test")]
-    use crate::balance::Balance;
+    use crate::{balance::Balance, requirement::Requirement};
     #[cfg(feature = "test")]
     use guild_common::{Chain, TokenType};
+    use serde_json::json;
+
+    #[test]
+    fn check_access_test() {
+        let body_1 = json!("batman");
+        let body_2 = json!(["superman", "batman", "aquaman"]);
+        let body_3 = json!(true);
+        let body_4 = json!(69);
+
+        let relation_1_2 = Relation::EqualTo(dbg!(hash_string_to_scalar("batman")));
+        let relation_3 = Relation::EqualTo(1.0);
+        let relation_4 = Relation::EqualTo(69.0);
+
+        assert!(check_access(body_1, &relation_1_2));
+        assert!(check_access(body_2, &relation_1_2));
+        assert!(check_access(body_3, &relation_3));
+        assert!(check_access(body_4, &relation_4));
+    }
 
     #[tokio::test]
     #[cfg(feature = "test")]
