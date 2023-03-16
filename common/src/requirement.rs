@@ -1,11 +1,27 @@
 use core::ops::{Range, RangeInclusive};
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 pub type Scalar = f64;
 
-#[derive(Debug)]
 pub enum RequirementType {
     EvmBalance,
+}
+
+impl fmt::Debug for RequirementType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let res = match self {
+            Self::EvmBalance => "evm_balance",
+        };
+
+        write!(f, "{res}")
+    }
+}
+
+impl fmt::Display for RequirementType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        <Self as fmt::Debug>::fmt(self, f)
+    }
 }
 
 #[derive(Debug)]
