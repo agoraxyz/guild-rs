@@ -130,10 +130,9 @@ impl Relation {
 
 #[cfg(test)]
 mod test {
-    use std::str::FromStr;
-
     use super::{Address, Identity, Relation};
     use shiba as _;
+    use std::str::FromStr;
 
     #[test]
     fn identity_test() {

@@ -11,12 +11,12 @@ impl<T> AllowList<T>
 where
     T: PartialEq,
 {
-    pub fn contains(&self, entry: &T) -> bool {
+    pub fn check(&self, entry: &T) -> bool {
         self.deny_list != self.list.contains(entry)
     }
 
-    pub fn contains_many(&self, entries: &[T]) -> Vec<bool> {
-        entries.iter().map(|entry| self.contains(entry)).collect()
+    pub fn check_many(&self, entries: &[T]) -> Vec<bool> {
+        entries.iter().map(|entry| self.check(entry)).collect()
     }
 }
 
@@ -31,15 +31,15 @@ mod test {
             list: vec![69, 420],
         };
 
-        assert!(allowlist.contains(&69));
-        assert!(!allowlist.contains(&13));
+        assert!(allowlist.check(&69));
+        assert!(!allowlist.check(&13));
 
         let denylist = AllowList {
             deny_list: true,
             list: vec![69, 420],
         };
 
-        assert!(!denylist.contains(&69));
-        assert!(denylist.contains(&13));
+        assert!(!denylist.check(&69));
+        assert!(denylist.check(&13));
     }
 }

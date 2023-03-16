@@ -124,7 +124,7 @@ impl Checkable for Role {
                     .map(|user| {
                         user.get_identities("evmaddress")
                             .iter()
-                            .any(|address| filter.contains(address))
+                            .any(|address| filter.check(address))
                     })
                     .collect::<Vec<_>>();
 
