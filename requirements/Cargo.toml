@@ -14,7 +14,7 @@ edition = "2021"
 
 [features]
 frontend = []
-test = []
+check = []
 
 [dev-dependencies]
 tokio = { workspace = true }

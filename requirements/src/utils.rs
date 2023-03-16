@@ -50,7 +50,7 @@ mod test {
     }
 
     #[test]
-    fn hash_string_to_acalar_test() {
+    fn hash_string_to_scalar_test() {
         assert_eq!(
             hash_string_to_scalar("Lorem ipsum dolor sit amet"),
             0.7593360189081984

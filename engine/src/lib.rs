@@ -153,7 +153,7 @@ mod test {
     use tokio as _;
 
     #[tokio::test]
-    #[cfg(feature = "test")]
+    #[cfg(feature = "check")]
     async fn role_check() {
         use crate::{Checkable, Role};
         use guild_common::{Chain, Identity::EvmAddress, Relation, TokenType, User};

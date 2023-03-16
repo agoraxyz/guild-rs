@@ -13,7 +13,7 @@ categories = [
 edition = "2021"
 
 [features]
-test = []
+check = []
 
 [dev-dependencies]
 primitive-types = { workspace = true }

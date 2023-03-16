@@ -1,9 +1,9 @@
-#[cfg(any(feature = "frontend", feature = "test"))]
+#[cfg(any(feature = "frontend", feature = "check"))]
 use primitive_types::H160 as Address;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[cfg(any(feature = "frontend", feature = "test"))]
+#[cfg(any(feature = "frontend", feature = "check"))]
 #[derive(Debug)]
 pub enum Identity {
     EvmAddress(Address),
@@ -11,7 +11,7 @@ pub enum Identity {
     TwitterId(u64),
 }
 
-#[cfg(any(feature = "frontend", feature = "test"))]
+#[cfg(any(feature = "frontend", feature = "check"))]
 impl Identity {
     pub fn id(&self) -> String {
         match self {
@@ -38,7 +38,7 @@ pub struct User {
 }
 
 impl User {
-    #[cfg(any(feature = "frontend", feature = "test"))]
+    #[cfg(any(feature = "frontend", feature = "check"))]
     pub fn new(id: u64) -> Self {
         Self {
             id,
@@ -46,7 +46,7 @@ impl User {
         }
     }
 
-    #[cfg(any(feature = "frontend", feature = "test"))]
+    #[cfg(any(feature = "frontend", feature = "check"))]
     pub fn add_identity(self, identity: Identity) -> Self {
         let id_type = identity.id();
         let mut identities = self.identities;
@@ -70,7 +70,7 @@ impl User {
     }
 }
 
-#[cfg(all(test, any(feature = "frontend", feature = "test")))]
+#[cfg(all(test, feature = "check"))]
 mod test {
     use super::Identity;
     use primitive_types::H160 as Address;

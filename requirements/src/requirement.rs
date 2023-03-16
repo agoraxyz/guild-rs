@@ -135,9 +135,9 @@ fn check_access(value: Value, relation: &Relation) -> bool {
 #[cfg(test)]
 mod test {
     use crate::requirement::{check_access, hash_string_to_scalar, Relation};
-    #[cfg(feature = "test")]
+    #[cfg(feature = "check")]
     use crate::{balance::Balance, requirement::Requirement};
-    #[cfg(feature = "test")]
+    #[cfg(feature = "check")]
     use guild_common::{Chain, TokenType};
     use serde_json::json;
 
@@ -159,7 +159,7 @@ mod test {
     }
 
     #[tokio::test]
-    #[cfg(feature = "test")]
+    #[cfg(feature = "check")]
     async fn requirement_check_test() {
         let balance_check = Balance {
             chain: Chain::Ethereum,
