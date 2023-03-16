@@ -1,5 +1,7 @@
-use super::request::*;
-use super::{hash_string_to_f64, parse_result};
+use super::{
+    request::*,
+    utils::{hash_string_to_f64, parse_result},
+};
 use futures::future::join_all;
 use guild_common::{Relation, Scalar, TokenType};
 use guild_providers::{evm::Provider, BalanceQuerier, BalancyError, RpcError};
@@ -128,5 +130,34 @@ impl Requirement {
         .await
         .into_iter()
         .collect()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[cfg(feature = "test")]
+    use super::{Balance, Relation, Requirement};
+    #[cfg(feature = "test")]
+    use guild_common::{Chain, TokenType};
+
+    #[tokio::test]
+    #[cfg(feature = "test")]
+    async fn requirement_check_test() {
+        let balance_check = Balance {
+            chain: Chain::Ethereum,
+            token_type: TokenType::NonFungible {
+                address: "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85".to_string(),
+                id: None,
+            },
+            relation: Relation::GreaterThan(0.0),
+        };
+
+        let req = Requirement::from(balance_check);
+        let client = reqwest::Client::new();
+
+        assert!(req
+            .check(&client, "0xe43878ce78934fe8007748ff481f03b8ee3b97de")
+            .await
+            .unwrap());
     }
 }
