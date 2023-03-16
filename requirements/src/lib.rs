@@ -20,13 +20,6 @@ use thiserror::Error;
 mod allowlist;
 mod balance;
 
-pub struct Role {
-    pub id: String,
-    pub filter: Option<AllowList<String>>,
-    pub logic: String,
-    pub requirements: Option<Vec<Requirement>>,
-}
-
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum Method {
     Get,

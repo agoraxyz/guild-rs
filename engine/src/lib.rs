@@ -6,9 +6,16 @@
 use async_trait::async_trait;
 use futures::future::join_all;
 use guild_common::User;
-use guild_requirements::Role;
+use guild_requirements::{AllowList, Requirement};
 use std::{collections::HashMap, str::FromStr};
 use thiserror::Error;
+
+pub struct Role {
+    pub id: String,
+    pub filter: Option<AllowList<String>>,
+    pub logic: String,
+    pub requirements: Option<Vec<Requirement>>,
+}
 
 #[derive(Error, Debug)]
 pub enum RoleError {
