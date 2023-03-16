@@ -3,8 +3,12 @@
 #![deny(clippy::cargo)]
 #![deny(unused_crate_dependencies)]
 
-use allowlist::AllowList;
-use guild_common::{Relation, Scalar};
+pub use allowlist::AllowList;
+#[cfg(any(feature = "frontend", feature = "test"))]
+pub use balance::Balance;
+use futures::future::join_all;
+use guild_common::{Relation, Scalar, TokenType};
+use guild_providers::{evm::Provider, BalanceQuerier, BalancyError, RpcError};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{
@@ -15,7 +19,6 @@ use thiserror::Error;
 
 mod allowlist;
 mod balance;
-mod user;
 
 pub struct Role {
     pub id: String,
@@ -44,7 +47,7 @@ pub enum Auth {
 pub enum Data {
     None,
     UrlEncoded(String),
-    JsonBody(String),
+    JsonBody(Value),
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -58,7 +61,6 @@ pub struct Request {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Requirement {
-    pub id: String,
     pub type_id: String,
     pub request: Request,
     pub identity_id: String,
@@ -69,6 +71,10 @@ pub struct Requirement {
 pub enum RequirementError {
     #[error("{0}")]
     ConversionFailed(String),
+    #[error(transparent)]
+    RpcError(#[from] RpcError),
+    #[error(transparent)]
+    BalancyError(#[from] BalancyError),
     #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
 }
@@ -86,6 +92,41 @@ impl Requirement {
             auth,
             path,
         } = &self.request;
+
+        if &self.type_id == "evmbalance" {
+            if let Data::JsonBody(body) = data {
+                let token_type = match body["type"].as_str().unwrap_or("") {
+                    "fungible" => TokenType::Fungible {
+                        address: body["address"].as_str().unwrap_or("").to_string(),
+                    },
+                    "non_fungible" => TokenType::NonFungible {
+                        address: body["address"].as_str().unwrap_or("").to_string(),
+                        id: match body["id"].as_str().unwrap_or("") {
+                            "" => None,
+                            id => Some(id.to_string()),
+                        },
+                    },
+                    "special" => TokenType::Special {
+                        address: body["address"].as_str().unwrap_or("").to_string(),
+                        id: match body["id"].as_str().unwrap_or("") {
+                            "" => None,
+                            id => Some(id.to_string()),
+                        },
+                    },
+                    _ => TokenType::Native,
+                };
+
+                let balance = Provider
+                    .get_balance(client, base_url, &token_type, identity)
+                    .await?;
+
+                return Ok(self.relation.assert(&balance));
+            } else {
+                return Err(RequirementError::ConversionFailed(
+                    "Wrong data type".to_string(),
+                ));
+            }
+        }
 
         let url = if let Data::UrlEncoded(param) = data {
             format!("{base_url}?{param}={identity}")
@@ -124,7 +165,6 @@ impl Requirement {
         };
 
         Ok(access)
-        //Ok(self.check_batch(client, &[identity]).await?[0])
     }
 
     pub async fn check_batch(
@@ -132,7 +172,14 @@ impl Requirement {
         client: &reqwest::Client,
         identities: &[String],
     ) -> Result<Vec<bool>, RequirementError> {
-        Ok(vec![true; identities.len()])
+        join_all(
+            identities
+                .iter()
+                .map(|identity| async { self.check(client, identity).await }),
+        )
+        .await
+        .into_iter()
+        .collect()
     }
 }
 
@@ -153,18 +200,20 @@ fn hash_string_to_f64(s: &str) -> f64 {
 
     let hash = hasher.finish() as u128;
     let prime = 18446744073709551629_u128; // Mersenne prime M61
-    let normalized_hash = (hash % prime) as f64 / prime as f64;
 
-    normalized_hash
+    (hash % prime) as f64 / prime as f64
 }
 
 #[cfg(test)]
 mod test {
-    use super::{
-        hash_string_to_f64, parse_result, user::User, Auth, Data, Method, Relation, Request,
-        Requirement,
-    };
+    use super::{hash_string_to_f64, parse_result};
+    #[cfg(feature = "test")]
+    use super::{Balance, Relation, Requirement};
+    #[cfg(feature = "test")]
+    use guild_common::{Chain, TokenType};
     use serde_json::json;
+
+    use tokio as _;
 
     #[test]
     fn parse_result_test() {
@@ -190,7 +239,23 @@ mod test {
     }
 
     #[tokio::test]
+    #[cfg(feature = "test")]
     async fn requirement_check_test() {
-        todo!();
+        let balance_check = Balance {
+            chain: Chain::Ethereum,
+            token_type: TokenType::NonFungible {
+                address: "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85".to_string(),
+                id: None,
+            },
+            relation: Relation::GreaterThan(0.0),
+        };
+
+        let req = Requirement::from(balance_check);
+        let client = reqwest::Client::new();
+
+        assert!(req
+            .check(&client, "0xe43878ce78934fe8007748ff481f03b8ee3b97de")
+            .await
+            .unwrap());
     }
 }
