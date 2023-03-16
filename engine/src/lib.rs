@@ -202,11 +202,13 @@ mod test {
             requirements: Some(vec![req]),
         };
 
-        let user1 = User::new(69).add_identity(EvmAddress(
+        let mut user1 = User::new(69);
+        user1.add_identity(EvmAddress(
             Address::from_str("0xe43878ce78934fe8007748ff481f03b8ee3b97de").unwrap(),
         ));
 
-        let user2 = User::new(420).add_identity(EvmAddress(
+        let mut user2 = User::new(420);
+        user2.add_identity(EvmAddress(
             Address::from_str("0x283d678711daa088640c86a1ad3f12c00ec1252e").unwrap(),
         ));
 

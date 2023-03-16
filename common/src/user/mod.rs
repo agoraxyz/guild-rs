@@ -20,25 +20,36 @@ impl User {
     }
 
     #[cfg(any(feature = "identity"))]
-    pub fn add_identity(self, identity: identity::Identity) -> Self {
+    pub fn add_identity(&mut self, identity: identity::Identity) -> &mut Self {
         let id_type = identity.id();
-        let mut identities = self.identities;
-        let mut vec: Vec<String> = identities
+        let mut vec: Vec<String> = self
+            .identities
             .get(&id_type)
             .map(|identities| identities.to_vec())
             .unwrap_or_default();
 
         vec.push(identity.inner());
 
-        identities.insert(id_type, vec);
+        self.identities.insert(id_type, vec);
 
-        Self {
-            id: self.id,
-            identities,
-        }
+        self
     }
 
     pub fn get_identities(&self, id_type: &str) -> Vec<String> {
         self.identities.get(id_type).cloned().unwrap_or_default()
+    }
+}
+
+#[cfg(all(test, feature = "identity"))]
+mod test {
+    use super::{identity::Identity, User};
+
+    #[test]
+    fn add_identity_test() {
+        let mut user = User::new(69);
+        user.add_identity(Identity::TwitterId(420))
+            .add_identity(Identity::TwitterId(23));
+
+        dbg!(user);
     }
 }
