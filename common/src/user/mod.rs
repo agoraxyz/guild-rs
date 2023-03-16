@@ -23,8 +23,7 @@ impl User {
     pub fn add_identity(&mut self, identity: identity::Identity) -> &mut Self {
         let id_type = identity.id();
         let mut vec: Vec<String> = self
-            .identities
-            .get(&id_type)
+            .identities(&id_type)
             .map(|identities| identities.to_vec())
             .unwrap_or_default();
 
@@ -35,8 +34,8 @@ impl User {
         self
     }
 
-    pub fn get_identities(&self, id_type: &str) -> Vec<String> {
-        self.identities.get(id_type).cloned().unwrap_or_default()
+    pub fn identities(&self, id_type: &str) -> Option<&Vec<String>> {
+        self.identities.get(id_type)
     }
 }
 
@@ -51,6 +50,6 @@ mod test {
         user.add_identity(Identity::TwitterId(420))
             .add_identity(Identity::TwitterId(23));
 
-        assert_eq!(user.get_identities("twitter_id"), ["420", "23"]);
+        assert_eq!(user.identities("twitter_id").unwrap(), &["420", "23"]);
     }
 }

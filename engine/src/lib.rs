@@ -58,8 +58,7 @@ impl Checkable for Role {
                     let identities_with_ids: Vec<(u64, String)> = users
                         .iter()
                         .flat_map(|user| {
-                            user.identities
-                                .get(&req.identity_id)
+                            user.identities(&req.identity_id)
                                 .unwrap_or(&vec![])
                                 .iter()
                                 .cloned()
@@ -129,7 +128,8 @@ impl Checkable for Role {
                 let list = users
                     .iter()
                     .map(|user| {
-                        user.get_identities("evm_address")
+                        user.identities("evm_address")
+                            .unwrap_or(&vec![])
                             .iter()
                             .any(|address| filter.check(address))
                     })
