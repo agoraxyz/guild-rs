@@ -1,6 +1,6 @@
 use super::{
     request::*,
-    utils::{hash_string_to_f64, parse_result},
+    utils::{hash_string_to_scalar, parse_result},
 };
 use futures::future::join_all;
 use guild_common::{Relation, Scalar, TokenType};
@@ -105,12 +105,12 @@ impl Requirement {
             Value::Array(array) => match self.relation {
                 Relation::EqualTo(value) => array
                     .iter()
-                    .any(|item| hash_string_to_f64(&item.to_string()) == value),
+                    .any(|item| hash_string_to_scalar(&item.to_string()) == value),
                 _ => true,
             },
             Value::Bool(bool) => self.relation.assert(&Scalar::from(bool)),
             Value::Number(number) => self.relation.assert(&number.as_f64().unwrap_or_default()),
-            Value::String(string) => self.relation.assert(&hash_string_to_f64(&string)),
+            Value::String(string) => self.relation.assert(&hash_string_to_scalar(&string)),
             _ => false,
         };
 
@@ -136,7 +136,9 @@ impl Requirement {
 #[cfg(test)]
 mod test {
     #[cfg(feature = "test")]
-    use super::{Balance, Relation, Requirement};
+    use super::{Relation, Requirement};
+    #[cfg(feature = "test")]
+    use crate::balance::Balance;
     #[cfg(feature = "test")]
     use guild_common::{Chain, TokenType};
 

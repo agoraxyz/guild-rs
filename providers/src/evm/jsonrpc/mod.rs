@@ -70,7 +70,7 @@ async fn get_coin_balance(
 
     let balance = rpc_error!(U256::from_str(&res.result))?;
 
-    Ok((balance.as_u128() as f64) / ETH_BALANCE_DIVIDER)
+    Ok((balance.as_u128() as Scalar) / ETH_BALANCE_DIVIDER)
 }
 
 #[async_trait]

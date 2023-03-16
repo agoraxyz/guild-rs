@@ -155,9 +155,9 @@ mod test {
     #[tokio::test]
     #[cfg(feature = "test")]
     async fn role_check() {
-        use crate::Checkable;
+        use crate::{Checkable, Role};
         use guild_common::{Chain, Identity::EvmAddress, Relation, TokenType, User};
-        use guild_requirements::{AllowList, Balance, Requirement, Role};
+        use guild_requirements::{AllowList, Balance, Requirement};
         use primitive_types::H160 as Address;
         use std::str::FromStr;
 

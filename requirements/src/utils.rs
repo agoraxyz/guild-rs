@@ -1,3 +1,4 @@
+use guild_common::Scalar;
 use serde_json::Value;
 use std::{
     collections::hash_map::DefaultHasher,
@@ -14,7 +15,7 @@ pub fn parse_result(result: Value, path: &[Value]) -> Value {
         .to_owned()
 }
 
-pub fn hash_string_to_f64(s: &str) -> f64 {
+pub fn hash_string_to_scalar(s: &str) -> Scalar {
     let mut hasher = DefaultHasher::new();
 
     s.hash(&mut hasher);
@@ -22,12 +23,12 @@ pub fn hash_string_to_f64(s: &str) -> f64 {
     let hash = hasher.finish() as u128;
     let prime = 18446744073709551629_u128; // Mersenne prime M61
 
-    (hash % prime) as f64 / prime as f64
+    (hash % prime) as Scalar / prime as Scalar
 }
 
 #[cfg(test)]
 mod test {
-    use super::{hash_string_to_f64, parse_result};
+    use super::{hash_string_to_scalar, parse_result, Scalar};
     use serde_json::json;
 
     use tokio as _;
@@ -44,13 +45,13 @@ mod test {
         let path = [json!("users"), json!(1), json!("balance")];
         let balance = parse_result(result, &path);
 
-        assert_eq!(balance.to_string().parse::<f64>().unwrap(), 420.0);
+        assert_eq!(balance.to_string().parse::<Scalar>().unwrap(), 420.0);
     }
 
     #[test]
-    fn hash_string_to_f64_test() {
+    fn hash_string_to_acalar_test() {
         assert_eq!(
-            hash_string_to_f64("Lorem ipsum dolor sit amet"),
+            hash_string_to_scalar("Lorem ipsum dolor sit amet"),
             0.7593360189081984
         );
     }
