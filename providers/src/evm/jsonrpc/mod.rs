@@ -175,7 +175,7 @@ mod test {
                     &reqwest::Client::new(),
                     &Ethereum.to_string(),
                     &Native,
-                    &vec![USER_1_ADDR.to_string(), USER_2_ADDR.to_string()]
+                    &[USER_1_ADDR.to_string(), USER_2_ADDR.to_string()]
                 )
                 .await
                 .unwrap(),
@@ -215,7 +215,7 @@ mod test {
                     &reqwest::Client::new(),
                     &Ethereum.to_string(),
                     &token_type,
-                    &vec![USER_1_ADDR.to_string(), USER_2_ADDR.to_string()]
+                    &[USER_1_ADDR.to_string(), USER_2_ADDR.to_string()]
                 )
                 .await
                 .unwrap(),
@@ -266,7 +266,7 @@ mod test {
                     &client,
                     &Ethereum.to_string(),
                     &token_type_without_id,
-                    &vec![USER_1_ADDR.to_string(), USER_2_ADDR.to_string()]
+                    &[USER_1_ADDR.to_string(), USER_2_ADDR.to_string()]
                 )
                 .await
                 .unwrap(),
@@ -318,7 +318,7 @@ mod test {
                     &client,
                     &Ethereum.to_string(),
                     &token_type_with_id,
-                    &vec![USER_1_ADDR.to_string(), USER_3_ADDR.to_string()]
+                    &[USER_1_ADDR.to_string(), USER_3_ADDR.to_string()]
                 )
                 .await
                 .unwrap(),

@@ -175,7 +175,7 @@ impl Requirement {
         join_all(
             identities
                 .iter()
-                .map(|identity| async { self.check(client, identity).await }),
+                .map(|identity| self.check(client, identity)),
         )
         .await
         .into_iter()
