@@ -148,7 +148,7 @@ mod test {
         let body_3 = json!(true);
         let body_4 = json!(69);
 
-        let relation_1_2 = Relation::EqualTo(dbg!(hash_string_to_scalar("batman")));
+        let relation_1_2 = Relation::EqualTo(hash_string_to_scalar("batman"));
         let relation_3 = Relation::EqualTo(1.0);
         let relation_4 = Relation::EqualTo(69.0);
 
