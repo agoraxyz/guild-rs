@@ -10,8 +10,12 @@ use std::collections::HashMap;
 
 pub type Scalar = f64;
 
-#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[derive(Debug)]
+pub enum RequirementType {
+    EvmBalance,
+}
+
+#[derive(Debug)]
 pub enum Chain {
     Ethereum,
     Polygon,
@@ -27,7 +31,7 @@ impl ToString for Chain {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+#[derive(Debug)]
 pub enum Identity {
     EvmAddress(Address),
     SolPubkey(String),
@@ -58,8 +62,8 @@ pub struct User {
     pub identities: HashMap<String, Vec<String>>,
 }
 
-#[cfg(feature = "frontend")]
 impl User {
+    #[cfg(any(feature = "frontend", feature = "test"))]
     pub fn new(id: u64) -> Self {
         Self {
             id,
@@ -67,6 +71,7 @@ impl User {
         }
     }
 
+    #[cfg(any(feature = "frontend", feature = "test"))]
     pub fn add_identity(self, identity: Identity) -> Self {
         let id_type = identity.id();
         let mut identities = self.identities;
@@ -90,7 +95,7 @@ impl User {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Debug)]
 pub enum TokenType {
     Native,
     Fungible { address: String },
