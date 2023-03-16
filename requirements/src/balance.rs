@@ -47,3 +47,40 @@ impl From<Balance> for Requirement {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::{
+        json, Auth, Balance, Chain, Data, Method, Relation, Request, Requirement, TokenType,
+    };
+
+    #[test]
+    fn requirement_from_balance() {
+        let address = "0x458691c1692cd82facfb2c5127e36d63213448a8".to_string();
+        let balance = Balance {
+            chain: Chain::Ethereum,
+            token_type: TokenType::Fungible { address },
+            relation: Relation::EqualTo(69.420),
+        };
+
+        let request = Request {
+            base_url: "ethereum".to_string(),
+            method: Method::Get,
+            data: Data::JsonBody(json!({
+                "type": "fungible",
+                "address": "0x458691c1692cd82facfb2c5127e36d63213448a8"
+            })),
+            auth: Auth::None,
+            path: vec![],
+        };
+
+        let requirement = Requirement {
+            type_id: "evm_balance".to_string(),
+            request,
+            identity_id: "evm_address".to_string(),
+            relation: Relation::EqualTo(69.420),
+        };
+
+        assert_eq!(Requirement::from(balance), requirement);
+    }
+}

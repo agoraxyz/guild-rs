@@ -32,7 +32,7 @@ pub enum TokenType {
     Special { address: String, id: Option<String> },
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 pub enum Relation {
     EqualTo(Scalar),
     GreaterThan(Scalar),
