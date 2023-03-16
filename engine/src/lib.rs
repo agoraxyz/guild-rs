@@ -115,7 +115,26 @@ impl Checkable for Role {
 
                 tree.evaluate(&terminals).unwrap_or(false)
             })
-            .collect();
+            .collect::<Vec<_>>();
+
+        let res = match self.filter.as_ref() {
+            Some(filter) => {
+                let list = users
+                    .iter()
+                    .map(|user| {
+                        user.get_identities("evmaddress")
+                            .iter()
+                            .any(|address| filter.contains(address))
+                    })
+                    .collect::<Vec<_>>();
+
+                res.iter()
+                    .enumerate()
+                    .map(|(idx, item)| *item && list[idx])
+                    .collect()
+            }
+            _ => res,
+        };
 
         Ok(res)
     }
@@ -123,21 +142,23 @@ impl Checkable for Role {
 
 #[cfg(test)]
 mod test {
-    use crate::Checkable;
-    use guild_common::{Chain, Identity::EvmAddress, Relation, TokenType, User};
-    use guild_requirements::{AllowList, Balance, Role};
-    use primitive_types::{H160 as Address, U256};
-    use std::str::FromStr;
+    use primitive_types as _;
     use tokio as _;
 
     #[tokio::test]
     #[cfg(feature = "test")]
     async fn role_check() {
+        use crate::Checkable;
+        use guild_common::{Chain, Identity::EvmAddress, Relation, TokenType, User};
+        use guild_requirements::{AllowList, Balance, Requirement, Role};
+        use primitive_types::H160 as Address;
+        use std::str::FromStr;
+
         let allowlist = AllowList {
             deny_list: false,
             list: vec![
-                "0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE".to_string(),
-                "0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3".to_string(),
+                "0xe43878ce78934fe8007748ff481f03b8ee3b97de".to_string(),
+                "0x14ddfe8ea7ffc338015627d160ccaf99e8f16dd3".to_string(),
             ],
         };
 
@@ -145,7 +166,7 @@ mod test {
             deny_list: true,
             list: vec![
                 "0x283d678711daa088640c86a1ad3f12c00ec1252e".to_string(),
-                "0x20CC54c7ebc5f43b74866D839b4BD5c01BB23503".to_string(),
+                "0x20CC54c7ebc5f43b74866d839b4bd5c01bb23503".to_string(),
             ],
         };
 
@@ -158,22 +179,24 @@ mod test {
             relation: Relation::GreaterThan(0.0),
         };
 
+        let req = Requirement::from(balance_check);
+
         let role1 = Role {
             id: "69".to_string(),
-            logic: "0 AND 1 AND 2".to_string(),
+            logic: "0".to_string(),
             filter: Some(allowlist),
-            requirements: None,
+            requirements: Some(vec![req.clone()]),
         };
 
         let role2 = Role {
             id: "69".to_string(),
-            logic: "0 AND 1 AND 2".to_string(),
+            logic: "0".to_string(),
             filter: Some(denylist),
-            requirements: None,
+            requirements: Some(vec![req]),
         };
 
         let user1 = User::new(69).add_identity(EvmAddress(
-            Address::from_str("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE").unwrap(),
+            Address::from_str("0xe43878ce78934fe8007748ff481f03b8ee3b97de").unwrap(),
         ));
 
         let user2 = User::new(420).add_identity(EvmAddress(
