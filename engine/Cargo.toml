@@ -12,7 +12,11 @@ categories = [
 ]
 edition = "2021"
 
+[features]
+test = []
+
 [dev-dependencies]
+primitive-types = { workspace = true }
 tokio = { workspace = true }
 
 [dependencies]
@@ -20,7 +24,6 @@ async-trait = { workspace = true }
 futures = { workspace = true }
 guild-common = { path = "../common" }
 guild-requirements = { path = "../requirements" }
-primitive-types = { workspace = true }
 requiem = { git = "https://github.com/agoraxyz/requiem.git" }
 reqwest = { workspace = true }
 thiserror = { workspace = true }

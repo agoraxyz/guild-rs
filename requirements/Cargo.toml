@@ -13,15 +13,17 @@ categories = [
 edition = "2021"
 
 [features]
-nomock = []
+frontend = []
+test = []
 
 [dev-dependencies]
 tokio = { workspace = true }
 
 [dependencies]
+futures = { workspace = true }
 reqwest = { workspace = true }
 guild-common = { path = "../common" }
-#guild-providers = { path = "../providers" }
+guild-providers = { path = "../providers" }
 serde = { workspace = true }
 serde_json = { version = "1.0.93", default-features = false }
 thiserror = { workspace = true }
