@@ -156,7 +156,10 @@ mod test {
     #[cfg(feature = "identity")]
     async fn role_check() {
         use crate::{Checkable, Role};
-        use guild_common::{identity::Identity::EvmAddress, Chain, Relation, TokenType, User};
+        use guild_common::{
+            identity::{Identity::EvmAddress, UserBuilder},
+            Chain, Relation, TokenType,
+        };
         use guild_requirements::{AllowList, Balance, Requirement};
         use primitive_types::H160 as Address;
         use std::str::FromStr;
@@ -202,15 +205,17 @@ mod test {
             requirements: Some(vec![req]),
         };
 
-        let mut user1 = User::new(69);
-        user1.add_identity(EvmAddress(
-            Address::from_str("0xe43878ce78934fe8007748ff481f03b8ee3b97de").unwrap(),
-        ));
+        let user1 = UserBuilder::new(69)
+            .add_identity(EvmAddress(
+                Address::from_str("0xe43878ce78934fe8007748ff481f03b8ee3b97de").unwrap(),
+            ))
+            .build();
 
-        let mut user2 = User::new(420);
-        user2.add_identity(EvmAddress(
-            Address::from_str("0x283d678711daa088640c86a1ad3f12c00ec1252e").unwrap(),
-        ));
+        let user2 = UserBuilder::new(420)
+            .add_identity(EvmAddress(
+                Address::from_str("0x283d678711daa088640c86a1ad3f12c00ec1252e").unwrap(),
+            ))
+            .build();
 
         let users = vec![user1, user2];
 

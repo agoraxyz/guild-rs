@@ -1,3 +1,4 @@
+use super::{HashMap, User};
 use primitive_types::H160 as Address;
 
 #[derive(Debug)]
@@ -22,6 +23,42 @@ impl Identity {
             Self::EvmAddress(address) => format!("{address:#x}"),
             Self::SolPubkey(pubkey) => pubkey.to_string(),
             Self::TwitterId(id) => format!("{id}"),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct UserBuilder {
+    pub id: u64,
+    pub identities: HashMap<String, Vec<String>>,
+}
+
+impl UserBuilder {
+    pub fn new(id: u64) -> Self {
+        Self {
+            id,
+            identities: HashMap::new(),
+        }
+    }
+
+    pub fn add_identity(mut self, identity: Identity) -> Self {
+        let id_type = identity.id();
+        if self
+            .identities
+            .get_mut(&id_type)
+            .map(|identities| identities.push(identity.inner()))
+            .is_none()
+        {
+            self.identities.insert(id_type, vec![identity.inner()]);
+        };
+
+        self
+    }
+
+    pub fn build(self) -> User {
+        User {
+            id: self.id,
+            identities: self.identities,
         }
     }
 }
