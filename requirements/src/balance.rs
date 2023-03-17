@@ -11,7 +11,7 @@ pub struct Balance {
 
 impl From<Balance> for Requirement {
     fn from(value: Balance) -> Self {
-        let data = match value.token_type {
+        let payload = match value.token_type {
             TokenType::Native => json!({
                 "type": "native"
             }),
@@ -34,7 +34,7 @@ impl From<Balance> for Requirement {
         let request = Request {
             base_url: value.chain.to_string(),
             method: Method::Get,
-            data: Data::JsonBody(data),
+            payload: Payload::JsonBody(payload),
             auth: Auth::None,
             path: vec![],
         };
@@ -51,7 +51,7 @@ impl From<Balance> for Requirement {
 #[cfg(test)]
 mod test {
     use super::{
-        json, Auth, Balance, Chain, Data, Method, Relation, Request, Requirement, TokenType,
+        json, Auth, Balance, Chain, Method, Payload, Relation, Request, Requirement, TokenType,
     };
 
     #[test]
@@ -66,7 +66,7 @@ mod test {
         let request = Request {
             base_url: "ethereum".to_string(),
             method: Method::Get,
-            data: Data::JsonBody(json!({
+            payload: Payload::JsonBody(json!({
                 "type": "fungible",
                 "address": "0x458691c1692cd82facfb2c5127e36d63213448a8"
             })),

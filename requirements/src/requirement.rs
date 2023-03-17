@@ -38,13 +38,13 @@ impl Requirement {
         let Request {
             base_url,
             method,
-            data,
+            payload,
             auth,
             path,
         } = &self.request;
 
         if &self.type_id == "evm_balance" {
-            if let Data::JsonBody(body) = data {
+            if let Payload::JsonBody(body) = payload {
                 let token_type = match body["type"].as_str().unwrap_or("") {
                     "fungible" => TokenType::Fungible {
                         address: body["address"].as_str().unwrap_or("").to_string(),
@@ -78,7 +78,7 @@ impl Requirement {
             }
         }
 
-        let url = if let Data::UrlEncoded(param) = data {
+        let url = if let Payload::UrlEncoded(param) = payload {
             format!("{base_url}?{param}={identity}")
         } else {
             base_url.to_string()
@@ -94,7 +94,7 @@ impl Requirement {
             builder = builder.bearer_auth(token);
         }
 
-        if let Data::JsonBody(body) = data {
+        if let Payload::JsonBody(body) = payload {
             builder = builder.json(&body);
         }
 

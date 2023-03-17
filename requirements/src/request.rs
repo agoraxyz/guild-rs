@@ -18,7 +18,7 @@ pub enum Auth {
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
-pub enum Data {
+pub enum Payload {
     None,
     UrlEncoded(String),
     JsonBody(Value),
@@ -28,7 +28,7 @@ pub enum Data {
 pub struct Request {
     pub base_url: String,
     pub method: Method,
-    pub data: Data,
+    pub payload: Payload,
     pub auth: Auth,
     pub path: Vec<Value>,
 }

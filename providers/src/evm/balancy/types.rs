@@ -55,6 +55,26 @@ pub struct Erc1155 {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub enum Token {
+    Erc20 {
+        token_address: String,
+        #[serde(deserialize_with = "u256_from_str")]
+        amount: U256,
+    },
+    Erc721 {
+        token_address: String,
+        token_id: String,
+    },
+    Erc1155 {
+        token_address: String,
+        token_id: String,
+        #[serde(deserialize_with = "u256_from_str")]
+        amount: U256,
+    },
+}
+
+#[derive(Deserialize, Debug)]
 pub struct BalancyResponse<T> {
     pub result: Vec<T>,
 }
