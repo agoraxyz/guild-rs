@@ -6,6 +6,7 @@
 use config::{Config, File};
 use guild_common::{Requirement, User};
 use libloading::{Library, Symbol};
+use redis::{Commands, Connection, RedisError};
 use reqwest::Client;
 use serde_json::Value;
 use std::{collections::HashMap, path::Path};
@@ -24,16 +25,38 @@ const CONFIG_PATH: &str = "config.json";
 #[cfg(test)]
 const CONFIG_PATH: &str = "../config.json";
 
+fn get_redis_connection() -> Result<Connection, RedisError> {
+    redis::Client::open("redis://127.0.0.1/")?.get_connection()
+}
+
 fn read_config(key: &str) -> Result<Value, ConfigError> {
+    let mut con = get_redis_connection().ok();
+
+    if let Some(con) = con.as_mut() {
+        if let Ok(entry) = con.get::<&str, String>(key) {
+            if let Ok(value) = serde_json::from_str(&entry) {
+                return Ok(value);
+            } else {
+                let _: Result<(), _> = con.del(key);
+            }
+        }
+    };
+
     let settings = Config::builder()
         .add_source(File::from(Path::new(CONFIG_PATH)))
         .build()?;
 
     let map = settings.try_deserialize::<HashMap<String, Value>>()?;
 
-    map.get(key)
-        .cloned()
-        .ok_or(ConfigError::NoSuchEntry(key.to_string()))
+    if let Some(value) = map.get(key).cloned() {
+        if let Some(con) = con.as_mut() {
+            let _: Result<(), _> = con.set(key, serde_json::to_string(&value).unwrap());
+        }
+
+        Ok(value)
+    } else {
+        Err(ConfigError::NoSuchEntry(key.to_string()))
+    }
 }
 
 pub trait Checkable {
