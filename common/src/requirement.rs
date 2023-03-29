@@ -14,7 +14,7 @@ pub struct Requirement {
     pub metadata: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub enum RequirementResult {
     Ok(Vec<bool>),
     Err(String),
