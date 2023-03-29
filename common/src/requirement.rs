@@ -11,6 +11,7 @@ pub enum RequirementType {
 pub struct Requirement {
     pub id: String,
     pub typ: RequirementType,
+    pub config_key: String,
     pub metadata: String,
 }
 
