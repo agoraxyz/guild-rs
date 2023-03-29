@@ -2,7 +2,7 @@
 name = "guild-common"
 description = "Common types and traits for Guild-Network"
 version = "0.1.0"
-repository = "https://github.com/agoraxyz/requirement-engine-v2"
+repository = "https://github.com/agoraxyz/guild-rs"
 readme = "README.md"
 license = "MIT"
 authors = ["Shronk <ureshpohar@gmail.com>"]
@@ -12,11 +12,12 @@ categories = [
 ]
 edition = "2021"
 
+[features]
+identity = ["primitive-types"]
+
 [dev-dependencies]
 shiba = { version = "0.1.1", default-features = false }
 
 [dependencies]
-async-trait = { workspace = true }
-primitive-types = { workspace = true }
-serde = { workspace = true }
-thiserror = { workspace = true }
+primitive-types = { version = "0.12.1", features = ["serde"], optional = true }
+serde = { version = "1.0.144", features = ["derive"] }
