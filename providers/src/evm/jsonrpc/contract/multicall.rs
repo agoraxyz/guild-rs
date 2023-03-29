@@ -53,7 +53,7 @@ pub fn parse_multicall_result(multicall_result: &str) -> Vec<U256> {
 #[cfg(test)]
 mod test {
     use crate::evm::jsonrpc::contract::{erc20_call, multicall::aggregate};
-    use rusty_gate_common::address;
+    use guild_common::address;
 
     #[test]
     fn aggregate_test() {

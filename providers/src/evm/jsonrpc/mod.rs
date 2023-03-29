@@ -200,8 +200,8 @@ mod test {
         evm::{common::*, jsonrpc::RpcProvider, EvmChain},
         BalanceQuerier,
     };
+    use guild_common::{address, TokenType::*};
     use primitive_types::U256;
-    use rusty_gate_common::{address, TokenType::*};
 
     #[tokio::test]
     async fn rpc_get_coin_balance() {

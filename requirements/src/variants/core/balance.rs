@@ -1,10 +1,10 @@
 use crate::{Requirement, RequirementError};
 use async_trait::async_trait;
 use core::ops::{Range, RangeInclusive};
+use guild_common::{TokenType, VerificationData};
+use guild_providers::evm::Provider;
+use guild_providers::{evm::EvmChain, BalanceQuerier};
 use primitive_types::{H160 as Address, U256};
-use rusty_gate_common::{TokenType, VerificationData};
-use rusty_gate_providers::evm::Provider;
-use rusty_gate_providers::{evm::EvmChain, BalanceQuerier};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -90,8 +90,8 @@ mod test {
     #[cfg(feature = "nomock")]
     use super::VerificationData;
     use super::{Balance, Relation, Requirement, TokenType, U256};
-    use rusty_gate_common::address;
-    use rusty_gate_providers::evm::EvmChain;
+    use guild_common::address;
+    use guild_providers::evm::EvmChain;
 
     #[test]
     fn relations() {
