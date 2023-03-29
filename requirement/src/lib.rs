@@ -76,7 +76,7 @@ impl Checkable for Requirement {
 
         let secrets = read_config(&self.config_key).unwrap();
 
-        check_req(client, &users, &self.metadata, &secrets.to_string())
+        check_req(client, users, &self.metadata, &secrets.to_string())
     }
 }
 
