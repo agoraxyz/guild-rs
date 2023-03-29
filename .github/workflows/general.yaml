@@ -47,7 +47,7 @@ jobs:
 
       - name: config
         run: |
-          cat > ./providers.json << EOF
+          cat > ./config.json << EOF
           {
             "ethereum": {
               "rpc_url": "${ETHEREUM_RPC}",
