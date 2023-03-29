@@ -52,7 +52,7 @@ pub async fn get_erc1155_balance(
     Ok(amount as f64)
 }
 
-#[cfg(all(test, feature = "nomock"))]
+#[cfg(test)]
 mod test {
     use crate::providers::{
         balancy::get_erc1155_balance,

@@ -22,20 +22,15 @@ pub fn check(
 
     let addresses: Vec<String> = users
         .iter()
-        .flat_map(|user| user.identities("evm_address").unwrap_or(&vec![]).clone())
+        .flat_map(|user| user.identities("evm_address").cloned().unwrap_or_default())
         .collect();
 
     let rt = runtime::Runtime::new()?;
 
-    let res = rt.block_on(async {
-        match provider
+    Ok(rt.block_on(async {
+        provider
             .get_balance_batch(client, token_type, &addresses)
             .await
-        {
-            Ok(res) => Ok(res.iter().map(|balance| relation.assert(balance)).collect()),
-            Err(err) => Err(err),
-        }
-    })?;
-
-    Ok(res)
+            .map(|res| res.iter().map(|b| relation.assert(b)).collect())
+    })?)
 }

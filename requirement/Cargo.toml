@@ -12,9 +12,6 @@ categories = [
 ]
 edition = "2021"
 
-[features]
-nomock = []
-
 [dev-dependencies]
 serde_json = "1.0.95"
 tokio = { version = "1.26.0", features = ["macros", "rt-multi-thread"] }

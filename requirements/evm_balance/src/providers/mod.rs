@@ -1,7 +1,5 @@
 use guild_common::TokenType;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "nomock")]
-use tokio as _;
 
 mod balancy;
 mod jsonrpc;
@@ -13,7 +11,7 @@ pub struct EvmProvider {
     pub balancy_id: Option<u8>,
 }
 
-#[cfg(all(test, feature = "nomock"))]
+#[cfg(test)]
 mod common {
     pub const RPC_URL: &str = "https://eth.public-rpc.com";
     pub const USER_1_ADDR: &str = "0xe43878ce78934fe8007748ff481f03b8ee3b97de";

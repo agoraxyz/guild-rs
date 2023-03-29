@@ -52,8 +52,7 @@ fn read_config(key: &str) -> Result<Value, ConfigError> {
 
     if let Some(value) = map.get(key).cloned() {
         if let Some(con) = con.as_mut() {
-            let _: Result<(), _> =
-                con.set(key, serde_json::to_string(&value).unwrap_or("".to_string()));
+            let _: Result<(), _> = con.set(key, serde_json::to_string(&value).unwrap_or_default());
         }
 
         Ok(value)

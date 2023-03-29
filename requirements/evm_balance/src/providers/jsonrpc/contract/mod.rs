@@ -203,7 +203,7 @@ pub async fn get_erc1155_balance_batch(
     balances.into_iter().collect()
 }
 
-#[cfg(all(test, feature = "nomock"))]
+#[cfg(test)]
 mod test {
     use crate::providers::{common::*, jsonrpc::get_erc20_decimals};
     use reqwest::Client;

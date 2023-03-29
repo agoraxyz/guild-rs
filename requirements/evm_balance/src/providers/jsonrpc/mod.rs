@@ -1,12 +1,12 @@
-use crate::{
-    providers::{balancy::get_erc1155_balance, jsonrpc::contract::*, EvmProvider, TokenType},
+use crate::providers::{
+    balancy::get_erc1155_balance, jsonrpc::contract::*, EvmProvider, TokenType,
 };
 pub use contract::get_erc20_decimals;
 use futures::future::join_all;
+use reqwest::Client;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use thiserror::Error;
-use reqwest::Client;
 
 mod contract;
 
@@ -102,7 +102,7 @@ impl EvmProvider {
     }
 }
 
-#[cfg(all(test, feature = "nomock"))]
+#[cfg(test)]
 mod test {
     use crate::providers::{common::*, EvmProvider};
     use guild_common::TokenType::*;

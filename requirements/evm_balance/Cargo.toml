@@ -3,9 +3,6 @@ name = "evm-balance"
 version = "0.1.0"
 edition = "2021"
 
-[features]
-nomock = []
-
 [lib]
 name = "evm_balance"
 crate-type = ["cdylib"]
