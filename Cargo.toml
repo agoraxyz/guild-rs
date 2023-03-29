@@ -4,6 +4,7 @@ members = [
 	"requirement",
 	"engine",
 ]
+exclude = ["requirements"]
 
 [profile.dev]
 opt-level = 3
