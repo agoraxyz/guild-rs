@@ -5,7 +5,7 @@
 
 mod providers;
 
-use guild_common::{Relation, RequirementResult, TokenType, User};
+use guild_common::{Relation, TokenType, User};
 use providers::EvmProvider;
 use reqwest::Client;
 use tokio::runtime;
@@ -16,7 +16,7 @@ pub fn check(
     users: &[User],
     metadata: &str,
     secrets: &str,
-) -> RequirementResult {
+) -> Result<Vec<bool>, String> {
     let provider: EvmProvider = serde_json::from_str(secrets).unwrap();
     let (token_type, relation): (TokenType, Relation<f64>) =
         serde_json::from_str(metadata).unwrap();
@@ -34,9 +34,9 @@ pub fn check(
             .await
         {
             Ok(res) => {
-                RequirementResult::Ok(res.iter().map(|balance| relation.assert(balance)).collect())
+                Ok(res.iter().map(|balance| relation.assert(balance)).collect())
             }
-            Err(err) => RequirementResult::Err(err.to_string()),
+            Err(err) => Err(err.to_string()),
         }
     })
 }

@@ -15,12 +15,6 @@ pub struct Requirement {
     pub metadata: String,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub enum RequirementResult {
-    Ok(Vec<bool>),
-    Err(String),
-}
-
 impl fmt::Debug for RequirementType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let res = match self {

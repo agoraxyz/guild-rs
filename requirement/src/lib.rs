@@ -4,7 +4,7 @@
 #![deny(unused_crate_dependencies)]
 
 use config::{Config, File};
-use guild_common::{Requirement, RequirementResult, User};
+use guild_common::{Requirement, User};
 use libloading::{Library, Symbol};
 use reqwest::Client;
 use serde_json::Value;
@@ -37,18 +37,19 @@ fn read_config(key: &str) -> Result<Value, ConfigError> {
 }
 
 pub trait Checkable {
-    fn check(&self, client: &Client, users: &[User]) -> RequirementResult;
+    fn check(&self, client: &Client, users: &[User]) -> Result<Vec<bool>, String>;
 }
 
 impl Checkable for Requirement {
-    fn check(&self, client: &Client, users: &[User]) -> RequirementResult {
+    fn check(&self, client: &Client, users: &[User]) -> Result<Vec<bool>, String> {
         let path = read_config(&self.typ.to_string()).unwrap();
         let path_str = path.as_str().unwrap();
 
         let lib = unsafe { Library::new(path_str) }.unwrap();
 
-        let check_req: Symbol<extern "C" fn(&Client, &[User], &str, &str) -> RequirementResult> =
-            unsafe { lib.get(b"check") }.unwrap();
+        let check_req: Symbol<
+            extern "C" fn(&Client, &[User], &str, &str) -> Result<Vec<bool>, String>,
+        > = unsafe { lib.get(b"check") }.unwrap();
 
         let secrets = read_config(&self.config_key).unwrap();
 
@@ -58,7 +59,7 @@ impl Checkable for Requirement {
 
 #[cfg(test)]
 mod test {
-    use super::{Checkable, Requirement, RequirementResult, User};
+    use super::{Checkable, Requirement, User};
     use guild_common::{Chain, Relation, RequirementType, TokenType};
     use reqwest::Client;
     use tokio::runtime;
@@ -105,10 +106,7 @@ mod test {
         let rt = runtime::Runtime::new().unwrap();
 
         rt.block_on(async {
-            assert_eq!(
-                req.check(&client, &users),
-                RequirementResult::Ok(vec![false, false, true])
-            );
+            assert_eq!(req.check(&client, &users), Ok(vec![false, false, true]));
         });
     }
 }
