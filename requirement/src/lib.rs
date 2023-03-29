@@ -3,11 +3,38 @@
 #![deny(clippy::cargo)]
 #![deny(unused_crate_dependencies)]
 
+use config::{Config, File};
 use guild_common::{Requirement, RequirementResult, User};
 use libloading::{Library, Symbol};
 use reqwest::Client;
+use serde_json::Value;
+use std::{collections::HashMap, path::Path};
+use thiserror::Error;
 
-const LIB_PATH: &str = "../requirements/evm_balance/target/release/libevm_balance.dylib";
+#[derive(Error, Debug)]
+pub enum ConfigError {
+    #[error(transparent)]
+    Config(#[from] config::ConfigError),
+    #[error("Value not found for key {0}")]
+    NoSuchEntry(String),
+}
+
+#[cfg(not(test))]
+const CONFIG_PATH: &str = "config.json";
+#[cfg(test)]
+const CONFIG_PATH: &str = "../config.json";
+
+fn read_config(key: &str) -> Result<Value, ConfigError> {
+    let settings = Config::builder()
+        .add_source(File::from(Path::new(CONFIG_PATH)))
+        .build()?;
+
+    let map = settings.try_deserialize::<HashMap<String, Value>>()?;
+
+    map.get(key)
+        .cloned()
+        .ok_or(ConfigError::NoSuchEntry(key.to_string()))
+}
 
 pub trait Checkable {
     fn check(&self, client: &Client, users: &[User]) -> RequirementResult;
@@ -15,25 +42,24 @@ pub trait Checkable {
 
 impl Checkable for Requirement {
     fn check(&self, client: &Client, users: &[User]) -> RequirementResult {
-        let lib = unsafe { Library::new(LIB_PATH) }.unwrap();
+        let path = read_config(&self.typ.to_string()).unwrap();
+        let path_str = path.as_str().unwrap();
+
+        let lib = unsafe { Library::new(path_str) }.unwrap();
 
         let check_req: Symbol<extern "C" fn(&Client, &[User], &str, &str) -> RequirementResult> =
             unsafe { lib.get(b"check") }.unwrap();
 
-        let secrets = r#"{
-          "rpc_url": "https://eth.public-rpc.com",
-          "contract": "0x5ba1e12693dc8f9c48aad8770482f4739beed696",
-          "balancy_id": 1
-        }"#;
+        let secrets = read_config(&self.config_key).unwrap();
 
-        check_req(client, &users, &self.metadata, secrets)
+        check_req(client, &users, &self.metadata, &secrets.to_string())
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::{Checkable, Requirement, RequirementResult, User};
-    use guild_common::{Relation, RequirementType, TokenType};
+    use guild_common::{Chain, Relation, RequirementType, TokenType};
     use reqwest::Client;
     use tokio::runtime;
 
@@ -69,6 +95,7 @@ mod test {
         let req = Requirement {
             id: "69".to_string(),
             typ: RequirementType::EvmBalance,
+            config_key: Chain::Ethereum.to_string(),
             metadata: serde_json::to_string(&(token_type, relation)).unwrap(),
         };
 
