@@ -1,6 +1,6 @@
 [package]
-name = "guild-requirements"
-description = "Requirement types for the Guild-Network"
+name = "guild-requirement"
+description = "Requirement checking logic for the Guild-Network"
 version = "0.1.0"
 repository = "https://github.com/agoraxyz/requirement-engine-v2"
 readme = "README.md"
@@ -16,12 +16,5 @@ edition = "2021"
 nomock = []
 
 [dev-dependencies]
-tokio = { workspace = true }
 
 [dependencies]
-async-trait = { workspace = true }
-primitive-types = { workspace = true }
-reqwest = { workspace = true }
-guild-common = { path = "../common" }
-guild-providers = { path = "../providers" }
-serde = { workspace = true }
