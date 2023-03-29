@@ -16,27 +16,26 @@ pub fn check(
     users: &[User],
     metadata: &str,
     secrets: &str,
-) -> Result<Vec<bool>, String> {
-    let provider: EvmProvider = serde_json::from_str(secrets).unwrap();
-    let (token_type, relation): (TokenType, Relation<f64>) =
-        serde_json::from_str(metadata).unwrap();
+) -> Result<Vec<bool>, Box<dyn std::error::Error>> {
+    let provider: EvmProvider = serde_json::from_str(secrets)?;
+    let (token_type, relation): (TokenType, Relation<f64>) = serde_json::from_str(metadata)?;
 
     let addresses: Vec<String> = users
         .iter()
-        .flat_map(|user| user.identities("evm_address").unwrap().clone())
+        .flat_map(|user| user.identities("evm_address").unwrap_or(&vec![]).clone())
         .collect();
 
-    let rt = runtime::Runtime::new().unwrap();
+    let rt = runtime::Runtime::new()?;
 
-    rt.block_on(async {
+    let res = rt.block_on(async {
         match provider
             .get_balance_batch(client, token_type, &addresses)
             .await
         {
-            Ok(res) => {
-                Ok(res.iter().map(|balance| relation.assert(balance)).collect())
-            }
-            Err(err) => Err(err.to_string()),
+            Ok(res) => Ok(res.iter().map(|balance| relation.assert(balance)).collect()),
+            Err(err) => Err(err),
         }
-    })
+    })?;
+
+    Ok(res)
 }

@@ -12,6 +12,8 @@ use serde_json::Value;
 use std::{collections::HashMap, path::Path};
 use thiserror::Error;
 
+type Error = Box<dyn std::error::Error>;
+
 #[derive(Error, Debug)]
 pub enum ConfigError {
     #[error(transparent)]
@@ -50,7 +52,8 @@ fn read_config(key: &str) -> Result<Value, ConfigError> {
 
     if let Some(value) = map.get(key).cloned() {
         if let Some(con) = con.as_mut() {
-            let _: Result<(), _> = con.set(key, serde_json::to_string(&value).unwrap());
+            let _: Result<(), _> =
+                con.set(key, serde_json::to_string(&value).unwrap_or("".to_string()));
         }
 
         Ok(value)
@@ -60,21 +63,21 @@ fn read_config(key: &str) -> Result<Value, ConfigError> {
 }
 
 pub trait Checkable {
-    fn check(&self, client: &Client, users: &[User]) -> Result<Vec<bool>, String>;
+    fn check(&self, client: &Client, users: &[User]) -> Result<Vec<bool>, Error>;
 }
 
 impl Checkable for Requirement {
-    fn check(&self, client: &Client, users: &[User]) -> Result<Vec<bool>, String> {
-        let path = read_config(&self.typ.to_string()).unwrap();
-        let path_str = path.as_str().unwrap();
+    fn check(&self, client: &Client, users: &[User]) -> Result<Vec<bool>, Error> {
+        let path = read_config(&self.typ.to_string())?;
+        let path_str = path.as_str().unwrap_or_default();
 
-        let lib = unsafe { Library::new(path_str) }.unwrap();
+        let lib = unsafe { Library::new(path_str) }?;
 
         let check_req: Symbol<
-            extern "C" fn(&Client, &[User], &str, &str) -> Result<Vec<bool>, String>,
-        > = unsafe { lib.get(b"check") }.unwrap();
+            extern "C" fn(&Client, &[User], &str, &str) -> Result<Vec<bool>, Error>,
+        > = unsafe { lib.get(b"check") }?;
 
-        let secrets = read_config(&self.config_key).unwrap();
+        let secrets = read_config(&self.config_key)?;
 
         check_req(client, users, &self.metadata, &secrets.to_string())
     }
@@ -129,7 +132,10 @@ mod test {
         let rt = runtime::Runtime::new().unwrap();
 
         rt.block_on(async {
-            assert_eq!(req.check(&client, &users), Ok(vec![false, false, true]));
+            assert_eq!(
+                req.check(&client, &users).unwrap(),
+                vec![false, false, true]
+            );
         });
     }
 }
