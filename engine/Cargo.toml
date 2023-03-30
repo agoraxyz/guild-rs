@@ -11,3 +11,10 @@ categories = [
     "cryptography", "cryptography::cryptocurrencies", "data-structures"
 ]
 edition = "2021"
+
+[dependencies]
+guild-common = { path = "../common" }
+guild-requirement = { path = "../requirement" }
+requiem = { git = "https://github.com/agoraxyz/requiem.git" }
+serde = { workspace = true }
+thiserror = { workspace = true }
