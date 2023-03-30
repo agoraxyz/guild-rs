@@ -1,28 +1,27 @@
 [package]
-name = "rusty-gate-providers"
-description = "Web3 balance providers"
+name = "guild-requirement"
+description = "Requirement checking logic for the Guild-Network"
 version = "0.1.0"
 repository = "https://github.com/agoraxyz/requirement-engine-v2"
 readme = "README.md"
 license = "MIT"
 authors = ["Shronk <ureshpohar@gmail.com>"]
-keywords = ["guild", "guild-network", "provider", "web3"]
+keywords = ["guild", "guild-network", "requirements"]
 categories = [
     "cryptography", "cryptography::cryptocurrencies", "data-structures"
 ]
 edition = "2021"
 
-[features]
-balancy = []
-nomock = ["dep:tokio"]
+[dev-dependencies]
+serde_json = "1.0.95"
+tokio = { version = "1.26.0", features = ["macros", "rt-multi-thread"] }
 
 [dependencies]
-async-trait = { workspace = true }
 config = { version = "0.13.3", default-features = false, features = ["json"] }
-primitive-types = { workspace = true }
-futures = { version = "0.3.17" }
+guild-common = { path = "../common" }
+libloading = "0.7.4"
+serde = { version = "1.0.144", features = ["derive"] }
+serde_json = "1.0.95"
+redis = { version = "0.22.3" }
 reqwest = { workspace = true }
-rusty-gate-common = { path = "../common" }
-serde = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true, optional = true }

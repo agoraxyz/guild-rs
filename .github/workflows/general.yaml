@@ -47,23 +47,28 @@ jobs:
 
       - name: config
         run: |
-          cat > ./providers.json << EOF
+          cat > ./config.json << EOF
           {
+            "evm_balance": "../plugins/evm_balance/target/debug/libevm_balance.so",
             "ethereum": {
               "rpc_url": "${ETHEREUM_RPC}",
-              "contract": "0x5ba1e12693dc8f9c48aad8770482f4739beed696"
-            },
-            "polygon": {
-              "rpc_url": "${POLYGON_RPC}",
-              "contract": "0x11ce4B23bD875D7F5C6a31084f55fDe1e9A87507"
+              "contract": "0x5ba1e12693dc8f9c48aad8770482f4739beed696",
+              "balancy_id": 1
             },
             "bsc": {
               "rpc_url": "${BSC_RPC}",
-              "contract": "0x41263cba59eb80dc200f3e2544eda4ed6a90e76c"
+              "contract": "0x41263cba59eb80dc200f3e2544eda4ed6a90e76c",
+              "balancy_id": 56
             },
             "gnosis": {
               "rpc_url": "${GNOSIS_RPC}",
-              "contract": "0xb5b692a88bdfc81ca69dcb1d924f59f0413a602a"
+              "contract": "0xb5b692a88bdfc81ca69dcb1d924f59f0413a602a",
+              "balancy_id": 100
+            },
+            "polygon": {
+              "rpc_url": "${POLYGON_RPC}",
+              "contract": "0x11ce4B23bD875D7F5C6a31084f55fDe1e9A87507",
+              "balancy_id": 137
             },
             "arbitrum": {
               "rpc_url": "${ARBITRUM_RPC}",
@@ -75,9 +80,11 @@ jobs:
             }
           }
           EOF
+          cd plugins/evm_balance
+          cargo b
+          cd ../..
 
       - name: test
         run: |
           pwd
-          cargo t
-          cargo t --features nomock
+          cargo t --all-features

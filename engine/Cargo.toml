@@ -1,5 +1,5 @@
 [package]
-name = "rusty-gate-engine"
+name = "guild-engine"
 description = "Guild-Network requirement engine"
 version = "0.1.0"
 repository = "https://github.com/agoraxyz/requirement-engine-v2"

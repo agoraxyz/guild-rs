@@ -1,4 +1,7 @@
-use super::{Call, ZEROES};
+use crate::{
+    balance::contract::{Call, RpcError},
+    rpc_error,
+};
 use primitive_types::U256;
 use std::str::FromStr;
 
@@ -17,8 +20,9 @@ pub fn aggregate(calls: &[Call]) -> String {
             let padding = vec!["0"; (DATA_PART_LEN - data_len) * 2].join("");
 
             format!(
-                "{ZEROES}{:x}{DATA_PART_LEN:064x}{data_len:064x}{}{padding}",
-                call.target, call.call_data
+                "{:0>64}{DATA_PART_LEN:064x}{data_len:064x}{}{padding}",
+                call.target.trim_start_matches("0x"),
+                call.call_data.trim_start_matches("0x")
             )
         })
         .collect::<String>();
@@ -31,7 +35,7 @@ pub fn aggregate(calls: &[Call]) -> String {
     format!("{FUNC_SIG}{param_count_len}{param_count}{offset}{aggregated}")
 }
 
-pub fn parse_multicall_result(multicall_result: &str) -> Vec<U256> {
+pub fn parse_multicall_result(multicall_result: &str) -> Result<Vec<f64>, RpcError> {
     let lines = multicall_result
         .trim_start_matches("0x")
         .chars()
@@ -40,20 +44,21 @@ pub fn parse_multicall_result(multicall_result: &str) -> Vec<U256> {
         .map(|c| c.iter().collect::<String>())
         .collect::<Vec<String>>();
 
-    let count = U256::from_str(&lines[2]).unwrap_or_default().as_usize();
+    let count = rpc_error!(U256::from_str(&lines[2]))?.as_usize();
 
-    lines
-        .iter()
+    let balances = lines
+        .into_iter()
         .skip(count + 4)
         .step_by(2)
-        .map(|balance| U256::from_str(balance).unwrap_or_default())
-        .collect::<Vec<U256>>()
+        .map(|balance| rpc_error!(U256::from_str(&balance).map(|value| value.as_u128() as f64)))
+        .collect::<Vec<Result<f64, RpcError>>>();
+
+    balances.into_iter().collect()
 }
 
 #[cfg(test)]
 mod test {
-    use crate::evm::jsonrpc::contract::{erc20_call, multicall::aggregate};
-    use rusty_gate_common::address;
+    use crate::balance::contract::{erc20_call, multicall::aggregate};
 
     #[test]
     fn aggregate_test() {
@@ -93,15 +98,11 @@ mod test {
         .join("");
 
         let erc20_addr = "0x458691c1692cd82facfb2c5127e36d63213448a8";
+        let user1_addr = "0xe43878ce78934fe8007748ff481f03b8ee3b97de";
+        let user2_addr = "0x14ddfe8ea7ffc338015627d160ccaf99e8f16dd3";
 
-        let call_1 = erc20_call(
-            address!(erc20_addr),
-            address!("0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"),
-        );
-        let call_2 = erc20_call(
-            address!(erc20_addr),
-            address!("0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3"),
-        );
+        let call_1 = erc20_call(erc20_addr, user1_addr);
+        let call_2 = erc20_call(erc20_addr, user2_addr);
 
         assert_eq!(aggregate(&[call_1, call_2]), data);
     }

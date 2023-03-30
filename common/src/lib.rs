@@ -3,74 +3,40 @@
 #![deny(clippy::cargo)]
 #![deny(unused_crate_dependencies)]
 
-use async_trait::async_trait;
-use primitive_types::H160 as Address;
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
+pub use requirement::*;
+use std::fmt;
+pub use user::*;
 
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-pub enum Identity {
-    EvmAddress(Address),
-    SolAccount(String),
-    Telegram(u64),
-    Discord(u64),
+mod requirement;
+mod user;
+
+#[derive(Clone, Copy)]
+pub enum Chain {
+    Ethereum,
+    Polygon,
+    Gnosis,
+    Bsc,
+    Goerli,
+    Arbitrum,
 }
 
-#[derive(Deserialize, Serialize)]
-pub struct User {
-    pub identities: Vec<Identity>,
+impl fmt::Debug for Chain {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let res = match self {
+            Self::Ethereum => "ethereum",
+            Self::Polygon => "polygon",
+            Self::Gnosis => "gnosis",
+            Self::Bsc => "bsc",
+            Self::Goerli => "goerli",
+            Self::Arbitrum => "arbitrum",
+        };
+
+        write!(f, "{res}")
+    }
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
-pub enum TokenType<T, U> {
-    Native,
-    Fungible { address: T },
-    NonFungible { address: T, id: Option<U> },
-    Special { address: T, id: Option<U> },
-}
-
-#[derive(Error, Debug)]
-pub enum RequirementError {
-    #[error("{0}")]
-    Other(String),
-}
-
-pub trait Requirement {
-    type Error;
-    type VerificationData;
-
-    fn verify(&self, vd: &Self::VerificationData) -> bool;
-    fn verify_batch(&self, vd: &[Self::VerificationData]) -> Vec<bool>;
-}
-
-#[async_trait]
-pub trait VerificationData {
-    type Error;
-    type Identity;
-    type Client;
-    type Res;
-
-    async fn retrieve(
-        &self,
-        client: &Self::Client,
-        identity: &Self::Identity,
-    ) -> Result<Self::Res, Self::Error>;
-    async fn retrieve_batch(
-        &self,
-        client: &Self::Client,
-        identities: &[Self::Identity],
-    ) -> Result<Vec<Self::Res>, Self::Error>;
-}
-
-#[macro_export]
-macro_rules! address {
-    ($addr:expr) => {{
-        use std::str::FromStr;
-        primitive_types::H160::from_str($addr).expect(&format!("Invalid address {}", $addr))
-    }};
-}
-
-#[cfg(test)]
-mod test {
-    use shiba as _;
+impl fmt::Display for Chain {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        <Self as fmt::Debug>::fmt(self, f)
+    }
 }
