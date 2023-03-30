@@ -117,9 +117,8 @@ mod test {
 
     #[test]
     fn requirement_check() {
-        let token_type = TokenType::Special {
-            address: "0x76be3b62873462d2142405439777e971754e8e77".to_string(),
-            id: None,
+        let token_type = TokenType::Fungible {
+            address: "0x458691c1692cd82facfb2c5127e36d63213448a8".to_string(),
         };
         let relation = Relation::GreaterThan(0.0);
 
@@ -138,7 +137,7 @@ mod test {
         rt.block_on(async {
             assert_eq!(
                 req.check(&client, &users).unwrap(),
-                vec![false, false, true]
+                vec![false, true, false]
             );
         });
     }

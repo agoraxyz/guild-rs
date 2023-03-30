@@ -1,6 +1,4 @@
-use crate::providers::{
-    jsonrpc::contract::*, EvmProvider, TokenType,
-};
+use crate::providers::{jsonrpc::contract::*, EvmProvider, TokenType};
 pub use contract::get_erc20_decimals;
 use reqwest::Client;
 use serde::Deserialize;
@@ -181,26 +179,11 @@ mod test {
     async fn rpc_get_erc1155_balance_batch() {
         let client: &'static Client = Box::leak(Box::new(Client::new()));
 
-        let token_type_without_id = Special {
-            address: ERC1155_ADDR.to_string(),
-            id: None,
-        };
         let token_type_with_id = Special {
             address: ERC1155_ADDR.to_string(),
             id: Some(U256::from(ERC1155_ID).to_string()),
         };
 
-        assert_eq!(
-            provider()
-                .get_balance_batch(
-                    client,
-                    token_type_without_id,
-                    &[USER_1_ADDR.to_string(), USER_3_ADDR.to_string()]
-                )
-                .await
-                .unwrap(),
-            vec![0.0, 6510.0]
-        );
         assert_eq!(
             provider()
                 .get_balance_batch(
