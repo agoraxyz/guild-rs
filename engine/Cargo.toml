@@ -12,6 +12,10 @@ categories = [
 ]
 edition = "2021"
 
+[dev-dependencies]
+serde_json = { workspace = true }
+tokio = { workspace = true }
+
 [dependencies]
 guild-common = { path = "../common" }
 guild-requirement = { path = "../requirement" }
