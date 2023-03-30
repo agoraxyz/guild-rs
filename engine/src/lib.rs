@@ -103,6 +103,12 @@ impl Role {
 }
 
 #[cfg(test)]
+mod test_import {
+    use serde_json as _;
+    use tokio as _;
+}
+
+#[cfg(all(test, feature = "test-config"))]
 mod test {
     use super::{AllowList, Requirement, Role, User};
     use guild_common::{Chain, Relation, RequirementType, TokenType};

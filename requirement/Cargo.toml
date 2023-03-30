@@ -12,6 +12,9 @@ categories = [
 ]
 edition = "2021"
 
+[features]
+test-config = []
+
 [dev-dependencies]
 tokio = { workspace = true }
 

@@ -31,9 +31,9 @@ pub enum ConfigError {
     NoSuchEntry(String),
 }
 
-#[cfg(not(test))]
+#[cfg(not(any(test, feature = "test-config")))]
 const CONFIG_PATH: &str = "config.json";
-#[cfg(test)]
+#[cfg(any(test, feature = "test-config"))]
 const CONFIG_PATH: &str = "../config.json";
 
 fn get_redis_connection() -> Result<Connection, RedisError> {

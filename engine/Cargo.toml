@@ -12,6 +12,9 @@ categories = [
 ]
 edition = "2021"
 
+[features]
+test-config = []
+
 [dev-dependencies]
 serde_json = { workspace = true }
 tokio = { workspace = true }
