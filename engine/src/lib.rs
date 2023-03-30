@@ -6,6 +6,8 @@
 pub use allowlist::AllowList;
 use guild_common::User;
 use guild_requirement::Requirement;
+use requiem::{LogicTree, ParseError};
+use std::{collections::HashMap, str::FromStr};
 use thiserror::Error;
 
 mod allowlist;
@@ -22,7 +24,9 @@ pub enum RoleError {
     #[error("Missing requirements")]
     InvalidRole,
     #[error(transparent)]
-    Requiem(#[from] requiem::ParseError),
+    Requiem(#[from] ParseError),
+    #[error("{0}")]
+    Requirement(String),
 }
 
 impl Role {
@@ -37,15 +41,63 @@ impl Role {
         client: &reqwest::Client,
         users: &[User],
     ) -> Result<Vec<bool>, RoleError> {
-        let accesses: Vec<_> = self
+        let acc: Vec<_> = self
             .requirements
             .iter()
             .map(|req| req.check(client, users))
             .collect();
 
-        dbg!(accesses);
+        let acc_res: Result<Vec<Vec<bool>>, _> = acc.into_iter().collect();
 
-        todo!()
+        let Ok(acc_per_req) = acc_res else {
+            return Err(RoleError::Requirement(acc_res.unwrap_err().to_string()))
+        };
+
+        let rotated: Vec<Vec<bool>> = (0..users.len())
+            .map(|i| {
+                acc_per_req
+                    .iter()
+                    .cloned()
+                    .map(|row: Vec<bool>| row[i])
+                    .collect()
+            })
+            .collect();
+
+        let tree = LogicTree::from_str(&self.logic)?;
+
+        let res = dbg!(rotated
+            .iter()
+            .map(|accesses| {
+                let terminals: HashMap<_, _> = accesses
+                    .iter()
+                    .enumerate()
+                    .map(|(i, &a)| (i as u32, a))
+                    .collect();
+
+                tree.evaluate(&terminals).unwrap_or(false)
+            })
+            .collect::<Vec<_>>());
+
+        if let Some(filter) = self.filter.as_ref() {
+            let list = users
+                .iter()
+                .map(|user| {
+                    dbg!(user.identities("evm_address").unwrap_or(&vec![]))
+                        .iter()
+                        .any(|address| filter.check(address))
+                })
+                .collect::<Vec<_>>();
+
+            let filtered = res
+                .iter()
+                .enumerate()
+                .map(|(idx, item)| *item && list[idx])
+                .collect();
+
+            return Ok(filtered);
+        }
+
+        Ok(res)
     }
 }
 
@@ -80,15 +132,15 @@ mod test {
         let allowlist = AllowList {
             deny_list: false,
             list: vec![
-                "0xe43878ce78934fe8007748ff481f03b8ee3b97de".to_string(),
-                "0x14ddfe8ea7ffc338015627d160ccaf99e8f16dd3".to_string(),
+                "0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE".to_string(),
+                "0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3".to_string(),
             ],
         };
 
         let users: Vec<User> = serde_json::from_str(USERS).unwrap();
 
         let token_type = TokenType::NonFungible {
-            address: "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85".to_string(),
+            address: "0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85".to_string(),
             id: None,
         };
 
