@@ -1,5 +1,5 @@
 use crate::{
-    providers::jsonrpc::contract::{Call, RpcError},
+    balance::contract::{Call, RpcError},
     rpc_error,
 };
 use primitive_types::U256;
@@ -58,7 +58,7 @@ pub fn parse_multicall_result(multicall_result: &str) -> Result<Vec<f64>, RpcErr
 
 #[cfg(test)]
 mod test {
-    use crate::providers::jsonrpc::contract::{erc20_call, multicall::aggregate};
+    use crate::balance::contract::{erc20_call, multicall::aggregate};
 
     #[test]
     fn aggregate_test() {

@@ -3,10 +3,10 @@
 #![allow(clippy::multiple_crate_versions)]
 #![deny(unused_crate_dependencies)]
 
-mod providers;
+mod balance;
 
+use balance::EvmProvider;
 use guild_common::{Relation, TokenType, User};
-use providers::EvmProvider;
 use reqwest::Client;
 use tokio::runtime;
 

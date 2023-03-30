@@ -1,5 +1,5 @@
 use crate::{
-    providers::jsonrpc::{
+    balance::{
         contract::multicall::{aggregate, parse_multicall_result},
         create_payload, RpcError, RpcResponse, ETH_BALANCE_DIVIDER,
     },
@@ -205,7 +205,7 @@ pub async fn get_erc1155_balance_batch(
 
 #[cfg(test)]
 mod test {
-    use crate::providers::{common::*, jsonrpc::get_erc20_decimals};
+    use crate::balance::{common::*, get_erc20_decimals};
     use reqwest::Client;
 
     #[tokio::test]
