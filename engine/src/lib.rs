@@ -65,7 +65,7 @@ impl Role {
 
         let tree = LogicTree::from_str(&self.logic)?;
 
-        let res = dbg!(rotated
+        let res = rotated
             .iter()
             .map(|accesses| {
                 let terminals: HashMap<_, _> = accesses
@@ -76,13 +76,14 @@ impl Role {
 
                 tree.evaluate(&terminals).unwrap_or(false)
             })
-            .collect::<Vec<_>>());
+            .collect::<Vec<_>>();
 
         if let Some(filter) = self.filter.as_ref() {
             let list = users
                 .iter()
                 .map(|user| {
-                    dbg!(user.identities("evm_address").unwrap_or(&vec![]))
+                    user.identities("evm_address")
+                        .unwrap_or(&vec![])
                         .iter()
                         .any(|address| filter.check(address))
                 })
