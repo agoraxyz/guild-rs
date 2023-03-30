@@ -10,7 +10,7 @@ pub enum RequirementType {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Requirement {
     pub id: String,
-    pub typ: RequirementType,
+    pub typ: String,
     pub config_key: String,
     pub metadata: String,
 }

@@ -120,7 +120,7 @@ mod test {
 
         let req = Requirement {
             id: "69".to_string(),
-            typ: RequirementType::EvmBalance,
+            typ: RequirementType::EvmBalance.to_string(),
             config_key: Chain::Ethereum.to_string(),
             metadata: serde_json::to_string(&(token_type, relation)).unwrap(),
         };
