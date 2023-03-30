@@ -16,5 +16,6 @@ edition = "2021"
 guild-common = { path = "../common" }
 guild-requirement = { path = "../requirement" }
 requiem = { git = "https://github.com/agoraxyz/requiem.git" }
+reqwest = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
