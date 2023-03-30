@@ -49,7 +49,7 @@ jobs:
         run: |
           cat > ./config.json << EOF
           {
-            "evm_balance": "../requirements/evm_balance/target/debug/libevm_balance.so",
+            "evm_balance": "../plugins/evm_balance/target/debug/libevm_balance.so",
             "ethereum": {
               "rpc_url": "${ETHEREUM_RPC}",
               "contract": "0x5ba1e12693dc8f9c48aad8770482f4739beed696",
@@ -80,7 +80,7 @@ jobs:
             }
           }
           EOF
-          cd requirements/evm_balance
+          cd plugins/evm_balance
           cargo b
           cd ../..
 
