@@ -1,8 +1,7 @@
 use crate::providers::{
-    balancy::get_erc1155_balance, jsonrpc::contract::*, EvmProvider, TokenType,
+    jsonrpc::contract::*, EvmProvider, TokenType,
 };
 pub use contract::get_erc20_decimals;
-use futures::future::join_all;
 use reqwest::Client;
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -19,8 +18,6 @@ pub struct RpcResponse {
 
 #[derive(Error, Debug)]
 pub enum RpcError {
-    #[error("Balancy doesn't support this chain")]
-    Balancy,
     #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
     #[error("{0}")]
@@ -86,17 +83,7 @@ impl EvmProvider {
                     )
                     .await
                 }
-                None => match self.balancy_id {
-                    Some(chain_id) => {
-                        let res = join_all(addresses.iter().map(|addr| async {
-                            rpc_error!(get_erc1155_balance(client, chain_id, &address, addr).await)
-                        }))
-                        .await;
-
-                        res.into_iter().collect()
-                    }
-                    None => Err(RpcError::Balancy),
-                },
+                None => Ok(vec![0.0; addresses.len()]),
             },
         }
     }
@@ -113,7 +100,6 @@ mod test {
         EvmProvider {
             rpc_url: RPC_URL.to_string(),
             contract: "0x5ba1e12693dc8f9c48aad8770482f4739beed696".to_string(),
-            balancy_id: Some(1),
         }
     }
 

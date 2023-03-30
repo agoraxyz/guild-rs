@@ -1,14 +1,12 @@
 use guild_common::TokenType;
 use serde::{Deserialize, Serialize};
 
-mod balancy;
 mod jsonrpc;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EvmProvider {
     pub rpc_url: String,
     pub contract: String,
-    pub balancy_id: Option<u8>,
 }
 
 #[cfg(test)]
