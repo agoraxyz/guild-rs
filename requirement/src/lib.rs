@@ -4,15 +4,24 @@
 #![deny(unused_crate_dependencies)]
 
 use config::{Config, File};
-use guild_common::{Requirement, User};
+use guild_common::User;
 use libloading::{Library, Symbol};
 use redis::{Commands, Connection, RedisError};
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashMap, path::Path};
 use thiserror::Error;
 
 type Error = Box<dyn std::error::Error>;
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Requirement {
+    pub id: String,
+    pub typ: String,
+    pub config_key: String,
+    pub metadata: String,
+}
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
@@ -61,12 +70,8 @@ fn read_config(key: &str) -> Result<Value, ConfigError> {
     }
 }
 
-pub trait Checkable {
-    fn check(&self, client: &Client, users: &[User]) -> Result<Vec<bool>, Error>;
-}
-
-impl Checkable for Requirement {
-    fn check(&self, client: &Client, users: &[User]) -> Result<Vec<bool>, Error> {
+impl Requirement {
+    pub fn check(&self, client: &Client, users: &[User]) -> Result<Vec<bool>, Error> {
         let path = read_config(&self.typ.to_string())?;
         let path_str = path.as_str().unwrap_or_default();
 
@@ -84,7 +89,7 @@ impl Checkable for Requirement {
 
 #[cfg(test)]
 mod test {
-    use super::{Checkable, Requirement, User};
+    use super::{Requirement, User};
     use guild_common::{Chain, Relation, RequirementType, TokenType};
     use reqwest::Client;
     use tokio::runtime;

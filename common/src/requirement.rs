@@ -7,14 +7,6 @@ pub enum RequirementType {
     EvmBalance,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Requirement {
-    pub id: String,
-    pub typ: String,
-    pub config_key: String,
-    pub metadata: String,
-}
-
 impl fmt::Debug for RequirementType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let res = match self {
