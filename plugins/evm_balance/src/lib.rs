@@ -57,10 +57,8 @@ pub fn check(
         .map(|user| {
             id_accesses
                 .iter()
-                .filter_map(|(i, access)| if &user.id == i { Some(access) } else { None })
-                .cloned()
-                .reduce(|a, b| a || b)
-                .unwrap_or_default()
+                .filter_map(|(i, access)| if &user.id == i { Some(*access) } else { None })
+                .any(|b| b)
         })
         .collect();
 
