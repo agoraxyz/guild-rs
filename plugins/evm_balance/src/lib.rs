@@ -20,21 +20,23 @@ pub fn check(
     let provider: EvmProvider = serde_json::from_str(secrets)?;
     let (token_type, relation): (TokenType, Relation<f64>) = serde_json::from_str(metadata)?;
 
-    let addresses_with_ids: Vec<(u64, String)> = users
+    let addresses_with_ids: Vec<(u64, &str)> = users
         .iter()
         .flat_map(|user| {
             user.identities("evm_address")
-                .cloned()
+                .map(|identities| {
+                    identities
+                        .iter()
+                        .map(|address| (user.id, address.as_ref()))
+                        .collect::<Vec<(u64, &str)>>()
+                })
                 .unwrap_or_default()
-                .iter()
-                .map(|address| (user.id, address.clone()))
-                .collect::<Vec<_>>()
         })
         .collect();
 
-    let addresses: Vec<String> = addresses_with_ids
+    let addresses: Vec<&str> = addresses_with_ids
         .iter()
-        .map(|(_, address)| address.clone())
+        .map(|(_, address)| *address)
         .collect();
 
     let rt = Runtime::new()?;

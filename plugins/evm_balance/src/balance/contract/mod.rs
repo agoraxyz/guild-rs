@@ -53,7 +53,7 @@ pub async fn get_eth_balance_batch(
     client: &'static Client,
     multicall_address: &str,
     rpc_url: &str,
-    user_addresses: &[String],
+    user_addresses: &[&str],
 ) -> Result<Vec<f64>, RpcError> {
     let calls = user_addresses
         .iter()
@@ -109,7 +109,7 @@ pub async fn get_erc20_balance_batch(
     multicall_address: &str,
     rpc_url: &str,
     token_address: &str,
-    user_addresses: &[String],
+    user_addresses: &[&str],
 ) -> Result<Vec<f64>, RpcError> {
     let calls = user_addresses
         .iter()
@@ -141,7 +141,7 @@ pub async fn get_erc721_balance_batch(
     multicall_address: &str,
     rpc_url: &str,
     token_address: &str,
-    user_addresses: &[String],
+    user_addresses: &[&str],
 ) -> Result<Vec<f64>, RpcError> {
     let calls = user_addresses
         .iter()
@@ -163,7 +163,7 @@ pub async fn get_erc1155_balance_batch(
     rpc_url: &str,
     token_address: String,
     token_id: &str,
-    user_addresses: &[String],
+    user_addresses: &[&str],
 ) -> Result<Vec<f64>, RpcError> {
     let id = format!("{:x}", rpc_error!(U256::from_dec_str(token_id))?);
     let addresses = user_addresses

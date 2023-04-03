@@ -49,7 +49,7 @@ impl EvmProvider {
         &self,
         client: &'static Client,
         token_type: TokenType,
-        addresses: &[String],
+        addresses: &[&str],
     ) -> Result<Vec<f64>, RpcError> {
         match token_type {
             TokenType::Native => {
@@ -127,11 +127,7 @@ mod test {
 
         assert_eq!(
             provider()
-                .get_balance_batch(
-                    client,
-                    Native,
-                    &[USER_1_ADDR.to_string(), USER_2_ADDR.to_string()]
-                )
+                .get_balance_batch(client, Native, &[USER_1_ADDR, USER_2_ADDR])
                 .await
                 .unwrap(),
             vec![0.000464468855704627, 0.3919455024496939]
@@ -147,11 +143,7 @@ mod test {
 
         assert_eq!(
             provider()
-                .get_balance_batch(
-                    client,
-                    token_type,
-                    &[USER_1_ADDR.to_string(), USER_2_ADDR.to_string()]
-                )
+                .get_balance_batch(client, token_type, &[USER_1_ADDR, USER_2_ADDR])
                 .await
                 .unwrap(),
             vec![0.0, 100.0]
@@ -173,22 +165,14 @@ mod test {
 
         assert_eq!(
             provider()
-                .get_balance_batch(
-                    client,
-                    token_type_without_id,
-                    &[USER_1_ADDR.to_string(), USER_2_ADDR.to_string()]
-                )
+                .get_balance_batch(client, token_type_without_id, &[USER_1_ADDR, USER_2_ADDR])
                 .await
                 .unwrap(),
             vec![1.0, 1.0]
         );
         assert_eq!(
             provider()
-                .get_balance_batch(
-                    client,
-                    token_type_with_id,
-                    &[USER_1_ADDR.to_string(), USER_2_ADDR.to_string()]
-                )
+                .get_balance_batch(client, token_type_with_id, &[USER_1_ADDR, USER_2_ADDR])
                 .await
                 .unwrap(),
             vec![1.0, 1.0]
@@ -206,11 +190,7 @@ mod test {
 
         assert_eq!(
             provider()
-                .get_balance_batch(
-                    client,
-                    token_type_with_id,
-                    &[USER_1_ADDR.to_string(), USER_3_ADDR.to_string()]
-                )
+                .get_balance_batch(client, token_type_with_id, &[USER_1_ADDR, USER_3_ADDR])
                 .await
                 .unwrap(),
             vec![0.0, 16.0]
