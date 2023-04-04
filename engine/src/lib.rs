@@ -12,6 +12,8 @@ use thiserror::Error;
 
 mod allowlist;
 
+type AccessMatrix = Vec<Vec<bool>>;
+
 pub struct Role {
     pub id: String,
     pub filter: Option<AllowList<String>>,
@@ -53,36 +55,14 @@ impl Role {
             .map(|req| req.check(redis_cache, client, users))
             .collect();
 
-        let acc_res: Result<Vec<Vec<bool>>, _> = acc.into_iter().collect();
+        let acc_res: Result<AccessMatrix, _> = acc.into_iter().collect();
 
         let Ok(acc_per_req) = acc_res else {
             return Err(RoleError::Requirement(acc_res.unwrap_err().to_string()))
         };
 
-        let rotated: Vec<Vec<bool>> = (0..users.len())
-            .map(|i| {
-                acc_per_req
-                    .iter()
-                    .cloned()
-                    .map(|row: Vec<bool>| row[i])
-                    .collect()
-            })
-            .collect();
-
-        let tree = LogicTree::from_str(&self.logic)?;
-
-        let res = rotated
-            .iter()
-            .map(|accesses| {
-                let terminals: HashMap<_, _> = accesses
-                    .iter()
-                    .enumerate()
-                    .map(|(i, &a)| (i as u32, a))
-                    .collect();
-
-                tree.evaluate(&terminals).unwrap_or(false)
-            })
-            .collect::<Vec<_>>();
+        let rotated: AccessMatrix = rotate_matrix(&acc_per_req, users.len());
+        let res = evaluate_access_matrix(&rotated, &self.logic)?;
 
         if let Some(filter) = self.filter.as_ref() {
             let list = users
@@ -108,6 +88,37 @@ impl Role {
     }
 }
 
+fn evaluate_access_matrix(matrix: &AccessMatrix, logic: &str) -> Result<Vec<bool>, ParseError> {
+    let tree = LogicTree::from_str(logic)?;
+
+    let res = matrix
+        .iter()
+        .map(|accesses| {
+            let terminals: HashMap<_, _> = accesses
+                .iter()
+                .enumerate()
+                .map(|(i, &a)| (i as u32, a))
+                .collect();
+
+            tree.evaluate(&terminals).unwrap_or(false)
+        })
+        .collect::<Vec<_>>();
+
+    Ok(res)
+}
+
+fn rotate_matrix(matrix: &AccessMatrix, length: usize) -> AccessMatrix {
+    (0..length)
+        .map(|i| {
+            matrix
+                .iter()
+                .cloned()
+                .map(|row: Vec<bool>| row[i])
+                .collect()
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod test_import {
     use serde_json as _;
@@ -116,7 +127,9 @@ mod test_import {
 
 #[cfg(all(test, feature = "test-config"))]
 mod test {
-    use super::{AllowList, RedisCache, Requirement, Role, User};
+    use super::{
+        evaluate_access_matrix, rotate_matrix, AllowList, RedisCache, Requirement, Role, User,
+    };
     use guild_common::{Chain, Relation, RequirementType, TokenType};
 
     const USERS: &str = r#"[
@@ -139,6 +152,44 @@ mod test {
         }
     }
     ]"#;
+
+    #[test]
+    fn rotate_matrix_test() {
+        let original = vec![
+            vec![true, true, true, false, false],
+            vec![true, true, true, true, true],
+            vec![true, false, true, true, true],
+            vec![true, true, true, false, true],
+            vec![true, true, true, false, true],
+        ];
+        let rotated = vec![
+            vec![true, true, true, true, true],
+            vec![true, true, false, true, true],
+            vec![true, true, true, true, true],
+            vec![false, true, true, false, false],
+            vec![false, true, true, true, true],
+        ];
+
+        assert_eq!(rotate_matrix(&original, 5), rotated);
+    }
+
+    #[test]
+    fn evaluate_access_matrix_test() {
+        let access_matrix = vec![
+            vec![true, true, true, true, true],
+            vec![true, true, false, true, true],
+            vec![true, true, true, true, true],
+            vec![false, true, true, false, false],
+            vec![false, true, true, true, true],
+        ];
+
+        let logic = "(0 AND 1) OR (2 OR 3) AND 4";
+
+        assert_eq!(
+            evaluate_access_matrix(&access_matrix, logic).unwrap(),
+            vec![true, true, true, false, true]
+        );
+    }
 
     #[tokio::test]
     async fn role_check() {
