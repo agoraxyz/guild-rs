@@ -5,7 +5,7 @@
 
 pub use allowlist::AllowList;
 use guild_common::User;
-use guild_requirement::Requirement;
+use guild_requirement::{RedisCache, Requirement};
 use requiem::{LogicTree, ParseError};
 use std::{collections::HashMap, str::FromStr};
 use thiserror::Error;
@@ -30,21 +30,27 @@ pub enum RoleError {
 }
 
 impl Role {
-    pub async fn check(&self, client: &reqwest::Client, user: &User) -> Result<bool, RoleError> {
-        self.check_batch(client, &[user.clone()])
+    pub async fn check(
+        &self,
+        redis_cache: &mut RedisCache,
+        client: &reqwest::Client,
+        user: &User,
+    ) -> Result<bool, RoleError> {
+        self.check_batch(redis_cache, client, &[user.clone()])
             .await
             .map(|accesses| accesses[0])
     }
 
     pub async fn check_batch(
         &self,
+        redis_cache: &mut RedisCache,
         client: &reqwest::Client,
         users: &[User],
     ) -> Result<Vec<bool>, RoleError> {
         let acc: Vec<_> = self
             .requirements
             .iter()
-            .map(|req| req.check(client, users))
+            .map(|req| req.check(redis_cache, client, users))
             .collect();
 
         let acc_res: Result<Vec<Vec<bool>>, _> = acc.into_iter().collect();
@@ -110,7 +116,7 @@ mod test_import {
 
 #[cfg(all(test, feature = "test-config"))]
 mod test {
-    use super::{AllowList, Requirement, Role, User};
+    use super::{AllowList, RedisCache, Requirement, Role, User};
     use guild_common::{Chain, Relation, RequirementType, TokenType};
 
     const USERS: &str = r#"[
@@ -167,10 +173,14 @@ mod test {
             requirements: vec![req],
         };
 
+        let mut redis_cache = RedisCache::default();
+
         let client = reqwest::Client::new();
 
         assert_eq!(
-            role.check_batch(&client, &users).await.unwrap(),
+            role.check_batch(&mut redis_cache, &client, &users)
+                .await
+                .unwrap(),
             &[true, true, false]
         );
     }
