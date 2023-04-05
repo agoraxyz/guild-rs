@@ -120,12 +120,6 @@ fn rotate_matrix(matrix: &AccessMatrix, length: usize) -> AccessMatrix {
 }
 
 #[cfg(test)]
-mod test_import {
-    use serde_json as _;
-    use tokio as _;
-}
-
-#[cfg(all(test, feature = "test-config"))]
 mod test {
     use super::{
         evaluate_access_matrix, rotate_matrix, AllowList, RedisCache, Requirement, Role, User,

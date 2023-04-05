@@ -33,18 +33,17 @@ pub enum ConfigError {
     NoSuchEntry(String),
 }
 
-#[cfg(not(any(test, feature = "test-config")))]
 const CONFIG_PATH: &str = "config.json";
-#[cfg(any(test, feature = "test-config"))]
-const CONFIG_PATH: &str = "../config.json";
 
 fn read_config(redis_cache: &mut RedisCache, key: &str) -> Result<Value, ConfigError> {
     if let Some(value) = redis_cache.read(key) {
         return Ok(value);
     }
 
+    let config_path = std::env::var("CONFIG_PATH").unwrap_or(CONFIG_PATH.to_string());
+
     let settings = Config::builder()
-        .add_source(File::from(Path::new(CONFIG_PATH)))
+        .add_source(File::from(Path::new(&config_path)))
         .build()?;
 
     let map = settings.try_deserialize::<HashMap<String, Value>>()?;
