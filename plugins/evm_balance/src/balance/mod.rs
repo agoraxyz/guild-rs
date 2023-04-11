@@ -49,7 +49,7 @@ impl EvmProvider {
         &self,
         client: &'static Client,
         token_type: TokenType,
-        addresses: &[String],
+        addresses: &[&str],
     ) -> Result<Vec<f64>, RpcError> {
         match token_type {
             TokenType::Native => {
@@ -96,14 +96,14 @@ impl EvmProvider {
 #[cfg(test)]
 mod common {
     pub const RPC_URL: &str = "https://eth.public-rpc.com";
-    pub const USER_1_ADDR: &str = "0xe43878ce78934fe8007748ff481f03b8ee3b97de";
-    pub const USER_2_ADDR: &str = "0x14ddfe8ea7ffc338015627d160ccaf99e8f16dd3";
-    pub const USER_3_ADDR: &str = "0x283d678711daa088640c86a1ad3f12c00ec1252e";
-    pub const ERC20_ADDR: &str = "0x458691c1692cd82facfb2c5127e36d63213448a8";
-    pub const ERC721_ADDR: &str = "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85";
+    pub const USER_1_ADDR: &str = "0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE";
+    pub const USER_2_ADDR: &str = "0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3";
+    pub const USER_3_ADDR: &str = "0x283D678711dAa088640C86a1ad3f12C00EC1252E";
+    pub const ERC20_ADDR: &str = "0x458691c1692CD82faCfb2C5127e36D63213448A8";
+    pub const ERC721_ADDR: &str = "0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85";
     pub const ERC721_ID: &str =
         "61313325075603536901663283754390960556726744542208800735045237225934362163454";
-    pub const ERC1155_ADDR: &str = "0x76be3b62873462d2142405439777e971754e8e77";
+    pub const ERC1155_ADDR: &str = "0x76BE3b62873462d2142405439777e971754E8E77";
     pub const ERC1155_ID: usize = 10868;
 }
 
@@ -117,7 +117,7 @@ mod test {
     fn provider() -> EvmProvider {
         EvmProvider {
             rpc_url: RPC_URL.to_string(),
-            contract: "0x5ba1e12693dc8f9c48aad8770482f4739beed696".to_string(),
+            contract: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696".to_string(),
         }
     }
 
@@ -127,11 +127,7 @@ mod test {
 
         assert_eq!(
             provider()
-                .get_balance_batch(
-                    client,
-                    Native,
-                    &[USER_1_ADDR.to_string(), USER_2_ADDR.to_string()]
-                )
+                .get_balance_batch(client, Native, &[USER_1_ADDR, USER_2_ADDR])
                 .await
                 .unwrap(),
             vec![0.000464468855704627, 0.3919455024496939]
@@ -147,11 +143,7 @@ mod test {
 
         assert_eq!(
             provider()
-                .get_balance_batch(
-                    client,
-                    token_type,
-                    &[USER_1_ADDR.to_string(), USER_2_ADDR.to_string()]
-                )
+                .get_balance_batch(client, token_type, &[USER_1_ADDR, USER_2_ADDR])
                 .await
                 .unwrap(),
             vec![0.0, 100.0]
@@ -173,22 +165,14 @@ mod test {
 
         assert_eq!(
             provider()
-                .get_balance_batch(
-                    client,
-                    token_type_without_id,
-                    &[USER_1_ADDR.to_string(), USER_2_ADDR.to_string()]
-                )
+                .get_balance_batch(client, token_type_without_id, &[USER_1_ADDR, USER_2_ADDR])
                 .await
                 .unwrap(),
             vec![1.0, 1.0]
         );
         assert_eq!(
             provider()
-                .get_balance_batch(
-                    client,
-                    token_type_with_id,
-                    &[USER_1_ADDR.to_string(), USER_2_ADDR.to_string()]
-                )
+                .get_balance_batch(client, token_type_with_id, &[USER_1_ADDR, USER_2_ADDR])
                 .await
                 .unwrap(),
             vec![1.0, 1.0]
@@ -206,11 +190,7 @@ mod test {
 
         assert_eq!(
             provider()
-                .get_balance_batch(
-                    client,
-                    token_type_with_id,
-                    &[USER_1_ADDR.to_string(), USER_3_ADDR.to_string()]
-                )
+                .get_balance_batch(client, token_type_with_id, &[USER_1_ADDR, USER_3_ADDR])
                 .await
                 .unwrap(),
             vec![0.0, 16.0]

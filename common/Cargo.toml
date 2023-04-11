@@ -20,4 +20,4 @@ shiba = { version = "0.1.1", default-features = false }
 
 [dependencies]
 primitive-types = { version = "0.12.1", features = ["serde"], optional = true }
-serde = { version = "1.0.144", features = ["derive"] }
+serde = { workspace = true }

@@ -4,14 +4,16 @@
 #![deny(unused_crate_dependencies)]
 
 use config::{Config, File};
+pub use db::RedisCache;
 use guild_common::User;
 use libloading::{Library, Symbol};
-use redis::{Commands, Connection, RedisError};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashMap, path::Path};
 use thiserror::Error;
+
+mod db;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -31,38 +33,23 @@ pub enum ConfigError {
     NoSuchEntry(String),
 }
 
-#[cfg(not(test))]
 const CONFIG_PATH: &str = "config.json";
-#[cfg(test)]
-const CONFIG_PATH: &str = "../config.json";
 
-fn get_redis_connection() -> Result<Connection, RedisError> {
-    redis::Client::open("redis://127.0.0.1/")?.get_connection()
-}
+fn read_config(redis_cache: &mut RedisCache, key: &str) -> Result<Value, ConfigError> {
+    if let Some(value) = redis_cache.read(key) {
+        return Ok(value);
+    }
 
-fn read_config(key: &str) -> Result<Value, ConfigError> {
-    let mut con = get_redis_connection().ok();
-
-    if let Some(con) = con.as_mut() {
-        if let Ok(entry) = con.get::<&str, String>(key) {
-            if let Ok(value) = serde_json::from_str(&entry) {
-                return Ok(value);
-            } else {
-                let _: Result<(), _> = con.del(key);
-            }
-        }
-    };
+    let config_path = std::env::var("CONFIG_PATH").unwrap_or(CONFIG_PATH.to_string());
 
     let settings = Config::builder()
-        .add_source(File::from(Path::new(CONFIG_PATH)))
+        .add_source(File::from(Path::new(&config_path)))
         .build()?;
 
     let map = settings.try_deserialize::<HashMap<String, Value>>()?;
 
     if let Some(value) = map.get(key).cloned() {
-        if let Some(con) = con.as_mut() {
-            let _: Result<(), _> = con.set(key, serde_json::to_string(&value).unwrap_or_default());
-        }
+        redis_cache.write(key, &value);
 
         Ok(value)
     } else {
@@ -71,8 +58,13 @@ fn read_config(key: &str) -> Result<Value, ConfigError> {
 }
 
 impl Requirement {
-    pub fn check(&self, client: &Client, users: &[User]) -> Result<Vec<bool>, Error> {
-        let path = read_config(&self.typ.to_string())?;
+    pub fn check(
+        &self,
+        redis_cache: &mut RedisCache,
+        client: &Client,
+        users: &[User],
+    ) -> Result<Vec<bool>, Error> {
+        let path = read_config(redis_cache, &self.typ.to_string())?;
         let path_str = path.as_str().unwrap_or_default();
 
         let lib = unsafe { Library::new(path_str) }?;
@@ -81,7 +73,7 @@ impl Requirement {
             extern "C" fn(&Client, &[User], &str, &str) -> Result<Vec<bool>, Error>,
         > = unsafe { lib.get(b"check") }?;
 
-        let secrets = read_config(&self.config_key)?;
+        let secrets = read_config(redis_cache, &self.config_key)?;
 
         check_req(client, users, &self.metadata, &secrets.to_string())
     }
@@ -89,7 +81,7 @@ impl Requirement {
 
 #[cfg(test)]
 mod test {
-    use super::{Requirement, User};
+    use super::{RedisCache, Requirement, User};
     use guild_common::{Chain, Relation, RequirementType, TokenType};
     use reqwest::Client;
     use tokio::runtime;
@@ -129,6 +121,7 @@ mod test {
             metadata: serde_json::to_string(&(token_type, relation)).unwrap(),
         };
 
+        let mut redis_cache = RedisCache::default();
         let client = Client::new();
         let users: Vec<User> = serde_json::from_str(USERS).unwrap();
 
@@ -136,7 +129,7 @@ mod test {
 
         rt.block_on(async {
             assert_eq!(
-                req.check(&client, &users).unwrap(),
+                req.check(&mut redis_cache, &client, &users).unwrap(),
                 vec![false, true, false]
             );
         });
