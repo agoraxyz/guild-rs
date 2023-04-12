@@ -5,7 +5,7 @@
 
 use config::{Config, File};
 pub use db::RedisCache;
-use guild_common::User;
+use guild_common::{Relation, Scalar, User};
 use libloading::{Library, Symbol};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -23,6 +23,7 @@ pub struct Requirement {
     pub typ: String,
     pub config_key: String,
     pub metadata: String,
+    pub relation: Relation<Scalar>,
 }
 
 #[derive(Error, Debug)]
@@ -118,7 +119,8 @@ mod test {
             id: "69".to_string(),
             typ: RequirementType::EvmBalance.to_string(),
             config_key: Chain::Ethereum.to_string(),
-            metadata: serde_json::to_string(&(token_type, relation)).unwrap(),
+            metadata: serde_json::to_string(&token_type).unwrap(),
+            relation,
         };
 
         let mut redis_cache = RedisCache::default();
