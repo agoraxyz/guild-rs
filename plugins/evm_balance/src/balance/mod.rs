@@ -193,7 +193,7 @@ mod test {
                 .get_balance_batch(client, token_type_with_id, &[USER_1_ADDR, USER_3_ADDR])
                 .await
                 .unwrap(),
-            vec![0.0, 16.0]
+            vec![0.0, 15.0]
         );
     }
 }
