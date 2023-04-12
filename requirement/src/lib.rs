@@ -15,6 +15,7 @@ use thiserror::Error;
 
 mod db;
 
+type Data = Vec<Vec<Scalar>>;
 type Error = Box<dyn std::error::Error>;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -70,9 +71,8 @@ impl Requirement {
 
         let lib = unsafe { Library::new(path_str) }?;
 
-        let retrieve: Symbol<
-            extern "C" fn(&Client, &[User], &str, &str) -> Result<Vec<Vec<Scalar>>, Error>,
-        > = unsafe { lib.get(b"retrieve") }?;
+        let retrieve: Symbol<extern "C" fn(&Client, &[User], &str, &str) -> Result<Data, Error>> =
+            unsafe { lib.get(b"retrieve") }?;
 
         let secrets = read_config(redis_cache, &self.config_key)?;
 
