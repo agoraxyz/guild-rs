@@ -71,12 +71,19 @@ impl Requirement {
         let lib = unsafe { Library::new(path_str) }?;
 
         let retrieve: Symbol<
-            extern "C" fn(&Client, &[User], &str, &str) -> Result<Vec<bool>, Error>,
+            extern "C" fn(&Client, &[User], &str, &str) -> Result<Vec<Vec<Scalar>>, Error>,
         > = unsafe { lib.get(b"retrieve") }?;
 
         let secrets = read_config(redis_cache, &self.config_key)?;
 
-        retrieve(client, users, &self.metadata, &secrets.to_string())
+        let data = retrieve(client, users, &self.metadata, &secrets.to_string())?;
+
+        let res = data
+            .iter()
+            .map(|values| values.iter().any(|v| self.relation.assert(v)))
+            .collect();
+
+        Ok(res)
     }
 }
 
