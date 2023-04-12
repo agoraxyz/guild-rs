@@ -2,6 +2,7 @@ use crate::{
     balance::contract::{Call, RpcError},
     rpc_error,
 };
+use guild_common::Scalar;
 use primitive_types::U256;
 use std::str::FromStr;
 
@@ -35,7 +36,7 @@ pub fn aggregate(calls: &[Call]) -> String {
     format!("{FUNC_SIG}{param_count_len}{param_count}{offset}{aggregated}")
 }
 
-pub fn parse_multicall_result(multicall_result: &str) -> Result<Vec<f64>, RpcError> {
+pub fn parse_multicall_result(multicall_result: &str) -> Result<Vec<Scalar>, RpcError> {
     let lines = multicall_result
         .trim_start_matches("0x")
         .chars()
@@ -50,8 +51,8 @@ pub fn parse_multicall_result(multicall_result: &str) -> Result<Vec<f64>, RpcErr
         .into_iter()
         .skip(count + 4)
         .step_by(2)
-        .map(|balance| rpc_error!(U256::from_str(&balance).map(|value| value.as_u128() as f64)))
-        .collect::<Vec<Result<f64, RpcError>>>();
+        .map(|balance| rpc_error!(U256::from_str(&balance).map(|value| value.as_u128() as Scalar)))
+        .collect::<Vec<Result<Scalar, RpcError>>>();
 
     balances.into_iter().collect()
 }
