@@ -2,6 +2,8 @@ use core::ops::{Range, RangeInclusive};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+pub type Scalar = f64;
+
 #[derive(Serialize, Deserialize)]
 pub enum RequirementType {
     EvmBalance,
