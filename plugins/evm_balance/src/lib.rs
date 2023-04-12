@@ -16,7 +16,7 @@ pub fn retrieve(
     users: &[User],
     metadata: &str,
     secrets: &str,
-) -> Result<Vec<(u64, Scalar)>, Box<dyn std::error::Error>> {
+) -> Result<Vec<Vec<Scalar>>, Box<dyn std::error::Error>> {
     let provider: EvmProvider = serde_json::from_str(secrets)?;
     let token_type: TokenType = serde_json::from_str(metadata)?;
 
@@ -53,5 +53,15 @@ pub fn retrieve(
         .map(|((user_id, _), access)| (*user_id, *access))
         .collect::<Vec<(u64, Scalar)>>();
 
-    Ok(id_accesses)
+    let res = users
+        .iter()
+        .map(|user| {
+            id_accesses
+                .iter()
+                .filter_map(|(i, access)| if &user.id == i { Some(*access) } else { None })
+                .collect()
+        })
+        .collect();
+
+    Ok(res)
 }
