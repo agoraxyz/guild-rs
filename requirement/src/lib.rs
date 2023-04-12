@@ -70,13 +70,13 @@ impl Requirement {
 
         let lib = unsafe { Library::new(path_str) }?;
 
-        let check_req: Symbol<
+        let retrieve: Symbol<
             extern "C" fn(&Client, &[User], &str, &str) -> Result<Vec<bool>, Error>,
-        > = unsafe { lib.get(b"check") }?;
+        > = unsafe { lib.get(b"retrieve") }?;
 
         let secrets = read_config(redis_cache, &self.config_key)?;
 
-        check_req(client, users, &self.metadata, &secrets.to_string())
+        retrieve(client, users, &self.metadata, &secrets.to_string())
     }
 }
 

@@ -11,7 +11,7 @@ use reqwest::Client;
 use tokio::runtime::Runtime;
 
 #[no_mangle]
-pub fn check(
+pub fn retrieve(
     client: &'static Client,
     users: &[User],
     metadata: &str,
