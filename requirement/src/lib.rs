@@ -5,7 +5,7 @@
 
 use config::{Config, File};
 pub use db::RedisCache;
-use guild_common::User;
+use guild_common::{Relation, Scalar, User};
 use libloading::{Library, Symbol};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -15,6 +15,7 @@ use thiserror::Error;
 
 mod db;
 
+type Data = Vec<Vec<Scalar>>;
 type Error = Box<dyn std::error::Error>;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -23,6 +24,7 @@ pub struct Requirement {
     pub typ: String,
     pub config_key: String,
     pub metadata: String,
+    pub relation: Relation<Scalar>,
 }
 
 #[derive(Error, Debug)]
@@ -69,13 +71,19 @@ impl Requirement {
 
         let lib = unsafe { Library::new(path_str) }?;
 
-        let check_req: Symbol<
-            extern "C" fn(&Client, &[User], &str, &str) -> Result<Vec<bool>, Error>,
-        > = unsafe { lib.get(b"check") }?;
+        let retrieve: Symbol<extern "C" fn(&Client, &[User], &str, &str) -> Result<Data, Error>> =
+            unsafe { lib.get(b"retrieve") }?;
 
         let secrets = read_config(redis_cache, &self.config_key)?;
 
-        check_req(client, users, &self.metadata, &secrets.to_string())
+        let data = retrieve(client, users, &self.metadata, &secrets.to_string())?;
+
+        let res = data
+            .iter()
+            .map(|values| values.iter().any(|v| self.relation.assert(v)))
+            .collect();
+
+        Ok(res)
     }
 }
 
@@ -118,7 +126,8 @@ mod test {
             id: "69".to_string(),
             typ: RequirementType::EvmBalance.to_string(),
             config_key: Chain::Ethereum.to_string(),
-            metadata: serde_json::to_string(&(token_type, relation)).unwrap(),
+            metadata: serde_json::to_string(&token_type).unwrap(),
+            relation,
         };
 
         let mut redis_cache = RedisCache::default();

@@ -5,6 +5,7 @@ use crate::{
     },
     rpc_error,
 };
+use guild_common::Scalar;
 use primitive_types::U256;
 use reqwest::Client;
 use serde_json::json;
@@ -54,7 +55,7 @@ pub async fn get_eth_balance_batch(
     multicall_address: &str,
     rpc_url: &str,
     user_addresses: &[&str],
-) -> Result<Vec<f64>, RpcError> {
+) -> Result<Vec<Scalar>, RpcError> {
     let calls = user_addresses
         .iter()
         .map(|address| Call {
@@ -110,7 +111,7 @@ pub async fn get_erc20_balance_batch(
     rpc_url: &str,
     token_address: &str,
     user_addresses: &[&str],
-) -> Result<Vec<f64>, RpcError> {
+) -> Result<Vec<Scalar>, RpcError> {
     let calls = user_addresses
         .iter()
         .map(|user_address| erc20_call(token_address, user_address))
@@ -126,7 +127,7 @@ pub async fn get_erc20_balance_batch(
 
     let balances = parse_multicall_result(&res)?
         .iter()
-        .map(|balance| balance / 10_u128.pow(decimals) as f64)
+        .map(|balance| balance / 10_u128.pow(decimals) as Scalar)
         .collect();
 
     Ok(balances)
@@ -142,7 +143,7 @@ pub async fn get_erc721_balance_batch(
     rpc_url: &str,
     token_address: &str,
     user_addresses: &[&str],
-) -> Result<Vec<f64>, RpcError> {
+) -> Result<Vec<Scalar>, RpcError> {
     let calls = user_addresses
         .iter()
         .map(|user_address| erc721_call(token_address, user_address))
@@ -164,7 +165,7 @@ pub async fn get_erc1155_balance_batch(
     token_address: String,
     token_id: &str,
     user_addresses: &[&str],
-) -> Result<Vec<f64>, RpcError> {
+) -> Result<Vec<Scalar>, RpcError> {
     let id = format!("{:x}", rpc_error!(U256::from_dec_str(token_id))?);
     let addresses = user_addresses
         .iter()
@@ -196,9 +197,9 @@ pub async fn get_erc1155_balance_batch(
         .map(|c| {
             let balance = c.iter().collect::<String>();
 
-            rpc_error!(U256::from_str(&balance).map(|value| value.as_u128() as f64))
+            rpc_error!(U256::from_str(&balance).map(|value| value.as_u128() as Scalar))
         })
-        .collect::<Vec<Result<f64, RpcError>>>();
+        .collect::<Vec<Result<Scalar, RpcError>>>();
 
     balances.into_iter().collect()
 }

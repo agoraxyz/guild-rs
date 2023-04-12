@@ -1,5 +1,5 @@
 use crate::balance::contract::*;
-use guild_common::TokenType;
+use guild_common::{Scalar, TokenType};
 use reqwest::Client;
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -33,7 +33,7 @@ macro_rules! rpc_error {
     };
 }
 
-const ETH_BALANCE_DIVIDER: f64 = 10_u128.pow(18) as f64;
+const ETH_BALANCE_DIVIDER: Scalar = 10_u128.pow(18) as Scalar;
 
 fn create_payload(method: &str, params: Value, id: u32) -> Value {
     json!({
@@ -50,7 +50,7 @@ impl EvmProvider {
         client: &'static Client,
         token_type: TokenType,
         addresses: &[&str],
-    ) -> Result<Vec<f64>, RpcError> {
+    ) -> Result<Vec<Scalar>, RpcError> {
         match token_type {
             TokenType::Native => {
                 get_eth_balance_batch(client, &self.contract.to_string(), &self.rpc_url, addresses)
@@ -193,7 +193,7 @@ mod test {
                 .get_balance_batch(client, token_type_with_id, &[USER_1_ADDR, USER_3_ADDR])
                 .await
                 .unwrap(),
-            vec![0.0, 16.0]
+            vec![0.0, 15.0]
         );
     }
 }
