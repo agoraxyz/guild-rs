@@ -41,24 +41,24 @@ pub fn retrieve(
 
     let rt = Runtime::new()?;
 
-    let accesses: Vec<_> = rt.block_on(async {
+    let balances: Vec<_> = rt.block_on(async {
         provider
             .get_balance_batch(client, token_type, &addresses)
             .await
     })?;
 
-    let id_accesses = addresses_with_ids
+    let id_balances = addresses_with_ids
         .iter()
-        .zip(accesses.iter())
-        .map(|((user_id, _), access)| (*user_id, *access))
+        .zip(balances.iter())
+        .map(|((user_id, _), balance)| (*user_id, *balance))
         .collect::<Vec<(u64, Scalar)>>();
 
     let res = users
         .iter()
         .map(|user| {
-            id_accesses
+            id_balances
                 .iter()
-                .filter_map(|(i, access)| if &user.id == i { Some(*access) } else { None })
+                .filter_map(|(i, balance)| if &user.id == i { Some(*balance) } else { None })
                 .collect()
         })
         .collect();
