@@ -139,7 +139,7 @@ mod test {
         let sol_balance = Requirement {
             id: "99".to_string(),
             typ: RequirementType::SolBalance.to_string(),
-            config_key: Chain::SolanaMainnet.to_string(),
+            config_key: Chain::SolanaMain.to_string(),
             metadata: String::new(),
             relation: relation_2,
         };

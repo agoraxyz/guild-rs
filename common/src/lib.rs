@@ -18,7 +18,9 @@ pub enum Chain {
     Bsc,
     Goerli,
     Arbitrum,
-    SolanaMainnet,
+    SolanaMain,
+    SolanaTest,
+    SolanaDev,
 }
 
 impl fmt::Debug for Chain {
@@ -30,7 +32,9 @@ impl fmt::Debug for Chain {
             Self::Bsc => "bsc",
             Self::Goerli => "goerli",
             Self::Arbitrum => "arbitrum",
-            Self::SolanaMainnet => "solana_main",
+            Self::SolanaMain => "solana_main",
+            Self::SolanaTest => "solana_test",
+            Self::SolanaDev => "solana_dev",
         };
 
         write!(f, "{res}")

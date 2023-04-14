@@ -95,7 +95,9 @@ jobs:
               "rpc_url": "${GOERLI_RPC}",
               "contract": "0x77dCa2C955b15e9dE4dbBCf1246B4B85b651e50e"
             },
-            "solana_main": "https://api.mainnet-beta.solana.com"
+            "solana_main": "https://api.mainnet-beta.solana.com",
+            "solana_test": "https://api.testnet.solana.com",
+            "solana_dev": "https://api.devnet.solana.com"
           }
           EOF
 
