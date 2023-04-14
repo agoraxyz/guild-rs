@@ -13,6 +13,27 @@ jobs:
       - uses: actions/checkout@v2
       - run: rustup component add rustfmt
       - run: cargo fmt -- --check
+
+  plugins:
+    steps:
+      - name: plugins/evm_balance
+        run: |
+          cd plugins/evm_balance
+          cargo fmt -- --check
+          cargo b
+          cargo clippy --color=always --all-targets --examples --tests
+          cargo t --all-features
+          cd ../..
+
+      - name: plugins/sol_balance
+        run: |
+          cd plugins/sol_balance
+          cargo fmt -- --check
+          cargo b
+          cargo clippy --color=always --all-targets --examples --tests
+          cargo t --all-features
+          cd ../..
+
   test:
     runs-on: rust
 
@@ -45,24 +66,6 @@ jobs:
       - name: clippy
         run: cargo clippy --color=always --all-targets --examples --tests
 
-      - name: plugins/evm_balance
-        run: |
-          cd plugins/evm_balance
-          cargo fmt -- --check
-          cargo b
-          cargo clippy --color=always --all-targets --examples --tests
-          cargo t --all-features
-          cd ../..
-
-      - name: plugins/sol_balance
-        run: |
-          cd plugins/sol_balance
-          cargo fmt -- --check
-          cargo b
-          cargo clippy --color=always --all-targets --examples --tests
-          cargo t --all-features
-          cd ../..
-
       - name: config
         run: |
           cat > ./config.json << EOF
@@ -72,22 +75,18 @@ jobs:
             "ethereum": {
               "rpc_url": "${ETHEREUM_RPC}",
               "contract": "0x5ba1e12693dc8f9c48aad8770482f4739beed696",
-              "balancy_id": 1
             },
             "bsc": {
               "rpc_url": "${BSC_RPC}",
               "contract": "0x41263cba59eb80dc200f3e2544eda4ed6a90e76c",
-              "balancy_id": 56
             },
             "gnosis": {
               "rpc_url": "${GNOSIS_RPC}",
               "contract": "0xb5b692a88bdfc81ca69dcb1d924f59f0413a602a",
-              "balancy_id": 100
             },
             "polygon": {
               "rpc_url": "${POLYGON_RPC}",
               "contract": "0x11ce4B23bD875D7F5C6a31084f55fDe1e9A87507",
-              "balancy_id": 137
             },
             "arbitrum": {
               "rpc_url": "${ARBITRUM_RPC}",
