@@ -41,11 +41,8 @@ pub fn retrieve(
 
     let rt = Runtime::new()?;
 
-    let balances: Vec<_> = rt.block_on(async {
-        provider
-            .get_balance_batch(client, token_type, &addresses)
-            .await
-    })?;
+    let balances: Vec<_> =
+        rt.block_on(provider.get_balance_batch(client, token_type, &addresses))?;
 
     let id_balances = addresses_with_ids
         .iter()
