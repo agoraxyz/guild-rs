@@ -68,6 +68,15 @@ jobs:
       - name: clippy
         run: cargo clippy --color=always --all-targets --examples --tests
 
+      - name: plugins
+        run: |
+          cd plugins/evm_balance
+          cargo b
+          cd ../..
+          cd plugins/sol_balance
+          cargo b
+          cd ../..
+
       - name: config
         run: |
           cat > ./config.json << EOF
