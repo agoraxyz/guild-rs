@@ -17,8 +17,6 @@ pub enum SolanaError {
     Other(String),
 }
 
-const SOL_URL: &str = "https://api.mainnet-beta.solana.com";
-
 fn create_payload(method: &str, params: Value, id: u32) -> Value {
     json!({
         "method"  : method,
@@ -28,7 +26,11 @@ fn create_payload(method: &str, params: Value, id: u32) -> Value {
     })
 }
 
-async fn get_balance_batch(client: &Client, pubkeys: &[&str]) -> Result<Vec<Scalar>, SolanaError> {
+async fn get_balance_batch(
+    client: &Client,
+    base_url: &str,
+    pubkeys: &[&str],
+) -> Result<Vec<Scalar>, SolanaError> {
     let params = json!([
         pubkeys,
         {
@@ -38,7 +40,7 @@ async fn get_balance_batch(client: &Client, pubkeys: &[&str]) -> Result<Vec<Scal
     let payload = create_payload("getMultipleAccounts", params, 1);
 
     let res: Value = client
-        .post(SOL_URL)
+        .post(base_url)
         .json(&payload)
         .send()
         .await?
@@ -61,7 +63,7 @@ pub fn retrieve(
     client: &'static Client,
     users: &[User],
     _metadata: &str,
-    _secrets: &str,
+    base_url: &str,
 ) -> Result<Vec<Vec<Scalar>>, Box<dyn std::error::Error>> {
     let pubkeys_with_ids: Vec<(u64, &str)> = users
         .iter()
@@ -81,7 +83,7 @@ pub fn retrieve(
 
     let rt = Runtime::new()?;
 
-    let balances: Vec<_> = rt.block_on(get_balance_batch(client, &pubkeys))?;
+    let balances: Vec<_> = rt.block_on(get_balance_batch(client, base_url, &pubkeys))?;
 
     let id_balances = pubkeys_with_ids
         .iter()
@@ -106,6 +108,8 @@ pub fn retrieve(
 mod test {
     use super::get_balance_batch;
 
+    const BASE_URL: &str = "https://api.mainnet-beta.solana.com";
+
     #[tokio::test]
     async fn test_balance_batch() {
         let client = reqwest::Client::new();
@@ -115,7 +119,7 @@ mod test {
             "4fYNw3dojWmQ4dXtSGE9epjRGy9pFSx62YypT7avPYvA",
         ];
 
-        let res = get_balance_batch(&client, pubkeys).await.unwrap();
+        let res = get_balance_batch(&client, BASE_URL, pubkeys).await.unwrap();
 
         assert_eq!(res, [1761523130.0, 2000000.0]);
     }
