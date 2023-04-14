@@ -45,6 +45,24 @@ jobs:
       - name: clippy
         run: cargo clippy --color=always --all-targets --examples --tests
 
+      - name: plugins/evm_balance
+        run: |
+          cd plugins/evm_balance
+          cargo fmt -- --check
+          cargo b
+          cargo clippy --color=always --all-targets --examples --tests
+          cargo t --all-features
+          cd ../..
+
+      - name: plugins/sol_balance
+        run: |
+          cd plugins/sol_balance
+          cargo fmt -- --check
+          cargo b
+          cargo clippy --color=always --all-targets --examples --tests
+          cd ../..
+          cargo t --all-features
+
       - name: config
         run: |
           cat > ./config.json << EOF
@@ -82,12 +100,6 @@ jobs:
             "solana_main": "https://api.mainnet-beta.solana.com"
           }
           EOF
-          cd plugins/evm_balance
-          cargo b
-          cd ../..
-          cd plugins/sol_balance
-          cargo b
-          cd ../..
 
       - name: test
         run: |
