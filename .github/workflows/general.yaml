@@ -18,23 +18,17 @@ jobs:
     name: plugins
     runs-on: rust
     steps:
-      - name: plugins/evm_balance
-        run: |
-          cd plugins/evm_balance
-          cargo fmt -- --check
-          cargo b
-          cargo clippy --color=always --all-targets --examples --tests
-          cargo t --all-features
-          cd ../..
+      - name: script
+        run: chmod +x plugins/plugins.sh
 
-      - name: plugins/sol_balance
-        run: |
-          cd plugins/sol_balance
-          cargo fmt -- --check
-          cargo b
-          cargo clippy --color=always --all-targets --examples --tests
-          cargo t --all-features
-          cd ../..
+      - name: check
+        run: ./plugins/plugins.sh check
+
+      - name: clippy
+        run: ./plugins/plugins.sh clippy
+
+      - name: test
+        run: ./plugins/plugins.sh test
 
   test:
     runs-on: rust
@@ -69,20 +63,14 @@ jobs:
         run: cargo clippy --color=always --all-targets --examples --tests
 
       - name: plugins
-        run: |
-          cd plugins/evm_balance
-          cargo b
-          cd ../..
-          cd plugins/sol_balance
-          cargo b
-          cd ../..
+        run: ./plugins/plugins.sh build
 
       - name: config
         run: |
           cat > ./config.json << EOF
           {
-            "evm_balance": "../plugins/evm_balance/target/debug/libevm_balance.so",
-            "sol_balance": "../plugins/sol_balance/target/debug/libsol_balance.so",
+            "evm_balance": "../plugins/evm_balance/target/release/libevm_balance.so",
+            "sol_balance": "../plugins/sol_balance/target/release/libsol_balance.so",
             "ethereum": {
               "rpc_url": "${ETHEREUM_RPC}",
               "contract": "0x5ba1e12693dc8f9c48aad8770482f4739beed696"
