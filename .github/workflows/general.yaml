@@ -50,6 +50,7 @@ jobs:
           cat > ./config.json << EOF
           {
             "evm_balance": "../plugins/evm_balance/target/debug/libevm_balance.so",
+            "sol_balance": "../plugins/sol_balance/target/debug/libsol_balance.so",
             "ethereum": {
               "rpc_url": "${ETHEREUM_RPC}",
               "contract": "0x5ba1e12693dc8f9c48aad8770482f4739beed696",
@@ -77,10 +78,14 @@ jobs:
             "goerli": {
               "rpc_url": "${GOERLI_RPC}",
               "contract": "0x77dCa2C955b15e9dE4dbBCf1246B4B85b651e50e"
-            }
+            },
+            "solana_main": "https://api.mainnet-beta.solana.com"
           }
           EOF
           cd plugins/evm_balance
+          cargo b
+          cd ../..
+          cd plugins/sol_balance
           cargo b
           cd ../..
 
