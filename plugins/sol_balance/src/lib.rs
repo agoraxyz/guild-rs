@@ -63,8 +63,11 @@ pub fn retrieve(
     client: &'static Client,
     users: &[User],
     _metadata: &str,
-    base_url: &str,
+    secrets: &str,
 ) -> Result<Vec<Vec<Scalar>>, Box<dyn std::error::Error>> {
+    let secret: Value = serde_json::from_str(secrets)?;
+    let base_url = secret.as_str().unwrap_or_default();
+
     let pubkeys_with_ids: Vec<(u64, &str)> = users
         .iter()
         .flat_map(|user| {
