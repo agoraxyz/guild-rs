@@ -113,7 +113,7 @@ mod test {
         "id": 2,
         "identities": {
             "evm_address": ["0x283d678711daa088640c86a1ad3f12c00ec1252e"],
-            "sol_pubkey": []
+            "sol_pubkey": ["vines1vzrYbzLMRdu58ou5XTby4qAqVRLmqo36NKPTg"]
         }
     }
     ]"#;

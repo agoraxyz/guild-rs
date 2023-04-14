@@ -48,10 +48,14 @@ async fn get_balance_batch(
         .await?;
 
     match res["result"]["value"].as_array() {
-        Some(values) => Ok(values
-            .iter()
-            .map(|value| value["lamports"].as_f64().unwrap())
-            .collect()),
+        Some(values) => {
+            let res = values
+                .iter()
+                .map(|value| value["lamports"].as_f64().unwrap_or_default())
+                .collect();
+
+            Ok(res)
+        }
         None => Err(SolanaError::Other(
             "Failed to deserialize result".to_string(),
         )),
