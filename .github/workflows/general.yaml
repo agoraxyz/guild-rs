@@ -13,6 +13,23 @@ jobs:
       - uses: actions/checkout@v2
       - run: rustup component add rustfmt
       - run: cargo fmt -- --check
+
+  plugins:
+    name: plugins
+    runs-on: rust
+    steps:
+      - name: script
+        run: chmod +x plugins/plugins.sh
+
+      - name: check
+        run: ./plugins/plugins.sh check
+
+      - name: clippy
+        run: ./plugins/plugins.sh clippy
+
+      - name: test
+        run: ./plugins/plugins.sh test
+
   test:
     runs-on: rust
 
@@ -45,30 +62,30 @@ jobs:
       - name: clippy
         run: cargo clippy --color=always --all-targets --examples --tests
 
+      - name: plugins
+        run: ./plugins/plugins.sh build
+
       - name: config
         run: |
           cat > ./config.json << EOF
           {
-            "evm_balance": "../plugins/evm_balance/target/debug/libevm_balance.so",
+            "evm_balance": "../plugins/evm_balance/target/release/libevm_balance.so",
+            "sol_balance": "../plugins/sol_balance/target/release/libsol_balance.so",
             "ethereum": {
               "rpc_url": "${ETHEREUM_RPC}",
-              "contract": "0x5ba1e12693dc8f9c48aad8770482f4739beed696",
-              "balancy_id": 1
+              "contract": "0x5ba1e12693dc8f9c48aad8770482f4739beed696"
             },
             "bsc": {
               "rpc_url": "${BSC_RPC}",
-              "contract": "0x41263cba59eb80dc200f3e2544eda4ed6a90e76c",
-              "balancy_id": 56
+              "contract": "0x41263cba59eb80dc200f3e2544eda4ed6a90e76c"
             },
             "gnosis": {
               "rpc_url": "${GNOSIS_RPC}",
-              "contract": "0xb5b692a88bdfc81ca69dcb1d924f59f0413a602a",
-              "balancy_id": 100
+              "contract": "0xb5b692a88bdfc81ca69dcb1d924f59f0413a602a"
             },
             "polygon": {
               "rpc_url": "${POLYGON_RPC}",
-              "contract": "0x11ce4B23bD875D7F5C6a31084f55fDe1e9A87507",
-              "balancy_id": 137
+              "contract": "0x11ce4B23bD875D7F5C6a31084f55fDe1e9A87507"
             },
             "arbitrum": {
               "rpc_url": "${ARBITRUM_RPC}",
@@ -77,12 +94,12 @@ jobs:
             "goerli": {
               "rpc_url": "${GOERLI_RPC}",
               "contract": "0x77dCa2C955b15e9dE4dbBCf1246B4B85b651e50e"
-            }
+            },
+            "solana_main": "https://api.mainnet-beta.solana.com",
+            "solana_test": "https://api.testnet.solana.com",
+            "solana_dev": "https://api.devnet.solana.com"
           }
           EOF
-          cd plugins/evm_balance
-          cargo b
-          cd ../..
 
       - name: test
         run: |

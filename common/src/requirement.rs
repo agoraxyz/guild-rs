@@ -7,12 +7,14 @@ pub type Scalar = f64;
 #[derive(Serialize, Deserialize)]
 pub enum RequirementType {
     EvmBalance,
+    SolBalance,
 }
 
 impl fmt::Debug for RequirementType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let res = match self {
             Self::EvmBalance => "evm_balance",
+            Self::SolBalance => "sol_balance",
         };
 
         write!(f, "{res}")
