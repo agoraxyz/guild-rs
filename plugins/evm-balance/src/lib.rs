@@ -3,18 +3,31 @@
 #![allow(clippy::multiple_crate_versions)]
 #![deny(unused_crate_dependencies)]
 
-//mod balance;
+mod balance;
 
-//use balance::EvmProvider;
-//use guild_common::{Scalar, TokenType, User};
-//use reqwest::Client;
-//use tokio::runtime::Runtime;
+use balance::EvmProvider;
 
 use guild_plugin_manager::{CallOneInput, CallOneResult};
+use guild_requirement::{cbor_deserialize, Scalar};
 
 #[no_mangle]
 pub fn call_one(input: CallOneInput) -> CallOneResult {
-	Ok(1.0)
+    let provider: EvmProvider = cbor_deserialize(secrets)?;
+    let token_type: TokenType = cbor_deserialize(metadata)?;
+
+	// TODO
+	let addresses = vec!["", ""];
+
+    let balances: Vec<_> = futures::executor::block_on(async move {
+        provider
+            .get_balance_batch(client, token_type, &addresses)
+            .await?
+    });
+
+	// TODO
+	let res = 0.0;
+
+    Ok(res)
 }
 
 /*

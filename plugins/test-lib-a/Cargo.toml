@@ -4,5 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "test-lib-a"
+name = "test_lib_a"
 crate-type = ["cdylib"]
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
