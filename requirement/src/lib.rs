@@ -3,6 +3,89 @@
 #![deny(clippy::cargo)]
 #![deny(unused_crate_dependencies)]
 
+mod relation;
+mod token;
+
+use serde::{Deserialize, Serialize};
+use serde_cbor::{from_slice as cbor_deserialize, to_vec as cbor_serialize};
+
+pub type Prefix = [u8; 8];
+pub type Scalar = f64;
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Requirement {
+    pub prefix: Prefix,
+    pub metadata: Vec<u8>,
+    pub relation: relation::Relation<Scalar>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RequirementsWithLogic {
+    pub requirements: Vec<Requirement>,
+    pub logic: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct SerializedRequirementsWithLogic {
+    pub requirements: Vec<Vec<u8>>,
+    pub logic: Vec<u8>,
+}
+
+impl TryFrom<RequirementsWithLogic> for SerializedRequirementsWithLogic {
+    type Error = serde_cbor::Error;
+    fn try_from(value: RequirementsWithLogic) -> Result<Self, Self::Error> {
+        let requirements = value
+            .requirements
+            .into_iter()
+            .map(|x| cbor_serialize(&x))
+            .collect::<Result<Vec<_>, _>>()?;
+        let logic = cbor_serialize(&value.logic)?;
+        Ok(Self {
+            requirements,
+            logic,
+        })
+    }
+}
+
+impl TryFrom<SerializedRequirementsWithLogic> for RequirementsWithLogic {
+    type Error = serde_cbor::Error;
+    fn try_from(value: SerializedRequirementsWithLogic) -> Result<Self, Self::Error> {
+        let requirements = value
+            .requirements
+            .into_iter()
+            .map(|x| cbor_deserialize(&x))
+            .collect::<Result<Vec<_>, _>>()?;
+        let logic = cbor_deserialize(&value.logic)?;
+        Ok(Self {
+            requirements,
+            logic,
+        })
+    }
+}
+
+impl Requirement {
+    pub fn check(
+        &self,
+        client: &Client,
+        plugin_path: &str,
+        secrets: &str,
+    ) -> Result<Scalar, Error> {
+        let lib = unsafe { Library::new(plugin_path) }?;
+        let retrieve: Symbol<extern "C" fn(&Client, &[User], &str, &str) -> Result<Data, Error>> =
+            unsafe { lib.get(b"retrieve") }?;
+
+        let data = retrieve(client, users, &self.metadata, &secrets.to_string())?;
+
+        let res = data
+            .iter()
+            .map(|values| values.iter().any(|v| self.relation.assert(v)))
+            .collect();
+
+        Ok(res)
+    }
+}
+
+/*
 use config::{Config, File};
 pub use db::RedisCache;
 use guild_common::{Relation, Scalar, User};
@@ -18,14 +101,6 @@ mod db;
 type Data = Vec<Vec<Scalar>>;
 type Error = Box<dyn std::error::Error>;
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Requirement {
-    pub id: String,
-    pub typ: String,
-    pub config_key: String,
-    pub metadata: String,
-    pub relation: Relation<Scalar>,
-}
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
@@ -59,36 +134,10 @@ fn read_config(redis_cache: &mut RedisCache, key: &str) -> Result<Value, ConfigE
     }
 }
 
-impl Requirement {
-    pub fn check(
-        &self,
-        redis_cache: &mut RedisCache,
-        client: &Client,
-        users: &[User],
-    ) -> Result<Vec<bool>, Error> {
-        let path = read_config(redis_cache, &self.typ.to_string())?;
-        let path_str = path.as_str().unwrap_or_default();
-
-        let lib = unsafe { Library::new(path_str) }?;
-
-        let retrieve: Symbol<extern "C" fn(&Client, &[User], &str, &str) -> Result<Data, Error>> =
-            unsafe { lib.get(b"retrieve") }?;
-
-        let secrets = read_config(redis_cache, &self.config_key)?;
-
-        let data = retrieve(client, users, &self.metadata, &secrets.to_string())?;
-
-        let res = data
-            .iter()
-            .map(|values| values.iter().any(|v| self.relation.assert(v)))
-            .collect();
-
-        Ok(res)
-    }
-}
 
 #[cfg(test)]
 mod test {
+    use shiba as _;
     use super::{RedisCache, Requirement, User};
     use guild_common::{Chain, Relation, RequirementType, TokenType};
     use reqwest::Client;
@@ -167,3 +216,4 @@ mod test {
         });
     }
 }
+*/

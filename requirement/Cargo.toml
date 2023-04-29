@@ -13,14 +13,15 @@ categories = [
 edition = "2021"
 
 [dev-dependencies]
-tokio = { workspace = true }
+#tokio = { workspace = true }
 
 [dependencies]
-config = { version = "0.13.3", default-features = false, features = ["json"] }
-guild-common = { path = "../common" }
-libloading = "0.7.4"
-serde = { workspace = true }
-serde_json = { workspace = true }
-redis = { version = "0.22.3" }
-reqwest = { workspace = true }
-thiserror = { workspace = true }
+#config = { version = "0.13.3", default-features = false, features = ["json"] }
+#guild-common = { path = "../common" }
+#libloading = "0.7.4"
+serde = { version = "1", features = ["derive"], default-features = false }
+serde_cbor = "0.11"
+#serde_json = { workspace = true }
+#redis = { version = "0.22.3" }
+#reqwest = { workspace = true }
+#thiserror = { workspace = true }

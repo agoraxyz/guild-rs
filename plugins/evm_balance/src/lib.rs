@@ -10,6 +10,7 @@ use guild_common::{Scalar, TokenType, User};
 use reqwest::Client;
 use tokio::runtime::Runtime;
 
+/*
 #[no_mangle]
 pub fn retrieve(
     client: &'static Client,
@@ -62,3 +63,4 @@ pub fn retrieve(
 
     Ok(res)
 }
+*/
