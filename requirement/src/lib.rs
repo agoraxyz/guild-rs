@@ -7,7 +7,7 @@ mod relation;
 mod token;
 
 use serde::{Deserialize, Serialize};
-use serde_cbor::{from_slice as cbor_deserialize, to_vec as cbor_serialize};
+pub use serde_cbor::{from_slice as cbor_deserialize, to_vec as cbor_serialize};
 
 pub type Prefix = [u8; 8];
 pub type Scalar = f64;
@@ -63,6 +63,7 @@ impl TryFrom<SerializedRequirementsWithLogic> for RequirementsWithLogic {
     }
 }
 
+/*
 impl Requirement {
     pub fn check(
         &self,
@@ -84,6 +85,7 @@ impl Requirement {
         Ok(res)
     }
 }
+*/
 
 /*
 use config::{Config, File};

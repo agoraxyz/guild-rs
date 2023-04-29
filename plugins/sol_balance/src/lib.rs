@@ -3,6 +3,14 @@
 #![allow(clippy::multiple_crate_versions)]
 #![deny(unused_crate_dependencies)]
 
+use guild_plugin_manager::{CallOneInput, CallOneResult};
+
+#[no_mangle]
+pub fn call_one(input: CallOneInput) -> CallOneResult {
+    Ok(2.0)
+}
+
+/*
 use guild_common::{Scalar, User};
 use reqwest::Client;
 use serde_json::{json, Value};
@@ -131,3 +139,4 @@ mod test {
         assert_eq!(res, [1761523130.0, 2000000.0]);
     }
 }
+*/

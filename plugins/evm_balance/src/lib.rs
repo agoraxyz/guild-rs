@@ -3,12 +3,19 @@
 #![allow(clippy::multiple_crate_versions)]
 #![deny(unused_crate_dependencies)]
 
-mod balance;
+//mod balance;
 
-use balance::EvmProvider;
-use guild_common::{Scalar, TokenType, User};
-use reqwest::Client;
-use tokio::runtime::Runtime;
+//use balance::EvmProvider;
+//use guild_common::{Scalar, TokenType, User};
+//use reqwest::Client;
+//use tokio::runtime::Runtime;
+
+use guild_plugin_manager::{CallOneInput, CallOneResult};
+
+#[no_mangle]
+pub fn call_one(input: CallOneInput) -> CallOneResult {
+	Ok(1.0)
+}
 
 /*
 #[no_mangle]

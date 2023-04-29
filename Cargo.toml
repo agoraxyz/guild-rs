@@ -1,10 +1,11 @@
 [workspace]
 members = [
 	#"common",
+	"plugin-manager",
 	"requirement",
 	#"engine",
 ]
-#exclude = ["plugins"]
+exclude = ["plugins"]
 
 [profile.dev]
 opt-level = 3
