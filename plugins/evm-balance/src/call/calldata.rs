@@ -33,6 +33,7 @@ impl CallData {
         Self::token_balance(user_address)
     }
 
+    // TODO
     //pub fn erc1155_balance(user_address: &str) -> Self {
     //let id = format!("{:x}", rpc_error!(U256::from_dec_str(token_id))?);
     //let addresses = user_addresses

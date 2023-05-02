@@ -1,11 +1,17 @@
 mod calldata;
 mod multicall;
 
-use calldata::CallData;
+pub use calldata::CallData;
+pub use multicall::Multicall;
 
-use crate::rpc::Response as RpcResponse;
 use reqwest::Client;
+use serde::Deserialize;
 use serde_json::{json, Value};
+
+#[derive(Deserialize)]
+pub struct Response {
+    pub result: String,
+}
 
 pub struct Call {
     target: String,
@@ -28,7 +34,7 @@ impl Call {
 
         let payload = create_payload("eth_call", params, 1);
 
-        let res: RpcResponse = client
+        let response: Response = client
             .post(rpc_url)
             .json(&payload)
             .send()
@@ -36,7 +42,7 @@ impl Call {
             .json()
             .await?;
 
-        Ok(res.result)
+        Ok(response.result)
     }
 
     pub fn target(&self) -> &str {
@@ -78,7 +84,10 @@ mod test {
             "0x0a9f693fce6f00a51a8e0db4351b5a8078b4242e".to_string(),
         ];
         let call_data = CallData::erc20_decimals();
-        let expected = vec![18u64, 9, 24, 5].into_iter().map(U256::from).collect::<Vec<U256>>();
+        let expected = vec![18u64, 9, 24, 5]
+            .into_iter()
+            .map(U256::from)
+            .collect::<Vec<U256>>();
 
         // act
         let result_string_futures = tokens

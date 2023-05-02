@@ -3,10 +3,9 @@
 #![allow(clippy::multiple_crate_versions)]
 #![deny(unused_crate_dependencies)]
 
-mod call;
 mod balances;
+mod call;
 mod provider;
-mod rpc;
 
 use guild_plugin_manager::{CallOneInput, CallOneResult};
 use guild_requirement::{cbor_deserialize, token::TokenType};

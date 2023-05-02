@@ -8,7 +8,7 @@ const PARAM_COUNT_LEN: usize = 32;
 pub struct Multicall(Vec<CallData>);
 
 impl Multicall {
-    pub fn eth_balances(user_addresses: &[&str]) -> Self {
+    pub fn eth_balances(user_addresses: &[String]) -> Self {
         Self(
             user_addresses
                 .iter()
@@ -17,7 +17,7 @@ impl Multicall {
         )
     }
 
-    pub fn erc20_balances(user_addresses: &[&str]) -> Self {
+    pub fn erc20_balances(user_addresses: &[String]) -> Self {
         Self(
             user_addresses
                 .iter()
@@ -26,7 +26,7 @@ impl Multicall {
         )
     }
 
-    pub fn erc721_balances(user_addresses: &[&str]) -> Self {
+    pub fn erc721_balances(user_addresses: &[String]) -> Self {
         Self(
             user_addresses
                 .iter()
@@ -35,7 +35,7 @@ impl Multicall {
         )
     }
 
-    pub fn aggregate(self, target: String) -> Call {
+    pub fn aggregate(self, target: String, contract: String) -> Call {
         let n_calls = self.0.len();
         let param_count_len = format!("{PARAM_COUNT_LEN:064x}");
         let param_count = format!("{:064x}", n_calls);
@@ -49,7 +49,7 @@ impl Multicall {
 
                 format!(
                     "{:0>64}{DATA_PART_LEN:064x}{data_len:064x}{}{padding}",
-                    target.as_str().trim_start_matches("0x"),
+                    contract.as_str().trim_start_matches("0x"),
                     call_data.raw().trim_start_matches("0x")
                 )
             })
@@ -71,10 +71,9 @@ impl Multicall {
 
 #[cfg(test)]
 mod test {
-    use super::{Call, Multicall};
+    use super::Multicall;
 
     const TEST_ADDRESS: &str = "0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE";
-    const TEST_ADDRESSES: &[&str; 5] = &[TEST_ADDRESS; 5];
 
     #[test]
     fn eth_aggregation() {
@@ -112,12 +111,14 @@ mod test {
             "0000000000000000000000000000000000000000000000000000000000000024",
             "4d2301cc000000000000000000000000E43878Ce78934fe8007748FF481f03B8",
             "Ee3b97DE00000000000000000000000000000000000000000000000000000000",
-        ].join("");
+        ]
+        .join("");
 
-        let target = "5BA1e12693Dc8F9c48aAD8770482f4739bEeD696";
-
-        let multicall = Multicall::eth_balances(TEST_ADDRESSES);
-        let call = multicall.aggregate(target.to_string());
+        let contract = "5BA1e12693Dc8F9c48aAD8770482f4739bEeD696";
+        let target = "target";
+        let addresses = vec![TEST_ADDRESS.to_string(); 5];
+        let multicall = Multicall::eth_balances(&addresses);
+        let call = multicall.aggregate(target.to_string(), contract.to_string());
         assert_eq!(call.target(), target);
         assert_eq!(call.call_data().raw(), expected);
     }
@@ -159,14 +160,15 @@ mod test {
         ]
         .join("");
 
-        let erc20_addr = "0x458691c1692cd82facfb2c5127e36d63213448a8";
-        let user1_addr = "0xe43878ce78934fe8007748ff481f03b8ee3b97de";
-        let user2_addr = "0x14ddfe8ea7ffc338015627d160ccaf99e8f16dd3";
+        let target = "target";
+        let erc20_addr = "0x458691c1692cd82facfb2c5127e36d63213448a8".to_string();
+        let user1_addr = "0xe43878ce78934fe8007748ff481f03b8ee3b97de".to_string();
+        let user2_addr = "0x14ddfe8ea7ffc338015627d160ccaf99e8f16dd3".to_string();
 
         let multicall = Multicall::erc20_balances(&[user1_addr, user2_addr]);
-        let call = multicall.aggregate(erc20_addr.to_string());
+        let call = multicall.aggregate(target.to_string(), erc20_addr);
 
-        assert_eq!(call.target(), erc20_addr);
+        assert_eq!(call.target(), target);
         assert_eq!(call.call_data().raw(), data);
     }
 }
