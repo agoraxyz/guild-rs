@@ -4,28 +4,26 @@
 #![deny(unused_crate_dependencies)]
 
 mod balance;
-
-use balance::EvmProvider;
+mod provider;
+mod rpc;
 
 use guild_plugin_manager::{CallOneInput, CallOneResult};
-use guild_requirement::{cbor_deserialize, Scalar};
+use guild_requirement::{cbor_deserialize, Scalar, token::TokenType};
 
 #[no_mangle]
 pub fn call_one(input: CallOneInput) -> CallOneResult {
-    let provider: EvmProvider = cbor_deserialize(secrets)?;
-    let token_type: TokenType = cbor_deserialize(metadata)?;
+    let provider: provider::Provider = cbor_deserialize(input.serialized_secrets)?;
+    let token_type: TokenType = cbor_deserialize(input.serialized_metadata)?;
 
-	// TODO
-	let addresses = vec!["", ""];
+    let addresses = vec![input.user];
 
     let balances: Vec<_> = futures::executor::block_on(async move {
         provider
-            .get_balance_batch(client, token_type, &addresses)
+            .get_balance_batch(input.client.clone(), token_type, &addresses)
             .await?
     });
 
-	// TODO
-	let res = 0.0;
+    let res = balances[0];
 
     Ok(res)
 }

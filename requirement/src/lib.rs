@@ -3,8 +3,8 @@
 #![deny(clippy::cargo)]
 #![deny(unused_crate_dependencies)]
 
-mod relation;
-mod token;
+pub mod relation;
+pub mod token;
 
 use serde::{Deserialize, Serialize};
 pub use serde_cbor::{from_slice as cbor_deserialize, to_vec as cbor_serialize};

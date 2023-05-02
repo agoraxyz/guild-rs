@@ -11,11 +11,11 @@ pub type CallOneResult = Result<Scalar, Error>;
 pub type CallOne = extern "C" fn(CallOneInput) -> CallOneResult;
 //type CallBatch = extern "C" fn(CallBatchInput) -> CallBatchResult;
 
-pub struct CallOneInput<'a> {
-    pub client: &'a Client,
-    pub user: &'a str,
-    pub serialized_secrets: &'a [u8],
-    pub serialized_metadata: &'a [u8],
+pub struct CallOneInput {
+    pub client: Client,
+    pub user: Vec<String>,
+    pub serialized_secrets: Vec<u8>,
+    pub serialized_metadata: Vec<u8>,
 }
 
 #[derive(Default)]
@@ -67,10 +67,10 @@ mod test {
     fn load_test_libraries() {
         let client = Client::new();
         let dummy_input = CallOneInput {
-            client: &client,
-            user: "",
-            serialized_secrets: b"",
-            serialized_metadata: b"",
+            client: client,
+            user: vec![String::from("")],
+            serialized_secrets: Vec::new(),
+            serialized_metadata: Vec::new(),
         };
 
         let path_map = vec![

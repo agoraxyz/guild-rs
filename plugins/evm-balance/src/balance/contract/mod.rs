@@ -1,3 +1,5 @@
+//mod multicall;
+
 use crate::{
     balance::{
         contract::multicall::{aggregate, parse_multicall_result},
@@ -5,13 +7,12 @@ use crate::{
     },
     rpc_error,
 };
-use guild_common::Scalar;
+
 use primitive_types::U256;
 use reqwest::Client;
 use serde_json::json;
 use std::str::FromStr;
 
-mod multicall;
 
 const FUNC_DECIMALS: &str = "313ce567";
 const FUNC_ETH_BALANCE: &str = "4d2301cc";
@@ -25,7 +26,7 @@ pub struct Call {
 }
 
 async fn call_contract(
-    client: &'static Client,
+    client: Client,
     rpc_url: &str,
     call: Call,
 ) -> Result<String, RpcError> {
@@ -51,7 +52,7 @@ async fn call_contract(
 }
 
 pub async fn get_eth_balance_batch(
-    client: &'static Client,
+    client: Client,
     multicall_address: &str,
     rpc_url: &str,
     user_addresses: &[&str],
@@ -82,7 +83,7 @@ pub async fn get_eth_balance_batch(
 }
 
 pub async fn get_erc20_decimals(
-    client: &'static Client,
+    client: Client,
     rpc_url: &str,
     token_address: &str,
 ) -> Result<u32, RpcError> {
@@ -106,7 +107,7 @@ fn erc20_call(token_address: &str, user_address: &str) -> Call {
 }
 
 pub async fn get_erc20_balance_batch(
-    client: &'static Client,
+    client: Client,
     multicall_address: &str,
     rpc_url: &str,
     token_address: &str,
@@ -138,7 +139,7 @@ pub fn erc721_call(token_address: &str, user_address: &str) -> Call {
 }
 
 pub async fn get_erc721_balance_batch(
-    client: &'static Client,
+    client: Client,
     multicall_address: &str,
     rpc_url: &str,
     token_address: &str,
@@ -160,7 +161,7 @@ pub async fn get_erc721_balance_batch(
 }
 
 pub async fn get_erc1155_balance_batch(
-    client: &'static Client,
+    client: Client,
     rpc_url: &str,
     token_address: String,
     token_id: &str,
@@ -211,16 +212,16 @@ mod test {
 
     #[tokio::test]
     async fn rpc_get_erc20_decimals() {
-        let client: &'static Client = Box::leak(Box::new(Client::new()));
+        let client Client::new();
 
         let token_1 = ERC20_ADDR;
         let token_2 = "0x343e59d9d835e35b07fe80f5bb544f8ed1cd3b11";
         let token_3 = "0xaba8cac6866b83ae4eec97dd07ed254282f6ad8a";
         let token_4 = "0x0a9f693fce6f00a51a8e0db4351b5a8078b4242e";
 
-        let decimals_1 = get_erc20_decimals(client, RPC_URL, token_1).await.unwrap();
-        let decimals_2 = get_erc20_decimals(client, RPC_URL, token_2).await.unwrap();
-        let decimals_3 = get_erc20_decimals(client, RPC_URL, token_3).await.unwrap();
+        let decimals_1 = get_erc20_decimals(client.clone(), RPC_URL, token_1).await.unwrap();
+        let decimals_2 = get_erc20_decimals(client.clone(), RPC_URL, token_2).await.unwrap();
+        let decimals_3 = get_erc20_decimals(client.clone(), RPC_URL, token_3).await.unwrap();
         let decimals_4 = get_erc20_decimals(client, RPC_URL, token_4).await.unwrap();
 
         assert_eq!(decimals_1, 18);

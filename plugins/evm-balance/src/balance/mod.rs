@@ -1,37 +1,8 @@
-use crate::balance::contract::*;
-use guild_common::{Scalar, TokenType};
-use reqwest::Client;
+//mod contract;
+
+use guild_requirement::{Scalar, token::TokenType};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use thiserror::Error;
-
-mod contract;
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct EvmProvider {
-    pub rpc_url: String,
-    pub contract: String,
-}
-
-#[derive(Deserialize)]
-pub struct RpcResponse {
-    pub result: String,
-}
-
-#[derive(Error, Debug)]
-pub enum RpcError {
-    #[error(transparent)]
-    Reqwest(#[from] reqwest::Error),
-    #[error("{0}")]
-    Other(String),
-}
-
-#[macro_export]
-macro_rules! rpc_error {
-    ($code:expr) => {
-        $code.map_err(|err| RpcError::Other(err.to_string()))
-    };
-}
 
 const ETH_BALANCE_DIVIDER: Scalar = 10_u128.pow(18) as Scalar;
 
@@ -42,55 +13,6 @@ fn create_payload(method: &str, params: Value, id: u32) -> Value {
         "id"      : id,
         "jsonrpc" : "2.0"
     })
-}
-
-impl EvmProvider {
-    pub async fn get_balance_batch(
-        &self,
-        client: &'static Client,
-        token_type: TokenType,
-        addresses: &[&str],
-    ) -> Result<Vec<Scalar>, RpcError> {
-        match token_type {
-            TokenType::Native => {
-                get_eth_balance_batch(client, &self.contract.to_string(), &self.rpc_url, addresses)
-                    .await
-            }
-            TokenType::Fungible { address } => {
-                get_erc20_balance_batch(
-                    client,
-                    &self.contract.to_string(),
-                    &self.rpc_url,
-                    &address,
-                    addresses,
-                )
-                .await
-            }
-            TokenType::NonFungible { address, id: _ } => {
-                get_erc721_balance_batch(
-                    client,
-                    &self.contract.to_string(),
-                    &self.rpc_url,
-                    &address,
-                    addresses,
-                )
-                .await
-            }
-            TokenType::Special { address, id } => match id {
-                Some(token_id) => {
-                    get_erc1155_balance_batch(
-                        client,
-                        &self.rpc_url,
-                        address.clone(),
-                        &token_id,
-                        addresses,
-                    )
-                    .await
-                }
-                None => Ok(vec![0.0; addresses.len()]),
-            },
-        }
-    }
 }
 
 #[cfg(test)]
