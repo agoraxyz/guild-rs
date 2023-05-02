@@ -1,3 +1,4 @@
+use guild_common::Scalar;
 use libloading::{Library, Symbol};
 use reqwest::Client;
 
@@ -5,15 +6,14 @@ use std::collections::HashMap;
 use std::path::Path;
 
 pub type Prefix = u64;
-pub type Scalar = f64;
 pub type Error = String;
 pub type CallOneResult = Result<Scalar, Error>;
 pub type CallOne = extern "C" fn(CallOneInput) -> CallOneResult;
 //type CallBatch = extern "C" fn(CallBatchInput) -> CallBatchResult;
 
-pub struct CallOneInput {
+pub struct CallOneInput<'a> {
     pub client: Client,
-    pub user: Vec<String>,
+    pub user: &'a [String],
     pub serialized_secrets: Vec<u8>,
     pub serialized_metadata: Vec<u8>,
 }

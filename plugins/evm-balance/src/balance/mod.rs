@@ -6,22 +6,12 @@ use serde_json::{json, Value};
 
 const ETH_BALANCE_DIVIDER: Scalar = 10_u128.pow(18) as Scalar;
 
-fn create_payload(method: &str, params: Value, id: u32) -> Value {
-    json!({
-        "method"  : method,
-        "params"  : params,
-        "id"      : id,
-        "jsonrpc" : "2.0"
-    })
-}
 
 #[cfg(test)]
 mod common {
-    pub const RPC_URL: &str = "https://eth.public-rpc.com";
     pub const USER_1_ADDR: &str = "0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE";
     pub const USER_2_ADDR: &str = "0x14DDFE8EA7FFc338015627D160ccAf99e8F16Dd3";
     pub const USER_3_ADDR: &str = "0x283D678711dAa088640C86a1ad3f12C00EC1252E";
-    pub const ERC20_ADDR: &str = "0x458691c1692CD82faCfb2C5127e36D63213448A8";
     pub const ERC721_ADDR: &str = "0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85";
     pub const ERC721_ID: &str =
         "61313325075603536901663283754390960556726744542208800735045237225934362163454";

@@ -36,26 +36,6 @@ pub fn aggregate(calls: &[Call]) -> String {
     format!("{FUNC_SIG}{param_count_len}{param_count}{offset}{aggregated}")
 }
 
-pub fn parse_multicall_result(multicall_result: &str) -> Result<Vec<Scalar>, RpcError> {
-    let lines = multicall_result
-        .trim_start_matches("0x")
-        .chars()
-        .collect::<Vec<char>>()
-        .chunks(64)
-        .map(|c| c.iter().collect::<String>())
-        .collect::<Vec<String>>();
-
-    let count = rpc_error!(U256::from_str(&lines[2]))?.as_usize();
-
-    let balances = lines
-        .into_iter()
-        .skip(count + 4)
-        .step_by(2)
-        .map(|balance| rpc_error!(U256::from_str(&balance).map(|value| value.as_u128() as Scalar)))
-        .collect::<Vec<Result<Scalar, RpcError>>>();
-
-    balances.into_iter().collect()
-}
 
 #[cfg(test)]
 mod test {

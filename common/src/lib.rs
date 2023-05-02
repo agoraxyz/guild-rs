@@ -3,6 +3,9 @@
 #![deny(clippy::cargo)]
 #![deny(unused_crate_dependencies)]
 
+pub type Scalar = f64;
+
+/*
 pub use requirement::*;
 use std::fmt;
 pub use user::*;
@@ -46,3 +49,4 @@ impl fmt::Display for Chain {
         <Self as fmt::Debug>::fmt(self, f)
     }
 }
+*/

@@ -6,11 +6,11 @@
 pub mod relation;
 pub mod token;
 
+use guild_common::Scalar;
 use serde::{Deserialize, Serialize};
 pub use serde_cbor::{from_slice as cbor_deserialize, to_vec as cbor_serialize};
 
 pub type Prefix = [u8; 8];
-pub type Scalar = f64;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Requirement {

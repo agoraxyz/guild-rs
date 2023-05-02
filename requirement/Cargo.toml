@@ -17,8 +17,7 @@ edition = "2021"
 
 [dependencies]
 #config = { version = "0.13.3", default-features = false, features = ["json"] }
-#guild-common = { path = "../common" }
-#libloading = "0.7.4"
+guild-common = { path = "../common" }
 serde = { version = "1", features = ["derive"], default-features = false }
 serde_cbor = "0.11"
 #serde_json = { workspace = true }

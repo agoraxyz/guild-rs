@@ -1,9 +1,8 @@
 [workspace]
 members = [
-	#"common",
+	"common",
 	"plugin-manager",
 	"requirement",
-	#"engine",
 ]
 exclude = ["plugins"]
 
