@@ -66,12 +66,13 @@ impl EvmProvider {
                 )
                 .await
             }
-            TokenType::NonFungible { address, id: _ } => {
+            TokenType::NonFungible { address, id } => {
                 get_erc721_balance_batch(
                     client,
                     &self.contract.to_string(),
                     &self.rpc_url,
                     &address,
+                    &id,
                     addresses,
                 )
                 .await
@@ -175,7 +176,7 @@ mod test {
                 .get_balance_batch(client, token_type_with_id, &[USER_1_ADDR, USER_2_ADDR])
                 .await
                 .unwrap(),
-            vec![1.0, 1.0]
+            vec![1.0, 0.0]
         );
     }
 

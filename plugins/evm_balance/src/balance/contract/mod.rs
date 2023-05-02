@@ -16,6 +16,7 @@ mod multicall;
 const FUNC_DECIMALS: &str = "313ce567";
 const FUNC_ETH_BALANCE: &str = "4d2301cc";
 const FUNC_BALANCE_OF: &str = "70a08231";
+const FUNC_OWNER_OF: &str = "6352211e";
 const FUNC_ERC1155_BATCH: &str = "4e1273f4";
 
 #[derive(Clone, Debug)]
@@ -137,26 +138,51 @@ pub fn erc721_call(token_address: &str, user_address: &str) -> Call {
     erc20_call(token_address, user_address)
 }
 
+fn erc721_id_call(token_address: &str, id: &str) -> Call {
+    Call {
+        target: token_address.to_string(),
+        call_data: format!("{FUNC_OWNER_OF}{id:0>64}"),
+    }
+}
+
 pub async fn get_erc721_balance_batch(
     client: &'static Client,
     multicall_address: &str,
     rpc_url: &str,
     token_address: &str,
+    token_id: &Option<String>,
     user_addresses: &[&str],
 ) -> Result<Vec<Scalar>, RpcError> {
-    let calls = user_addresses
-        .iter()
-        .map(|user_address| erc721_call(token_address, user_address))
-        .collect::<Vec<Call>>();
+    let res = match token_id {
+        Some(id) => {
+            let id = format!("{:x}", rpc_error!(U256::from_dec_str(id))?);
+            let call = erc721_id_call(token_address, &id);
+            let address = call_contract(client, rpc_url, call).await?;
+            let trimmed = format!("0x{}", &address[26..]);
 
-    let call = Call {
-        target: multicall_address.to_string(),
-        call_data: aggregate(&calls),
+            user_addresses
+                .iter()
+                .map(|addr| (addr.to_lowercase() == trimmed) as u8 as Scalar)
+                .collect::<Vec<Scalar>>()
+        }
+        None => {
+            let calls = user_addresses
+                .iter()
+                .map(|user_address| erc721_call(token_address, user_address))
+                .collect::<Vec<Call>>();
+
+            let call = Call {
+                target: multicall_address.to_string(),
+                call_data: aggregate(&calls),
+            };
+
+            let res = call_contract(client, rpc_url, call).await?;
+
+            parse_multicall_result(&res)?
+        }
     };
 
-    let res = call_contract(client, rpc_url, call).await?;
-
-    parse_multicall_result(&res)
+    Ok(res)
 }
 
 pub async fn get_erc1155_balance_batch(
