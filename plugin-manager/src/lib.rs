@@ -7,7 +7,7 @@ use std::path::Path;
 
 pub type Prefix = u64;
 pub type Error = String;
-pub type CallOneResult = Result<Scalar, Error>;
+pub type CallOneResult = Result<Vec<Scalar>, Error>;
 pub type CallOne = extern "C" fn(CallOneInput) -> CallOneResult;
 //type CallBatch = extern "C" fn(CallBatchInput) -> CallBatchResult;
 

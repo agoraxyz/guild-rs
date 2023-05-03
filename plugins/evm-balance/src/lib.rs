@@ -18,13 +18,12 @@ pub fn call_one(input: CallOneInput) -> CallOneResult {
 
     let balances: balances::Balances = futures::executor::block_on(async move {
         provider
-            .get_balance_batch(input.client.clone(), token_type, input.user)
+            .balances(input.client.clone(), token_type, input.user)
             .await
-    }).unwrap();
+    })
+    .unwrap();
 
-    let res = balances.into_inner()[0];
-
-    Ok(res)
+    Ok(balances.into_inner())
 }
 
 /*

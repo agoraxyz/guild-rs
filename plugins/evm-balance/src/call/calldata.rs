@@ -2,6 +2,7 @@ const FUNC_BALANCE_OF: &str = "70a08231";
 const FUNC_DECIMALS: &str = "313ce567";
 const FUNC_ERC1155_BATCH: &str = "4e1273f4";
 const FUNC_ETH_BALANCE: &str = "4d2301cc";
+const FUNC_OWNER_OF: &str = "6352211e";
 
 #[derive(Clone)]
 pub struct CallData(String);
@@ -33,22 +34,26 @@ impl CallData {
         Self::token_balance(user_address)
     }
 
-    // TODO
-    //pub fn erc1155_balance(user_address: &str) -> Self {
-    //let id = format!("{:x}", rpc_error!(U256::from_dec_str(token_id))?);
-    //let addresses = user_addresses
-    //    .iter()
-    //    .map(|user_address| format!("{:0>64}", user_address.trim_start_matches("0x")))
-    //    .collect::<String>();
+    pub fn erc721_owner(id: &str) -> Self {
+        Self(format!("{FUNC_OWNER_OF}{id:0>64}"))
+    }
 
-    //let len = 64;
-    //let count = user_addresses.len();
-    //let offset = (count + 3) * 32;
-    //let ids = vec![format!("{id:0>64}"); count].join("");
+    pub fn erc1155_balance_batch(user_addresses: &[String], token_id: &str) -> Self {
+        //let id = format!("{:x}", rpc_error!(U256::from_dec_str(token_id))?);
+        let padded_addresses = user_addresses
+            .iter()
+            .map(|address| format!("{:0>64}", address.trim_start_matches("0x")))
+            .collect::<String>();
 
-    //let call_data = format!(
-    //    "{FUNC_ERC1155_BATCH}{len:064x}{offset:064x}{count:064x}{addresses}{count:064x}{ids}",
-    //);
+        let len = 64;
+        let n_addresses = padded_addresses.len();
+        let offset = (n_addresses + 3) * 32;
+        let token_ids = vec![format!("{token_id:0>64}"); n_addresses].join("");
+
+        Self(format!(
+            "{FUNC_ERC1155_BATCH}{len:064x}{offset:064x}{n_addresses:064x}{padded_addresses}{n_addresses:064x}{token_ids}",
+        ))
+    }
 
     pub fn erc20_decimals() -> Self {
         Self(FUNC_DECIMALS.to_string())
@@ -72,6 +77,9 @@ mod test {
     #[test]
     fn eth_balance() {
         let call_data = CallData::eth_balance(TEST_ADDRESS);
-        assert_eq!(call_data.raw(), "4d2301cc000000000000000000000000E43878Ce78934fe8007748FF481f03B8Ee3b97DE");
+        assert_eq!(
+            call_data.raw(),
+            "4d2301cc000000000000000000000000E43878Ce78934fe8007748FF481f03B8Ee3b97DE"
+        );
     }
 }

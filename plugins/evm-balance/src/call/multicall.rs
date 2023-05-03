@@ -60,12 +60,12 @@ impl Multicall {
             .map(|idx| format!("{:064x}", (idx + n_calls) * 32))
             .collect::<String>();
 
-        Call {
+        Call::new(
             target,
-            call_data: CallData::new(format!(
+            CallData::new(format!(
                 "{FUNC_SIG}{param_count_len}{param_count}{offset}{aggregated}"
             )),
-        }
+        )
     }
 }
 

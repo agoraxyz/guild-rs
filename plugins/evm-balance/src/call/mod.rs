@@ -1,108 +1,107 @@
+mod call;
 mod calldata;
 mod multicall;
 
-pub use calldata::CallData;
-pub use multicall::Multicall;
+use call::Call;
+use calldata::CallData;
+use multicall::Multicall;
 
+use crate::balances::Balances;
+use guild_common::Scalar;
 use reqwest::Client;
-use serde::Deserialize;
-use serde_json::{json, Value};
 
-#[derive(Deserialize)]
-pub struct Response {
-    pub result: String,
-}
+use std::str::FromStr;
 
-pub struct Call {
+pub async fn eth_balances(
+    client: Client,
+    addresses: &[String],
     target: String,
-    call_data: CallData,
+    rpc_url: &str,
+) -> Result<Balances, anyhow::Error> {
+    let multicall = Multicall::eth_balances(addresses);
+    let call = multicall.aggregate(target.clone(), target);
+    let response = call.dispatch(client, rpc_url).await?;
+    Balances::from_response(&response)
 }
 
-impl Call {
-    pub fn new(target: String, call_data: CallData) -> Self {
-        Self { target, call_data }
-    }
-
-    pub async fn dispatch(self, client: Client, rpc_url: &str) -> Result<String, anyhow::Error> {
-        let params = json!([
-            {
-                "to"   : self.target,
-                "data" : format!("0x{}", self.call_data.raw())
-            },
-            "latest"
-        ]);
-
-        let payload = create_payload("eth_call", params, 1);
-
-        let response: Response = client
-            .post(rpc_url)
-            .json(&payload)
-            .send()
-            .await?
-            .json()
-            .await?;
-
-        Ok(response.result)
-    }
-
-    pub fn target(&self) -> &str {
-        &self.target
-    }
-
-    pub fn call_data(&self) -> &CallData {
-        &self.call_data
-    }
+pub async fn erc20_balances(
+    client: Client,
+    addresses: &[String],
+    target: String,
+    contract: String,
+    rpc_url: &str,
+) -> Result<Balances, anyhow::Error> {
+    let multicall = Multicall::erc20_balances(addresses);
+    let call = multicall.aggregate(target, contract.clone());
+    let response = call.dispatch(client.clone(), rpc_url).await?;
+    let mut balances = Balances::from_response(&response)?;
+    let decimals_call = Call::new(contract, CallData::erc20_decimals());
+    let response = decimals_call.dispatch(client, rpc_url).await?;
+    let decimals = convert_decimals(&response)?;
+    balances.normalize(decimals);
+    Ok(balances)
 }
 
-fn create_payload(method: &str, params: Value, id: u32) -> Value {
-    json!({
-        "method"  : method,
-        "params"  : params,
-        "id"      : id,
-        "jsonrpc" : "2.0"
-    })
+pub async fn erc721_balances(
+    client: Client,
+    addresses: &[String],
+    target: String,
+    contract: String,
+    rpc_url: &str,
+) -> Result<Balances, anyhow::Error> {
+    let multicall = Multicall::erc721_balances(addresses);
+    let call = multicall.aggregate(target, contract);
+    let response = call.dispatch(client, rpc_url).await?;
+    Balances::from_response(&response)
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    use futures::future::try_join_all;
-    use primitive_types::U256;
+pub async fn erc721_ownership(
+    client: Client,
+    addresses: &[String],
+    contract: String,
+    id: String,
+    rpc_url: &str,
+) -> Result<Balances, anyhow::Error> {
+    let hex_id = dec_to_hex(&id)?;
+    let call = Call::new(contract, CallData::erc721_owner(&hex_id));
+    let response = call.dispatch(client, rpc_url).await?;
+    Ok(Balances::new(
+        addresses
+            .iter()
+            .map(|address| address.to_lowercase() == response)
+            .map(Scalar::from)
+            .collect(),
+    ))
+}
 
-    use std::str::FromStr;
+pub async fn erc1155_balances(
+    client: Client,
+    addresses: &[String],
+    contract: String,
+    id: String,
+    rpc_url: &str,
+) -> Result<Balances, anyhow::Error> {
+    let call = Call::new(contract, CallData::erc1155_balance_batch(addresses, &id));
+    let response = call.dispatch(client, rpc_url).await?;
+    Balances::from_special_response(&response)
+}
 
-    const RPC_URL: &str = "https://eth.public-rpc.com";
+fn dec_to_hex(input: &str) -> Result<String, anyhow::Error> {
+    let parsed = primitive_types::U256::from_dec_str(input)?;
+    Ok(format!("{:x}", parsed))
+}
 
-    #[tokio::test]
-    async fn rpc_get_erc20_decimals() {
-        // arrange
-        let client = Client::new();
-        let tokens = vec![
-            "0x458691c1692CD82faCfb2C5127e36D63213448A8".to_string(),
-            "0x343e59d9d835e35b07fe80f5bb544f8ed1cd3b11".to_string(),
-            "0xaba8cac6866b83ae4eec97dd07ed254282f6ad8a".to_string(),
-            "0x0a9f693fce6f00a51a8e0db4351b5a8078b4242e".to_string(),
-        ];
-        let call_data = CallData::erc20_decimals();
-        let expected = vec![18u64, 9, 24, 5]
-            .into_iter()
-            .map(U256::from)
-            .collect::<Vec<U256>>();
+fn convert_decimals(input: &str) -> Result<u32, anyhow::Error> {
+    let parsed = primitive_types::U256::from_str(input)?;
+    Ok(parsed.as_u32())
+}
 
-        // act
-        let result_string_futures = tokens
-            .into_iter()
-            .map(|token| Call::new(token, call_data.clone()).dispatch(client.clone(), RPC_URL))
-            .collect::<Vec<_>>();
-
-        let result_strings = try_join_all(result_string_futures).await.unwrap();
-
-        let decimals = result_strings
-            .into_iter()
-            .map(|result_string| U256::from_str(&result_string).unwrap())
-            .collect::<Vec<U256>>();
-
-        // assert
-        assert_eq!(decimals, expected);
-    }
+#[test]
+fn dec_to_hex_conversion() {
+    assert_eq!(dec_to_hex("0").unwrap(), "0");
+    assert_eq!(dec_to_hex("10").unwrap(), "a");
+    assert_eq!(dec_to_hex("15").unwrap(), "f");
+    assert_eq!(dec_to_hex("16").unwrap(), "10");
+    assert_eq!(dec_to_hex("1024").unwrap(), "400");
+    assert!(dec_to_hex("abc").is_err());
 }
