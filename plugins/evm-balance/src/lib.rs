@@ -13,15 +13,14 @@ use guild_requirement::{cbor_deserialize, token::TokenType};
 #[no_mangle]
 pub fn call_one(input: CallOneInput) -> CallOneResult {
     // TODO error handling
-    let provider: provider::Provider = cbor_deserialize(&input.serialized_secrets).unwrap();
-    let token_type: TokenType = cbor_deserialize(&input.serialized_metadata).unwrap();
+    let provider: provider::Provider = cbor_deserialize(&input.serialized_secrets)?;
+    let token_type: TokenType = cbor_deserialize(&input.serialized_metadata)?;
 
     let balances: balances::Balances = futures::executor::block_on(async move {
         provider
             .balances(input.client.clone(), token_type, input.user)
             .await
-    })
-    .unwrap();
+    })?;
 
     Ok(balances.into_inner())
 }

@@ -171,4 +171,27 @@ mod test {
         assert_eq!(call.target(), target);
         assert_eq!(call.call_data().raw(), data);
     }
+
+    #[test]
+    fn erc721_aggregation() {
+        let data = vec![
+            "252dba42",
+            "0000000000000000000000000000000000000000000000000000000000000020",
+            "0000000000000000000000000000000000000000000000000000000000000001",
+            "0000000000000000000000000000000000000000000000000000000000000020",
+            "00000000000000000000000057f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85",
+            "0000000000000000000000000000000000000000000000000000000000000040",
+            "0000000000000000000000000000000000000000000000000000000000000024",
+            "70a08231000000000000000000000000E43878Ce78934fe8007748FF481f03B8",
+            "Ee3b97DE00000000000000000000000000000000000000000000000000000000",
+        ]
+        .join("");
+
+        let erc721_addr = "57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85".to_string();
+        let target = "target";
+        let multicall = Multicall::erc721_balances(&[TEST_ADDRESS.to_string()]);
+        let call = multicall.aggregate(target.to_string(), erc721_addr);
+        assert_eq!(call.target(), target);
+        assert_eq!(call.call_data().raw(), data);
+    }
 }

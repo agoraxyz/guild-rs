@@ -6,8 +6,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 pub type Prefix = u64;
-pub type Error = String;
-pub type CallOneResult = Result<Vec<Scalar>, Error>;
+pub type CallOneResult = Result<Vec<Scalar>, anyhow::Error>;
 pub type CallOne = extern "C" fn(CallOneInput) -> CallOneResult;
 //type CallBatch = extern "C" fn(CallBatchInput) -> CallBatchResult;
 
@@ -30,18 +29,22 @@ impl PluginManager {
         }
     }
 
-    pub fn insert(&mut self, prefix: Prefix, path: &Path) -> Result<(), String> {
-        let library = unsafe { Library::new(path) }.map_err(|e| e.to_string())?;
+    pub fn insert(&mut self, prefix: Prefix, path: &Path) -> Result<(), anyhow::Error> {
+        let library = unsafe { Library::new(path) }?; //.map_err(|e| e.to_string())?;
         self.plugins.insert(prefix, library);
         Ok(())
     }
 
-    fn symbol<'a, T>(&'a self, prefix: Prefix, name: &[u8]) -> Result<Symbol<'a, T>, String> {
+    fn symbol<'a, T>(
+        &'a self,
+        prefix: Prefix,
+        name: &[u8],
+    ) -> Result<Symbol<'a, T>, anyhow::Error> {
         let plugin = self
             .plugins
             .get(&prefix)
-            .ok_or(String::from("no such prefix"))?;
-        unsafe { plugin.get(name) }.map_err(|e| e.to_string())
+            .ok_or(anyhow::anyhow!("no such prefix"))?;
+        unsafe { plugin.get(name) }.map_err(|e| anyhow::anyhow!(e))
     }
 
     pub fn call_one(&self, prefix: Prefix, input: CallOneInput) -> CallOneResult {
@@ -57,7 +60,7 @@ mod test {
     type TestCall = extern "C" fn() -> String;
 
     impl PluginManager {
-        pub fn name(&self, prefix: Prefix) -> Result<String, String> {
+        pub fn name(&self, prefix: Prefix) -> Result<String, anyhow::Error> {
             let dynamic_call: TestCall = *self.symbol(prefix, b"name")?;
             Ok(dynamic_call())
         }
@@ -68,7 +71,7 @@ mod test {
         let client = Client::new();
         let dummy_input = CallOneInput {
             client: client,
-            user: vec![String::from("")],
+            user: &[String::from("")],
             serialized_secrets: Vec::new(),
             serialized_metadata: Vec::new(),
         };

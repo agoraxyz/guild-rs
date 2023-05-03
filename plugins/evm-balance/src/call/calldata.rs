@@ -45,7 +45,7 @@ impl CallData {
             .collect::<String>();
 
         let len = 64;
-        let n_addresses = padded_addresses.len();
+        let n_addresses = user_addresses.len();
         let offset = (n_addresses + 3) * 32;
         let token_ids = vec![format!("{token_id:0>64}"); n_addresses].join("");
 
@@ -80,5 +80,21 @@ mod test {
             call_data.raw(),
             "4d2301cc000000000000000000000000E43878Ce78934fe8007748FF481f03B8Ee3b97DE"
         );
+    }
+
+    #[test]
+    fn erc1155_balance() {
+        let expected = vec![
+            "4e1273f4",
+            "0000000000000000000000000000000000000000000000000000000000000040",
+            "0000000000000000000000000000000000000000000000000000000000000080",
+            "0000000000000000000000000000000000000000000000000000000000000001",
+            "000000000000000000000000E43878Ce78934fe8007748FF481f03B8Ee3b97DE",
+            "0000000000000000000000000000000000000000000000000000000000000001",
+            "0000000000000000000000000000000000000000000000000000000000002a74",
+        ]
+        .join("");
+        let call_data = CallData::erc1155_balance_batch(&[TEST_ADDRESS.to_string()], "2a74");
+        assert_eq!(call_data.raw(), expected);
     }
 }
