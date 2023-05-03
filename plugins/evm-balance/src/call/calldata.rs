@@ -39,7 +39,6 @@ impl CallData {
     }
 
     pub fn erc1155_balance_batch(user_addresses: &[String], token_id: &str) -> Self {
-        //let id = format!("{:x}", rpc_error!(U256::from_dec_str(token_id))?);
         let padded_addresses = user_addresses
             .iter()
             .map(|address| format!("{:0>64}", address.trim_start_matches("0x")))

@@ -14,10 +14,10 @@ impl Balances {
         self.0
     }
 
-    pub fn normalize(&mut self, decimals: u32) {
+    pub fn normalize(&mut self, by: Scalar) {
         self.0
             .iter_mut()
-            .for_each(|balance| *balance /= 10u128.pow(decimals) as Scalar)
+            .for_each(|balance| *balance /= by)
     }
 
     pub fn from_response(response: &str) -> Result<Self, anyhow::Error> {
@@ -74,12 +74,12 @@ mod test {
     #[test]
     fn normalize() {
         let mut balances = Balances::new(vec![0.0, 1.0, 2.0, 100.0, 1000.0]);
-        balances.normalize(2);
+        balances.normalize(100.0);
         assert_eq!(balances.into_inner(), vec![0.0, 0.01, 0.02, 1.0, 10.0]);
     }
 
     #[test]
-    fn parse() {
+    fn parse_response() {
         let input = vec![
             "0x",
             // 1st line (line 0)
@@ -127,5 +127,40 @@ mod test {
         );
 
         assert!(Balances::from_response("").is_err());
+    }
+    #[test]
+    fn parse_special_response() {
+        let input = vec![
+            "000000000000000000000000000000000000000000000000000000000000000a",
+            "0000000000000000000000000000000000000000000000000000000000000003",
+            "0000000000000000000000000000000000000000000000000000000000000004",
+            "0000000000000000000000000000000000000000000000000000000000000005",
+            "0000000000000000000000000000000000000000000000000000000000000006",
+            "0000000000000000000000000000000000000000000000000000000000000007",
+            "0000000000000000000000000000000000000000000000000000000000000008",
+            "0000000000000000000000000000000000000000000000000000000000000009",
+            "0000000000000000000000000000000000000000000000000000000000000010",
+            "0000000000000000000000000000000000000000000000000000000000000011",
+            "0000000000000000000000000000000000000000000000000000000000000012",
+            "0000000000000000000000000000000000000000000000000000000000000013",
+        ]
+        .join("");
+
+        let invalid_input = vec![
+            "000000000000000000000000000000000000000000000000000000000000000a",
+            "0000000000000000000000000000000000000000000000000000000000000003",
+            "00000000000000000000000000000000000000000000000000000000000000xy",
+        ].join("");
+
+        let balances = Balances::from_special_response(&input).unwrap();
+        assert_eq!(
+            balances.into_inner(),
+            &[4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 16.0, 17.0, 18.0, 19.0]
+        );
+
+        let balances = Balances::from_special_response("").unwrap();
+        assert!(balances.into_inner().is_empty());
+
+        assert!(Balances::from_special_response(&invalid_input).is_err());
     }
 }
