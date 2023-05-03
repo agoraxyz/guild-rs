@@ -41,10 +41,12 @@ impl Call {
         Ok(response.result)
     }
 
+    #[cfg(test)]
     pub fn target(&self) -> &str {
         &self.target
     }
 
+    #[cfg(test)]
     pub fn call_data(&self) -> &CallData {
         &self.call_data
     }

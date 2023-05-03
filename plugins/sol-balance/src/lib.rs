@@ -6,8 +6,8 @@
 use guild_plugin_manager::{CallOneInput, CallOneResult};
 
 #[no_mangle]
-pub fn call_one(input: CallOneInput) -> CallOneResult {
-    Ok(2.0)
+pub fn call_one(_input: CallOneInput) -> CallOneResult {
+    todo!()
 }
 
 /*

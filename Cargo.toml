@@ -2,7 +2,7 @@
 members = [
 	"common",
 	"plugin-manager",
-	"requirement",
+	"requirements",
 ]
 exclude = ["plugins"]
 

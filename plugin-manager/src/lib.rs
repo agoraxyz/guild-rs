@@ -1,6 +1,6 @@
 use guild_common::Scalar;
 use libloading::{Library, Symbol};
-use reqwest::Client;
+pub use reqwest::Client;
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -30,7 +30,7 @@ impl PluginManager {
     }
 
     pub fn insert(&mut self, prefix: Prefix, path: &Path) -> Result<(), anyhow::Error> {
-        let library = unsafe { Library::new(path) }?; //.map_err(|e| e.to_string())?;
+        let library = unsafe { Library::new(path) }?;
         self.plugins.insert(prefix, library);
         Ok(())
     }
