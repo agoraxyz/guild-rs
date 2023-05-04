@@ -1,24 +1,22 @@
 use super::{Requirement, Scalar};
+use guild_plugin_manager::redis::ConnectionLike;
 use guild_plugin_manager::{CallOneInput, Client, PluginManager};
-use redis::Commands;
 
 impl Requirement {
-    pub fn check(
+    pub fn check<C: ConnectionLike>(
         &self,
+        mut pm: PluginManager<C>,
         client: Client,
-        redis: &mut redis::Connection,
         user: &[String],
     ) -> Result<Scalar, anyhow::Error> {
-        let plugin_manager: PluginManager = redis.get("pm")?;
-        let serialized_secrets: Vec<u8> = redis.get(format!("secrets_{}", self.prefix))?;
         let call_one_input = CallOneInput {
             client,
             user,
-            serialized_secrets,
+            serialized_secret: &pm.serialized_secret(self.prefix)?,
             serialized_metadata: &self.metadata,
         };
 
-        let balances = plugin_manager.call_one(self.prefix, call_one_input)?;
+        let balances = pm.call_one(self.prefix, call_one_input)?;
         Ok(balances.into_iter().sum())
     }
 }
