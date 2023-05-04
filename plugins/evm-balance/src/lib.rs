@@ -12,7 +12,6 @@ use guild_requirements::{cbor_deserialize, token::TokenType};
 
 #[no_mangle]
 pub fn call_one(input: CallOneInput) -> CallOneResult {
-    // TODO error handling
     let provider: provider::Provider = cbor_deserialize(&input.serialized_secret)?;
     let token_type: TokenType = cbor_deserialize(&input.serialized_metadata)?;
 
