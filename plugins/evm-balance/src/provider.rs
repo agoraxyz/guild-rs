@@ -1,6 +1,6 @@
 use crate::balances::Balances;
 use crate::call::*;
-use guild_requirement::token::TokenType;
+use guild_requirements::token::TokenType;
 use reqwest::Client;
 use serde::Deserialize;
 use zeroize::Zeroize;

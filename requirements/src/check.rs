@@ -1,67 +1,29 @@
 use super::{Requirement, Scalar};
-use guild_plugin_manager::{Client, PluginManager};
+use guild_plugin_manager::{CallOneInput, Client, PluginManager};
+use redis::Commands;
 
 impl Requirement {
     pub fn check(
         &self,
         client: Client,
-        plugin_path: &PluginManager,
-        secrets: &str,
+        redis: &mut redis::Connection,
+        user: &[String],
     ) -> Result<Scalar, anyhow::Error> {
-        todo!()
+        let plugin_manager: PluginManager = redis.get("pm")?;
+        let serialized_secrets: Vec<u8> = redis.get(format!("secrets_{}", self.prefix))?;
+        let call_one_input = CallOneInput {
+            client,
+            user,
+            serialized_secrets,
+            serialized_metadata: &self.metadata,
+        };
+
+        let balances = plugin_manager.call_one(self.prefix, call_one_input)?;
+        Ok(balances.into_iter().sum())
     }
 }
 
 /*
-use config::{Config, File};
-pub use db::RedisCache;
-use guild_common::{Relation, Scalar, User};
-use libloading::{Library, Symbol};
-use reqwest::Client;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use std::{collections::HashMap, path::Path};
-use thiserror::Error;
-
-mod db;
-
-type Data = Vec<Vec<Scalar>>;
-type Error = Box<dyn std::error::Error>;
-
-
-#[derive(Error, Debug)]
-pub enum ConfigError {
-    #[error(transparent)]
-    Config(#[from] config::ConfigError),
-    #[error("Value not found for key {0}")]
-    NoSuchEntry(String),
-}
-
-const CONFIG_PATH: &str = "config.json";
-
-fn read_config(redis_cache: &mut RedisCache, key: &str) -> Result<Value, ConfigError> {
-    if let Some(value) = redis_cache.read(key) {
-        return Ok(value);
-    }
-
-    let config_path = std::env::var("CONFIG_PATH").unwrap_or(CONFIG_PATH.to_string());
-
-    let settings = Config::builder()
-        .add_source(File::from(Path::new(&config_path)))
-        .build()?;
-
-    let map = settings.try_deserialize::<HashMap<String, Value>>()?;
-
-    if let Some(value) = map.get(key).cloned() {
-        redis_cache.write(key, &value);
-
-        Ok(value)
-    } else {
-        Err(ConfigError::NoSuchEntry(key.to_string()))
-    }
-}
-
-
 #[cfg(test)]
 mod test {
     use shiba as _;
@@ -71,7 +33,7 @@ mod test {
     use tokio::runtime;
 
     const USERS: &str = r#"[
-    {
+{
         "id": 0,
         "identities": {
             "evm_address": ["0xE43878Ce78934fe8007748FF481f03B8Ee3b97DE"],

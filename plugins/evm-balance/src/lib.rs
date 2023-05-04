@@ -8,7 +8,7 @@ mod call;
 mod provider;
 
 use guild_plugin_manager::{CallOneInput, CallOneResult};
-use guild_requirement::{cbor_deserialize, token::TokenType};
+use guild_requirements::{cbor_deserialize, token::TokenType};
 
 #[no_mangle]
 pub fn call_one(input: CallOneInput) -> CallOneResult {

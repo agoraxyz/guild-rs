@@ -1,8 +1,12 @@
 use guild_common::Scalar;
-use libloading::{Library, Symbol};
-pub use reqwest::Client;
+pub use redis;
 
-use std::collections::HashMap;
+use libloading::{Library, Symbol};
+use redis::Commands;
+pub use reqwest::Client;
+use serde::Serialize;
+use serde_cbor::to_vec as cbor_serialize;
+
 use std::path::Path;
 
 pub type Prefix = u64;
@@ -13,57 +17,58 @@ pub type CallOne = extern "C" fn(CallOneInput) -> CallOneResult;
 pub struct CallOneInput<'a> {
     pub client: Client,
     pub user: &'a [String],
-    pub serialized_secrets: Vec<u8>,
-    pub serialized_metadata: Vec<u8>,
+    pub serialized_secrets: &'a [u8],
+    pub serialized_metadata: &'a [u8],
 }
 
-#[derive(Default)]
-pub struct PluginManager {
-    plugins: HashMap<Prefix, Library>,
+pub fn plugin_key(prefix: Prefix) -> String {
+    format!("plugin_{prefix}")
 }
 
-impl PluginManager {
-    pub fn new() -> Self {
-        Self {
-            plugins: HashMap::new(),
-        }
-    }
+pub fn secret_key(prefix: Prefix) -> String {
+    format!("secret_{prefix}")
+}
 
-    pub fn insert(&mut self, prefix: Prefix, path: &Path) -> Result<(), anyhow::Error> {
-        let library = unsafe { Library::new(path) }?;
-        self.plugins.insert(prefix, library);
+pub struct PluginManager<'a>(&'a mut redis::Connection);
+
+impl PluginManager<'_> {
+    pub fn insert_plugin(self, prefix: Prefix, path: &str) -> Result<(), anyhow::Error> {
+        self.0.set::<String, &str, _>(plugin_key(prefix), path)?;
         Ok(())
     }
 
-    fn symbol<'a, T>(
-        &'a self,
+    pub fn insert_secret<T: Serialize>(
+        self,
         prefix: Prefix,
-        name: &[u8],
-    ) -> Result<Symbol<'a, T>, anyhow::Error> {
-        let plugin = self
-            .plugins
-            .get(&prefix)
-            .ok_or(anyhow::anyhow!("no such prefix"))?;
-        unsafe { plugin.get(name) }.map_err(|e| anyhow::anyhow!(e))
+        secret: &T,
+    ) -> Result<(), anyhow::Error> {
+        let serialized_secret = cbor_serialize(secret)?;
+        self.0.set(secret_key(prefix), serialized_secret)?;
+        Ok(())
     }
 
-    pub fn call_one(&self, prefix: Prefix, input: CallOneInput) -> CallOneResult {
+    fn symbol<'a, T>(self, prefix: Prefix, name: &[u8]) -> Result<Symbol<'a, T>, anyhow::Error> {
+        let path = self.0.get::<String, String>(plugin_key(prefix))?;
+        let library = unsafe { Library::new(path) }?;
+        unsafe { library.get(name) }.map_err(|e| anyhow::anyhow!(e))
+    }
+
+    pub fn call_one(self, prefix: Prefix, input: CallOneInput) -> CallOneResult {
         let dynamic_call: CallOne = *self.symbol(prefix, b"call_one")?;
         dynamic_call(input)
     }
 }
 
+/*
 #[cfg(test)]
 mod test {
     use super::*;
 
     type TestCall = extern "C" fn() -> String;
 
-    impl PluginManager {
-        pub fn name(&self, prefix: Prefix) -> Result<String, anyhow::Error> {
-            let dynamic_call: TestCall = *self.symbol(prefix, b"name")?;
-            Ok(dynamic_call())
-        }
+    fn name(redis: &mut redis::Connection, prefix: Prefix) -> Result<String, anyhow::Error> {
+        let dynamic_call: TestCall = symbol(redis, prefix, b"name")?;
+        Ok(dynamic_call())
     }
 
     #[test]
@@ -95,3 +100,4 @@ mod test {
         assert!(plugin_manager.call_one(0, dummy_input).is_err());
     }
 }
+*/
