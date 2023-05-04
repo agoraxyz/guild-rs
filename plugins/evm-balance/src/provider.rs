@@ -2,10 +2,11 @@ use crate::balances::Balances;
 use crate::call::*;
 use guild_requirements::token::TokenType;
 use reqwest::Client;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 use zeroize::Zeroize;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub struct Provider {
     pub rpc_url: String,
     pub multicall_contract: String,

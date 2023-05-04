@@ -1,23 +1,10 @@
-use guild_common::Scalar;
 pub use redis;
 
 use libloading::Library;
 use redis::{Commands, ConnectionLike};
-pub use reqwest::Client;
 use serde::Serialize;
-use serde_cbor::to_vec as cbor_serialize;
 
 pub type Prefix = u64;
-pub type CallOneResult = Result<Vec<Scalar>, anyhow::Error>;
-pub type CallOne = extern "C" fn(CallOneInput) -> CallOneResult;
-//type CallBatch = extern "C" fn(CallBatchInput) -> CallBatchResult;
-
-pub struct CallOneInput<'a> {
-    pub client: Client,
-    pub user: &'a [String],
-    pub serialized_secret: &'a [u8],
-    pub serialized_metadata: &'a [u8],
-}
 
 pub fn plugin_key(prefix: Prefix) -> String {
     format!("plugin_{prefix}")
@@ -47,13 +34,13 @@ where
         prefix: Prefix,
         secret: &T,
     ) -> Result<(), anyhow::Error> {
-        let serialized_secret = cbor_serialize(secret)?;
+        let serialized_secret = serde_json::to_string(secret)?;
         self.0.set(secret_key(prefix), serialized_secret)?;
         Ok(())
     }
 
-    pub fn serialized_secret(&mut self, prefix: Prefix) -> Result<Vec<u8>, anyhow::Error> {
-        Ok(self.0.get::<String, Vec<u8>>(secret_key(prefix))?)
+    pub fn serialized_secret(&mut self, prefix: Prefix) -> Result<String, anyhow::Error> {
+        Ok(self.0.get::<String, String>(secret_key(prefix))?)
     }
 
     fn library(&mut self, prefix: Prefix) -> Result<Library, anyhow::Error> {
@@ -62,9 +49,17 @@ where
         Ok(library)
     }
 
-    pub fn call_one(&mut self, prefix: Prefix, input: CallOneInput) -> CallOneResult {
+    pub fn call<Call, In, Out>(
+        &mut self,
+        prefix: Prefix,
+        name: &[u8],
+        input: In,
+    ) -> Result<Out, anyhow::Error>
+    where
+        Call: Fn(In) -> Result<Out, anyhow::Error> + Copy,
+    {
         let library = self.library(prefix)?;
-        let dynamic_call: CallOne = *unsafe { library.get(b"call_one") }?;
+        let dynamic_call: Call = *unsafe { library.get(name) }?;
         dynamic_call(input)
     }
 }
@@ -74,24 +69,18 @@ mod test {
     use super::*;
     use redis_test::{MockCmd, MockRedisConnection};
 
-    type TestCall = extern "C" fn() -> String;
-
-    impl PluginManager<'_, MockRedisConnection> {
-        fn name(&mut self, prefix: Prefix) -> Result<String, anyhow::Error> {
-            let library = self.library(prefix)?;
-            let dynamic_call: TestCall = *unsafe { library.get(b"name") }?;
-            Ok(dynamic_call())
-        }
-    }
+    type TestInA = ();
+    type TestInB<'a> = &'a str;
+    type TestOut = String;
+    type TestCallA = fn(TestInA) -> Result<TestOut, anyhow::Error>;
+    type TestCallB = fn(TestInB) -> Result<TestOut, anyhow::Error>;
 
     #[test]
     fn load_test_libraries() {
-        let client = Client::new();
-
         let module_a = "./plugins/libtest_lib_a.module";
         let module_b = "./plugins/libtest_lib_b.module";
         let secret = String::from("secret");
-        let serialized_secret = cbor_serialize(&secret).unwrap();
+        let serialized_secret = serde_json::to_string(&secret).unwrap();
 
         let mut mock_redis = MockRedisConnection::new(vec![
             MockCmd::new(redis::cmd("SET").arg(plugin_key(0)).arg(module_a), Ok(0)),
@@ -115,19 +104,24 @@ mod test {
         assert!(plugin_manager.insert_plugin(1, module_b).is_ok());
         assert!(plugin_manager.insert_secret(0, &secret).is_ok());
 
-        assert_eq!(plugin_manager.name(0).unwrap(), "test-lib-a");
-        assert_eq!(plugin_manager.name(1).unwrap(), "test-lib-b");
+        assert_eq!(
+            plugin_manager
+                .call::<TestCallA, _, _>(0, b"call", ())
+                .unwrap(),
+            "test-lib-a"
+        );
+        assert_eq!(
+            plugin_manager
+                .call::<TestCallB, _, _>(1, b"call", "hello")
+                .unwrap(),
+            "test-lib-b-hello"
+        );
 
-        let dummy_input = CallOneInput {
-            client: client,
-            user: &[String::from("")],
-            serialized_secret: &plugin_manager.serialized_secret(0).unwrap(),
-            serialized_metadata: &[],
-        };
-
-        assert_eq!(dummy_input.serialized_secret, serialized_secret);
+        assert_eq!(
+            plugin_manager.serialized_secret(0).unwrap(),
+            serialized_secret
+        );
 
         assert!(plugin_manager.insert_plugin(2, "nonexistent/path").is_err());
-        assert!(plugin_manager.call_one(0, dummy_input).is_err());
     }
 }

@@ -20,7 +20,9 @@ std = ["guild-plugin-manager"]
 anyhow = { version = "1", default-features = false }
 guild-common = { path = "../common" }
 guild-plugin-manager = { path = "../plugin-manager", optional = true }
+reqwest = "0.11"
 serde = { workspace = true }
 serde_cbor = { workspace = true }
 
 [dev-dependencies]
+redis-test = "0.2"

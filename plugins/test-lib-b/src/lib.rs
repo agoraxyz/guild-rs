@@ -1,4 +1,4 @@
 #[no_mangle]
-pub fn name() -> String {
-    "test-lib-b".into()
+pub fn call(input: &str) -> Result<String, anyhow::Error> {
+    Ok(format!("test-lib-b-{input}"))
 }

@@ -7,12 +7,12 @@ mod balances;
 mod call;
 mod provider;
 
-use guild_plugin_manager::{CallOneInput, CallOneResult};
+use guild_requirements::check::{CallOneInput, CallOneOutput};
 use guild_requirements::{cbor_deserialize, token::TokenType};
 
 #[no_mangle]
-pub fn call_one(input: CallOneInput) -> CallOneResult {
-    let provider: provider::Provider = cbor_deserialize(&input.serialized_secret)?;
+pub fn call_one(input: CallOneInput) -> Result<CallOneOutput, anyhow::Error> {
+    let provider: provider::Provider = serde_json::from_str(input.serialized_secret)?;
     let token_type: TokenType = cbor_deserialize(&input.serialized_metadata)?;
 
     let balances: balances::Balances = futures::executor::block_on(async move {
@@ -23,5 +23,3 @@ pub fn call_one(input: CallOneInput) -> CallOneResult {
 
     Ok(balances.into_inner())
 }
-
-// TODO call_batch
