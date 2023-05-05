@@ -1,6 +1,6 @@
 use super::CallData;
 
-use reqwest::Client;
+use reqwest::blocking::Client;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -19,7 +19,7 @@ impl Call {
         Self { target, call_data }
     }
 
-    pub async fn dispatch(self, client: Client, rpc_url: &str) -> Result<String, anyhow::Error> {
+    pub fn dispatch(self, client: Client, rpc_url: &str) -> Result<String, anyhow::Error> {
         let params = json!([
             {
                 "to"   : self.target,
@@ -30,13 +30,7 @@ impl Call {
 
         let payload = create_payload("eth_call", params, 1);
 
-        let response: Response = client
-            .post(rpc_url)
-            .json(&payload)
-            .send()
-            .await?
-            .json()
-            .await?;
+        let response: Response = client.post(rpc_url).json(&payload).send()?.json()?;
 
         Ok(response.result)
     }
@@ -64,15 +58,14 @@ fn create_payload(method: &str, params: Value, id: u32) -> Value {
 #[cfg(test)]
 mod test {
     use super::*;
-    use futures::future::try_join_all;
     use primitive_types::U256;
 
     use std::str::FromStr;
 
     const RPC_URL: &str = "https://eth.public-rpc.com";
 
-    #[tokio::test]
-    async fn get_erc20_decimals() {
+    #[test]
+    fn get_erc20_decimals() {
         // arrange
         let client = Client::new();
         let tokens = vec![
@@ -88,12 +81,11 @@ mod test {
             .collect::<Vec<U256>>();
 
         // act
-        let result_string_futures = tokens
+        let result_strings = tokens
             .into_iter()
             .map(|token| Call::new(token, call_data.clone()).dispatch(client.clone(), RPC_URL))
-            .collect::<Vec<_>>();
-
-        let result_strings = try_join_all(result_string_futures).await.unwrap();
+            .collect::<Result<Vec<String>, anyhow::Error>>()
+            .unwrap();
 
         let decimals = result_strings
             .into_iter()

@@ -1,7 +1,7 @@
 use super::Requirement;
 use guild_plugin_manager::redis::ConnectionLike;
 use guild_plugin_manager::PluginManager;
-use reqwest::Client;
+use reqwest::blocking::Client;
 
 pub type CallOneOutput = Vec<guild_common::Scalar>;
 pub type CallOne = fn(CallOneInput) -> Result<CallOneOutput, anyhow::Error>;
@@ -80,12 +80,12 @@ mod test {
             MockCmd::new(redis::cmd("GET").arg(plugin_key(PREFIX)), Ok(PLUGIN)),
         ]);
         let pm = PluginManager::new(&mut mock_redis);
-        let client = reqwest::Client::new();
+        let client = reqwest::blocking::Client::new();
         let token_type = TokenType::Fungible {
             address: "0x458691c1692cd82facfb2c5127e36d63213448a8".to_string(),
         };
 
-        let relation = Relation::Between(2.0..4.0);
+        let relation = Relation::Between(95.0..140.0);
 
         let evm_balance = Requirement {
             prefix: PREFIX,
