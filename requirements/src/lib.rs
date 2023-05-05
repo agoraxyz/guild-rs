@@ -4,12 +4,14 @@
 #![deny(clippy::cargo)]
 #![deny(unused_crate_dependencies)]
 
-#[cfg(feature = "std")]
+#[cfg(feature = "check")]
 pub mod check;
 pub mod relation;
 pub mod token;
 
 use guild_common::Scalar;
+#[cfg(not(feature = "std"))]
+use guild_common::{String, Vec};
 use serde::{Deserialize, Serialize};
 pub use serde_cbor::{from_slice as cbor_deserialize, to_vec as cbor_serialize};
 
@@ -62,4 +64,9 @@ impl TryFrom<SerializedRequirementsWithLogic> for RequirementsWithLogic {
             logic,
         })
     }
+}
+
+#[cfg(test)]
+mod test {
+    use redis_test as _;
 }

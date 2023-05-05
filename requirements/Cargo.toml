@@ -14,13 +14,21 @@ edition = "2021"
 
 [features]
 default = ["std"]
-std = ["guild-common/std"]
+std = [
+    "guild-common/std",
+]
+check = [
+    "std",
+    "anyhow",
+    "guild-plugin-manager",
+    "reqwest",
+]
 
 [dependencies]
-anyhow = { version = "1", default-features = false }
+anyhow = { version = "1", default-features = false, optional = true}
 guild-common = { path = "../common", default-features = false }
 guild-plugin-manager = { path = "../plugin-manager", optional = true }
-reqwest = { version = "0.11", features = ["blocking"] }
+reqwest = { version = "0.11", features = ["blocking"], optional = true }
 serde = { workspace = true }
 serde_cbor = { workspace = true }
 

@@ -6,7 +6,10 @@
 
 pub type Scalar = f64;
 
+#[cfg(feature = "std")]
+use parity_scale_codec as _;
+
 #[cfg(not(feature = "std"))]
 pub use parity_scale_codec::alloc::vec::Vec;
 #[cfg(not(feature = "std"))]
-pub use parity_scale_codec::alloc::String;
+pub use parity_scale_codec::alloc::string::String;
