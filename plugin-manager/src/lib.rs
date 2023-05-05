@@ -49,12 +49,7 @@ where
         Ok(library)
     }
 
-    pub fn call<Call, In, Out>(
-        &mut self,
-        prefix: Prefix,
-        name: &[u8],
-        input: In,
-    ) -> Result<Out, anyhow::Error>
+    pub fn call<Call, In, Out>(&mut self, prefix: Prefix, name: &[u8], input: In) -> Call::Output
     where
         Call: Fn(In) -> Result<Out, anyhow::Error> + Copy,
     {
