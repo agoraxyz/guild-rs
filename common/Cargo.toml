@@ -12,12 +12,9 @@ categories = [
 ]
 edition = "2021"
 
-#[features]
-#identity = ["primitive-types"]
-#
-#[dev-dependencies]
-#shiba = { version = "0.1.1", default-features = false }
-#
-#[dependencies]
-#primitive-types = { version = "0.12.1", features = ["serde"], optional = true }
-#serde = { workspace = true }
+[features]
+default = ["std"]
+std = []
+
+[dependencies]
+parity-scale-codec = { version = "3.2", default-features = false }
