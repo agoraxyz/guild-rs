@@ -3,6 +3,9 @@ name = "guild-plugin-manager"
 version = "0.0.0"
 edition = "2021"
 
+[features]
+mockdb = []
+
 [dependencies]
 anyhow = "1"
 guild-common = { path = "../common" }

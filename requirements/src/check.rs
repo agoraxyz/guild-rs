@@ -1,7 +1,7 @@
 use super::Requirement;
 use guild_plugin_manager::redis::ConnectionLike;
 use guild_plugin_manager::PluginManager;
-use reqwest::blocking::Client;
+pub use reqwest::blocking::Client;
 
 pub type CallOneOutput = Vec<guild_common::Scalar>;
 pub type CallOne = fn(CallOneInput) -> Result<CallOneOutput, anyhow::Error>;

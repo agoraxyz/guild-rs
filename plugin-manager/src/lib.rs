@@ -1,3 +1,5 @@
+pub mod mockdb;
+
 pub use redis;
 
 use libloading::Library;
@@ -118,5 +120,38 @@ mod test {
         );
 
         assert!(plugin_manager.insert_plugin(2, "nonexistent/path").is_err());
+    }
+
+    #[test]
+    #[cfg(feature = "mockdb")]
+    fn load_test_libraries_mockdb() {
+        let module_a = "./plugins/libtest_lib_a.module";
+        let module_b = "./plugins/libtest_lib_b.module";
+        let secret = String::from("secret");
+        let serialized_secret = serde_json::to_string(&secret).unwrap();
+
+        let mut mockdb = mockdb::MockDb::new();
+        let mut plugin_manager = PluginManager::new(&mut mockdb);
+        assert!(plugin_manager.insert_plugin(0, module_a).is_ok());
+        assert!(plugin_manager.insert_plugin(1, module_b).is_ok());
+        assert!(plugin_manager.insert_secret(0, &secret).is_ok());
+
+        assert_eq!(
+            plugin_manager
+                .call::<TestCallA, _, _>(0, b"call", ())
+                .unwrap(),
+            "test-lib-a"
+        );
+        assert_eq!(
+            plugin_manager
+                .call::<TestCallB, _, _>(1, b"call", "hello")
+                .unwrap(),
+            "test-lib-b-hello"
+        );
+
+        assert_eq!(
+            plugin_manager.serialized_secret(0).unwrap(),
+            serialized_secret
+        );
     }
 }
